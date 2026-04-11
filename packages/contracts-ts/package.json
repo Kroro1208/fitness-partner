@@ -1,23 +1,23 @@
 {
-  "name": "@fitness/contracts-ts",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "main": "./src/index.ts",
-  "scripts": {
-    "generate:types": "node scripts/generate-types.mjs",
-    "generate:zod": "node scripts/generate-zod.mjs",
-    "generate": "pnpm run generate:types && pnpm run generate:zod",
-    "test": "vitest run"
-  },
-  "dependencies": {
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@types/node": "^22.10.0",
-    "json-schema-to-typescript": "^15.0.4",
-    "json-schema-to-zod": "^2.5.0",
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
-  }
+	"name": "@fitness/contracts-ts",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"main": "./src/index.ts",
+	"scripts": {
+		"generate:types": "node scripts/generate-types.mjs",
+		"generate:zod": "node scripts/generate-zod.mjs",
+		"generate": "pnpm run generate:types && pnpm run generate:zod",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.0",
+		"json-schema-to-typescript": "^15.0.4",
+		"json-schema-to-zod": "^2.5.0",
+		"typescript": "^5.6.0",
+		"vitest": "^2.1.0"
+	}
 }

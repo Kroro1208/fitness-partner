@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
 
 const pkgRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const generatedTypes = join(pkgRoot, "generated", "types.d.ts");
@@ -22,14 +22,14 @@ const generatedTypes = join(pkgRoot, "generated", "types.d.ts");
  *   - `tsc --noEmit`: パッケージ全体の型チェック (CI の typescript ジョブが実行)
  */
 describe("generate-types 出力", () => {
-  it("generated/types.d.ts を出力すること", () => {
-    expect(existsSync(generatedTypes)).toBe(true);
-  });
+	it("generated/types.d.ts を出力すること", () => {
+		expect(existsSync(generatedTypes)).toBe(true);
+	});
 
-  it("空でない CalorieMacroResult の型宣言を含むこと", () => {
-    const contents = readFileSync(generatedTypes, "utf8");
-    expect(contents.length).toBeGreaterThan(0);
-    // 識別子 CalorieMacroResult が存在する (宣言形式は問わない)
-    expect(contents).toMatch(/\bCalorieMacroResult\b/);
-  });
+	it("空でない CalorieMacroResult の型宣言を含むこと", () => {
+		const contents = readFileSync(generatedTypes, "utf8");
+		expect(contents.length).toBeGreaterThan(0);
+		// 識別子 CalorieMacroResult が存在する (宣言形式は問わない)
+		expect(contents).toMatch(/\bCalorieMacroResult\b/);
+	});
 });

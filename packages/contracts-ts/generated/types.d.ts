@@ -40,12 +40,12 @@ export type Explanation = string[];
  * Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。
  */
 export interface CalorieMacroResult {
-  bmr: Bmr;
-  activity_multiplier: ActivityMultiplier;
-  tdee: Tdee;
-  target_calories: TargetCalories;
-  protein_g: ProteinG;
-  fat_g: FatG;
-  carbs_g: CarbsG;
-  explanation?: Explanation;
+	bmr: Bmr;
+	activity_multiplier: ActivityMultiplier;
+	tdee: Tdee;
+	target_calories: TargetCalories;
+	protein_g: ProteinG;
+	fat_g: FatG;
+	carbs_g: CarbsG;
+	explanation?: Explanation;
 }
