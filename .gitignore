@@ -33,8 +33,11 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Claude Code 設定 (追跡しない)
+# Claude Code 設定 / エージェント関連 / ローカル作業メモ / ローカルスクリプト (追跡しない)
 .claude/
+.agents/
+tasks/
+scripts/
 
 # ログ
 *.log

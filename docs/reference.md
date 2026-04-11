@@ -1,0 +1,5 @@
+- https://aws.amazon.com/jp/blogs/machine-learning/ai-agents-in-enterprises-best-practices-with-amazon-bedrock-agentcore/
+- https://qiita.com/nasuvitz/items/d7daf916d2b3a47c1e87
+- https://github.com/awslabs/fullstack-solution-template-for-agentcore
+- https://qiita.com/Kumoai/items/dd55ce73a01926b7b820
+- https://speakerdeck.com/yokomachi/building-a-personal-ai-agent-with-strands-agents-x-amazon-bedrock-agentcore-jp
