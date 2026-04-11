@@ -1,0 +1,14 @@
+{
+  "name": "ai-fitness-partner",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.21.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "contracts:generate": "pnpm --filter @fitness/contracts-ts generate",
+    "contracts:test": "pnpm --filter @fitness/contracts-ts test",
+    "test": "pnpm -r test"
+  }
+}
