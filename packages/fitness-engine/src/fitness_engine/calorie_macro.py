@@ -102,3 +102,20 @@ def calculate_target_calories(
     target = tdee - deficit
     floor = round(bmr * 1.1)
     return max(target, floor)
+
+
+def calculate_macros(*, target_calories: int, weight_kg: float) -> dict[str, int]:
+    """目標カロリーと体重から protein / fat / carbs の g を決める。
+
+    MVP ルール:
+    - protein: 1.8 g/kg
+    - fat: 0.8 g/kg
+    - carbs: 残り / 4 kcal/g (負になったら 0 にクリップ)
+    """
+    protein_g = round(weight_kg * 1.8)
+    fat_g = round(weight_kg * 0.8)
+    protein_kcal = protein_g * 4
+    fat_kcal = fat_g * 9
+    carbs_kcal = max(0, target_calories - protein_kcal - fat_kcal)
+    carbs_g = round(carbs_kcal / 4)
+    return {"protein_g": protein_g, "fat_g": fat_g, "carbs_g": carbs_g}

@@ -106,3 +106,33 @@ def test_calculate_target_calories(
         bmi=bmi,
     )
     assert result == expected
+
+
+from fitness_engine.calorie_macro import calculate_macros
+
+
+def test_calculate_macros_basic():
+    # weight 70kg, target 2100 kcal
+    # protein: 70 * 1.8 = 126g → 126 * 4 = 504 kcal
+    # fat: 70 * 0.8 = 56g → 56 * 9 = 504 kcal
+    # carbs: (2100 - 504 - 504) / 4 = 273g
+    result = calculate_macros(target_calories=2100, weight_kg=70.0)
+    assert result == {"protein_g": 126, "fat_g": 56, "carbs_g": 273}
+
+
+def test_calculate_macros_low_carb_positive():
+    # 低めのターゲットで carbs が少量残るケース
+    # weight 100kg, target 1500: protein 180g*4=720, fat 80g*9=720, remaining=60 → carbs 15
+    result = calculate_macros(target_calories=1500, weight_kg=100.0)
+    assert result["protein_g"] == 180
+    assert result["fat_g"] == 80
+    assert result["carbs_g"] == 15
+
+
+def test_calculate_macros_clips_negative_carbs_to_zero():
+    # 極端低ターゲットで remaining が負 (< 0) になるケース
+    # weight 100kg, target 1000: protein 180g*4=720, fat 80g*9=720, remaining=1000-1440=-440 → 0 にクリップ
+    result = calculate_macros(target_calories=1000, weight_kg=100.0)
+    assert result["protein_g"] == 180
+    assert result["fat_g"] == 80
+    assert result["carbs_g"] == 0
