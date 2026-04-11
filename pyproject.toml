@@ -1,0 +1,20 @@
+[project]
+name = "ai-fitness-partner-workspace"
+version = "0.0.0"
+description = "ai-fitness-partner Python パッケージの workspace ルート"
+requires-python = ">=3.11"
+
+[tool.uv.workspace]
+members = ["packages/contracts-py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages/contracts-py/tests"]
+python_files = ["test_*.py"]
