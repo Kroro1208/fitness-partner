@@ -18,9 +18,25 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from fitness_contracts.models.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+from fitness_contracts.models.hydration import HydrationInput, HydrationResult
+from fitness_contracts.models.safety import SafetyInput, SafetyResult
+from fitness_contracts.models.supplement import (
+    SupplementInput,
+    SupplementRecommendation,
+    SupplementRecommendationList,
+)
 
 MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
+    ("CalorieMacroInput", CalorieMacroInput),
     ("CalorieMacroResult", CalorieMacroResult),
+    ("HydrationInput", HydrationInput),
+    ("HydrationResult", HydrationResult),
+    ("SupplementInput", SupplementInput),
+    ("SupplementRecommendation", SupplementRecommendation),
+    ("SupplementRecommendationList", SupplementRecommendationList),
+    ("SafetyInput", SafetyInput),
+    ("SafetyResult", SafetyResult),
 ]
 
 

@@ -1,0 +1,75 @@
+{
+  "description": "Calorie Macro Engine の入力。",
+  "properties": {
+    "age": {
+      "description": "年齢 (成人のみ)。",
+      "maximum": 120,
+      "minimum": 18,
+      "title": "Age",
+      "type": "integer"
+    },
+    "sex": {
+      "description": "生物学的性別 (BMR 計算に必要)。",
+      "enum": [
+        "male",
+        "female"
+      ],
+      "title": "Sex",
+      "type": "string"
+    },
+    "height_cm": {
+      "description": "身長 (cm)。",
+      "exclusiveMaximum": 300,
+      "exclusiveMinimum": 0,
+      "title": "Height Cm",
+      "type": "number"
+    },
+    "weight_kg": {
+      "description": "現在体重 (kg)。",
+      "exclusiveMaximum": 500,
+      "exclusiveMinimum": 0,
+      "title": "Weight Kg",
+      "type": "number"
+    },
+    "activity_level": {
+      "description": "PAL 活動係数を決める活動レベル。",
+      "enum": [
+        "sedentary",
+        "lightly_active",
+        "moderately_active",
+        "very_active",
+        "extremely_active"
+      ],
+      "title": "Activity Level",
+      "type": "string"
+    },
+    "sleep_hours": {
+      "description": "平均睡眠時間 (caution 条件判定に使う)。",
+      "maximum": 24,
+      "minimum": 0,
+      "title": "Sleep Hours",
+      "type": "number"
+    },
+    "stress_level": {
+      "description": "ストレスレベル (caution 条件判定に使う)。",
+      "enum": [
+        "low",
+        "moderate",
+        "high"
+      ],
+      "title": "Stress Level",
+      "type": "string"
+    }
+  },
+  "required": [
+    "age",
+    "sex",
+    "height_cm",
+    "weight_kg",
+    "activity_level",
+    "sleep_hours",
+    "stress_level"
+  ],
+  "title": "CalorieMacroInput",
+  "type": "object"
+}

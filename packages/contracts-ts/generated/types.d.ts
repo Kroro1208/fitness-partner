@@ -4,6 +4,48 @@
  */
 
 /**
+ * 年齢 (成人のみ)。
+ */
+export type Age = number;
+/**
+ * 生物学的性別 (BMR 計算に必要)。
+ */
+export type Sex = "male" | "female";
+/**
+ * 身長 (cm)。
+ */
+export type HeightCm = number;
+/**
+ * 現在体重 (kg)。
+ */
+export type WeightKg = number;
+/**
+ * PAL 活動係数を決める活動レベル。
+ */
+export type ActivityLevel = "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
+/**
+ * 平均睡眠時間 (caution 条件判定に使う)。
+ */
+export type SleepHours = number;
+/**
+ * ストレスレベル (caution 条件判定に使う)。
+ */
+export type StressLevel = "low" | "moderate" | "high";
+
+/**
+ * Calorie Macro Engine の入力。
+ */
+export interface CalorieMacroInput {
+  age: Age;
+  sex: Sex;
+  height_cm: HeightCm;
+  weight_kg: WeightKg;
+  activity_level: ActivityLevel;
+  sleep_hours: SleepHours;
+  stress_level: StressLevel;
+}
+
+/**
  * Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。
  */
 export type Bmr = number;
@@ -40,12 +82,228 @@ export type Explanation = string[];
  * Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。
  */
 export interface CalorieMacroResult {
-	bmr: Bmr;
-	activity_multiplier: ActivityMultiplier;
-	tdee: Tdee;
-	target_calories: TargetCalories;
-	protein_g: ProteinG;
-	fat_g: FatG;
-	carbs_g: CarbsG;
-	explanation?: Explanation;
+  bmr: Bmr;
+  activity_multiplier: ActivityMultiplier;
+  tdee: Tdee;
+  target_calories: TargetCalories;
+  protein_g: ProteinG;
+  fat_g: FatG;
+  carbs_g: CarbsG;
+  explanation?: Explanation;
+}
+
+/**
+ * 現在体重 (kg)。
+ */
+export type WeightKg = number;
+/**
+ * 週の運動頻度 (回)。
+ */
+export type WorkoutsPerWeek = number;
+/**
+ * 1 回あたりの平均運動時間 (分)。
+ */
+export type AvgWorkoutMinutes = number;
+/**
+ * 仕事の身体負荷タイプ。
+ */
+export type JobType = "desk" | "standing" | "light_physical" | "manual_labour" | "outdoor";
+
+/**
+ * Hydration Engine への入力。
+ */
+export interface HydrationInput {
+  weight_kg: WeightKg;
+  workouts_per_week: WorkoutsPerWeek;
+  avg_workout_minutes: AvgWorkoutMinutes;
+  job_type: JobType;
+}
+
+/**
+ * 1 日の水分目標 (リットル)。
+ */
+export type TargetLiters = number;
+/**
+ * 計算の内訳 (base + workout + job)。
+ */
+export type FormulaBreakdown = string[];
+/**
+ * 生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。
+ */
+export type PracticalTips = string[];
+/**
+ * なぜ水分が重要かの簡潔な説明 (1-3 項目)。
+ */
+export type WhyItMatters = string[];
+
+/**
+ * Hydration Engine の出力。
+ *
+ * architecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、
+ * practical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。
+ */
+export interface HydrationResult {
+  target_liters: TargetLiters;
+  formula_breakdown?: FormulaBreakdown;
+  practical_tips?: PracticalTips;
+  why_it_matters?: WhyItMatters;
+}
+
+/**
+ * 年齢。18 歳未満は block される。
+ */
+export type Age = number;
+export type WeightKg = number;
+export type HeightCm = number;
+/**
+ * 減量ペース希望。aggressive は caution として扱う。
+ */
+export type DesiredPace = "steady" | "aggressive";
+export type SleepHours = number;
+export type StressLevel = "low" | "moderate" | "high";
+/**
+ * 週の飲酒杯数。
+ */
+export type AlcoholPerWeek = number;
+export type PregnancyOrBreastfeeding = boolean;
+export type EatingDisorderHistory = boolean;
+/**
+ * 既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。
+ */
+export type MedicalConditions = string[];
+
+/**
+ * Safety Guard への入力 (UserProfile の安全関連サブセット)。
+ *
+ * Note: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの
+ * 体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。
+ */
+export interface SafetyInput {
+  age: Age;
+  weight_kg: WeightKg;
+  height_cm: HeightCm;
+  desired_pace: DesiredPace;
+  sleep_hours: SleepHours;
+  stress_level: StressLevel;
+  alcohol_per_week: AlcoholPerWeek;
+  pregnancy_or_breastfeeding?: PregnancyOrBreastfeeding;
+  eating_disorder_history?: EatingDisorderHistory;
+  medical_conditions?: MedicalConditions;
+}
+
+export type Level = "safe" | "caution" | "blocked";
+export type Reasons = string[];
+export type AllowedToGeneratePlan = boolean;
+export type ResponseMode = "normal" | "limited" | "medical_redirect";
+
+/**
+ * Safety Guard の出力。
+ */
+export interface SafetyResult {
+  level: Level;
+  reasons?: Reasons;
+  allowed_to_generate_plan: AllowedToGeneratePlan;
+  response_mode: ResponseMode;
+}
+
+/**
+ * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
+ */
+export type ProteinGapG = number;
+export type WorkoutsPerWeek = number;
+export type SleepHours = number;
+/**
+ * 週の魚摂取回数 (オメガ3 推奨トリガー)。
+ */
+export type FishPerWeek = number;
+/**
+ * 早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。
+ */
+export type EarlyMorningTraining = boolean;
+/**
+ * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
+ */
+export type LowSunlightExposure = boolean;
+
+/**
+ * Supplement Recommender への入力。
+ */
+export interface SupplementInput {
+  protein_gap_g: ProteinGapG;
+  workouts_per_week: WorkoutsPerWeek;
+  sleep_hours: SleepHours;
+  fish_per_week: FishPerWeek;
+  early_morning_training?: EarlyMorningTraining;
+  low_sunlight_exposure?: LowSunlightExposure;
+}
+
+/**
+ * サプリ名 (whey / creatine / magnesium / omega3 等)。
+ */
+export type Name = string;
+/**
+ * 推奨用量 (人間が読める形式)。
+ */
+export type Dose = string;
+/**
+ * 摂取タイミング。
+ */
+export type Timing = string;
+/**
+ * なぜこのユーザーに関係があるか。
+ */
+export type WhyRelevant = string;
+/**
+ * 注意事項 (ある場合)。
+ */
+export type Caution = string | null;
+
+/**
+ * 1 件のサプリ推奨。
+ */
+export interface SupplementRecommendation {
+  name: Name;
+  dose: Dose;
+  timing: Timing;
+  why_relevant: WhyRelevant;
+  caution?: Caution;
+}
+
+/**
+ * サプリ名 (whey / creatine / magnesium / omega3 等)。
+ */
+export type Name = string;
+/**
+ * 推奨用量 (人間が読める形式)。
+ */
+export type Dose = string;
+/**
+ * 摂取タイミング。
+ */
+export type Timing = string;
+/**
+ * なぜこのユーザーに関係があるか。
+ */
+export type WhyRelevant = string;
+/**
+ * 注意事項 (ある場合)。
+ */
+export type Caution = string | null;
+export type Items = SupplementRecommendation[];
+
+/**
+ * Supplement Recommender の出力 (0 件以上の推奨)。
+ */
+export interface SupplementRecommendationList {
+  items?: Items;
+}
+/**
+ * 1 件のサプリ推奨。
+ */
+export interface SupplementRecommendation {
+  name: Name;
+  dose: Dose;
+  timing: Timing;
+  why_relevant: WhyRelevant;
+  caution?: Caution;
 }

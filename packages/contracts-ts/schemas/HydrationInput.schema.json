@@ -1,0 +1,46 @@
+{
+  "description": "Hydration Engine への入力。",
+  "properties": {
+    "weight_kg": {
+      "description": "現在体重 (kg)。",
+      "exclusiveMaximum": 500,
+      "exclusiveMinimum": 0,
+      "title": "Weight Kg",
+      "type": "number"
+    },
+    "workouts_per_week": {
+      "description": "週の運動頻度 (回)。",
+      "maximum": 14,
+      "minimum": 0,
+      "title": "Workouts Per Week",
+      "type": "integer"
+    },
+    "avg_workout_minutes": {
+      "description": "1 回あたりの平均運動時間 (分)。",
+      "maximum": 300,
+      "minimum": 0,
+      "title": "Avg Workout Minutes",
+      "type": "integer"
+    },
+    "job_type": {
+      "description": "仕事の身体負荷タイプ。",
+      "enum": [
+        "desk",
+        "standing",
+        "light_physical",
+        "manual_labour",
+        "outdoor"
+      ],
+      "title": "Job Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "weight_kg",
+    "workouts_per_week",
+    "avg_workout_minutes",
+    "job_type"
+  ],
+  "title": "HydrationInput",
+  "type": "object"
+}

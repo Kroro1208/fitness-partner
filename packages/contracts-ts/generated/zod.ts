@@ -4,38 +4,20 @@
  */
 import { z } from "zod";
 
-export const CalorieMacroResultSchema = z
-	.object({
-		bmr: z
-			.number()
-			.int()
-			.gte(0)
-			.describe("Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。"),
-		activity_multiplier: z
-			.number()
-			.gte(1)
-			.lte(2)
-			.describe("TDEE 計算に使う PAL 活動係数。"),
-		tdee: z
-			.number()
-			.int()
-			.gte(0)
-			.describe(
-				"Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。",
-			),
-		target_calories: z
-			.number()
-			.int()
-			.gte(0)
-			.describe("deficit ルール適用後の 1 日目標カロリー。"),
-		protein_g: z.number().int().gte(0).describe("1 日のタンパク質目標 (g)。"),
-		fat_g: z.number().int().gte(0).describe("1 日の脂質目標 (g)。"),
-		carbs_g: z.number().int().gte(0).describe("1 日の炭水化物目標 (g)。"),
-		explanation: z
-			.array(z.string())
-			.describe("人間が読める計算根拠を step-by-step で列挙したもの。")
-			.optional(),
-	})
-	.describe(
-		"Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。",
-	);
+export const CalorieMacroInputSchema = z.object({ "age": z.number().int().gte(18).lte(120).describe("年齢 (成人のみ)。"), "sex": z.enum(["male","female"]).describe("生物学的性別 (BMR 計算に必要)。"), "height_cm": z.number().gt(0).lt(300).describe("身長 (cm)。"), "weight_kg": z.number().gt(0).lt(500).describe("現在体重 (kg)。"), "activity_level": z.enum(["sedentary","lightly_active","moderately_active","very_active","extremely_active"]).describe("PAL 活動係数を決める活動レベル。"), "sleep_hours": z.number().gte(0).lte(24).describe("平均睡眠時間 (caution 条件判定に使う)。"), "stress_level": z.enum(["low","moderate","high"]).describe("ストレスレベル (caution 条件判定に使う)。") }).describe("Calorie Macro Engine の入力。")
+
+export const CalorieMacroResultSchema = z.object({ "bmr": z.number().int().gte(0).describe("Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。"), "activity_multiplier": z.number().gte(1).lte(2).describe("TDEE 計算に使う PAL 活動係数。"), "tdee": z.number().int().gte(0).describe("Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。"), "target_calories": z.number().int().gte(0).describe("deficit ルール適用後の 1 日目標カロリー。"), "protein_g": z.number().int().gte(0).describe("1 日のタンパク質目標 (g)。"), "fat_g": z.number().int().gte(0).describe("1 日の脂質目標 (g)。"), "carbs_g": z.number().int().gte(0).describe("1 日の炭水化物目標 (g)。"), "explanation": z.array(z.string()).describe("人間が読める計算根拠を step-by-step で列挙したもの。").optional() }).describe("Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。")
+
+export const HydrationInputSchema = z.object({ "weight_kg": z.number().gt(0).lt(500).describe("現在体重 (kg)。"), "workouts_per_week": z.number().int().gte(0).lte(14).describe("週の運動頻度 (回)。"), "avg_workout_minutes": z.number().int().gte(0).lte(300).describe("1 回あたりの平均運動時間 (分)。"), "job_type": z.enum(["desk","standing","light_physical","manual_labour","outdoor"]).describe("仕事の身体負荷タイプ。") }).describe("Hydration Engine への入力。")
+
+export const HydrationResultSchema = z.object({ "target_liters": z.number().gte(0).describe("1 日の水分目標 (リットル)。"), "formula_breakdown": z.array(z.string()).describe("計算の内訳 (base + workout + job)。").optional(), "practical_tips": z.array(z.string()).describe("生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。").optional(), "why_it_matters": z.array(z.string()).describe("なぜ水分が重要かの簡潔な説明 (1-3 項目)。").optional() }).describe("Hydration Engine の出力。\n\narchitecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、\npractical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。")
+
+export const SafetyInputSchema = z.object({ "age": z.number().int().gte(0).lte(120).describe("年齢。18 歳未満は block される。"), "weight_kg": z.number().gt(0).lt(500), "height_cm": z.number().gt(0).lt(300), "desired_pace": z.enum(["steady","aggressive"]).describe("減量ペース希望。aggressive は caution として扱う。"), "sleep_hours": z.number().gte(0).lte(24), "stress_level": z.enum(["low","moderate","high"]), "alcohol_per_week": z.number().int().gte(0).lte(100).describe("週の飲酒杯数。"), "pregnancy_or_breastfeeding": z.boolean().default(false), "eating_disorder_history": z.boolean().default(false), "medical_conditions": z.array(z.string()).describe("既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。").optional() }).describe("Safety Guard への入力 (UserProfile の安全関連サブセット)。\n\nNote: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの\n体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。")
+
+export const SafetyResultSchema = z.object({ "level": z.enum(["safe","caution","blocked"]), "reasons": z.array(z.string()).optional(), "allowed_to_generate_plan": z.boolean(), "response_mode": z.enum(["normal","limited","medical_redirect"]) }).describe("Safety Guard の出力。")
+
+export const SupplementInputSchema = z.object({ "protein_gap_g": z.number().describe("タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。"), "workouts_per_week": z.number().int().gte(0).lte(14), "sleep_hours": z.number().gte(0).lte(24), "fish_per_week": z.number().int().gte(0).lte(21).describe("週の魚摂取回数 (オメガ3 推奨トリガー)。"), "early_morning_training": z.boolean().describe("早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。").default(false), "low_sunlight_exposure": z.boolean().describe("日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。").default(false) }).describe("Supplement Recommender への入力。")
+
+export const SupplementRecommendationSchema = z.object({ "name": z.string().describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"), "dose": z.string().describe("推奨用量 (人間が読める形式)。"), "timing": z.string().describe("摂取タイミング。"), "why_relevant": z.string().describe("なぜこのユーザーに関係があるか。"), "caution": z.union([z.string(), z.null()]).describe("注意事項 (ある場合)。").default(null) }).describe("1 件のサプリ推奨。")
+
+export const SupplementRecommendationListSchema = z.object({ "items": z.array(z.any()).optional() }).describe("Supplement Recommender の出力 (0 件以上の推奨)。")
