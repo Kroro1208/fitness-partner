@@ -21,3 +21,12 @@ testpaths = [
   "packages/fitness-engine/tests",
 ]
 python_files = ["test_*.py"]
+
+[tool.coverage.run]
+source = ["packages/fitness-engine/src/fitness_engine"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = false
