@@ -70,3 +70,35 @@ def calculate_tdee(*, bmr: int, activity_level: ActivityLevel) -> int:
             f"got {activity_level!r}"
         ) from exc
     return round(bmr * multiplier)
+
+
+def calculate_target_calories(
+    *,
+    tdee: int,
+    bmr: int,
+    activity_level: ActivityLevel,
+    sleep_hours: float,
+    stress_level: Literal["low", "moderate", "high"],
+    bmi: float,
+) -> int:
+    """TDEE から deficit ルールに従って目標カロリーを決定する。
+
+    ルール:
+    - caution 条件 (睡眠<6h かつ stress=high / BMI<20): TDEE - 300
+    - 高活動 (very_active, extremely_active): TDEE - 500
+    - 通常: TDEE - 400
+    - 下限 guard: BMR * 1.1 を下回らない
+    """
+    is_caution = (sleep_hours < 6 and stress_level == "high") or bmi < 20.0
+    is_high_activity = activity_level in ("very_active", "extremely_active")
+
+    if is_caution:
+        deficit = 300
+    elif is_high_activity:
+        deficit = 500
+    else:
+        deficit = 400
+
+    target = tdee - deficit
+    floor = round(bmr * 1.1)
+    return max(target, floor)

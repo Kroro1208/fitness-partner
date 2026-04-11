@@ -67,3 +67,42 @@ def test_calculate_tdee_rejects_unknown_level():
     """未知の activity_level は ValueError。メッセージ文言には依存しない。"""
     with pytest.raises(ValueError):
         calculate_tdee(bmr=1500, activity_level="super_active")
+
+
+from fitness_engine.calorie_macro import calculate_target_calories
+
+
+@pytest.mark.parametrize(
+    ("tdee", "bmr", "activity_level", "sleep_hours", "stress_level", "bmi", "expected"),
+    [
+        # 通常条件: TDEE - 400
+        (2500, 1600, "moderately_active", 7.5, "moderate", 22.0, 2100),
+        # 高活動: TDEE - 500 (very_active 以上)
+        (3000, 1800, "very_active", 8.0, "low", 23.0, 2500),
+        # caution (睡眠不足+高ストレス): TDEE - 300
+        (2500, 1600, "moderately_active", 5.5, "high", 22.0, 2200),
+        # caution (低体重 BMI<20): TDEE - 300
+        (2200, 1500, "lightly_active", 8.0, "low", 19.0, 1900),
+        # guard: BMR*1.1 を下回らない
+        # BMR=1500, BMR*1.1=1650, TDEE=1800, TDEE-400=1400 → guard で 1650
+        (1800, 1500, "sedentary", 8.0, "moderate", 22.0, 1650),
+    ],
+)
+def test_calculate_target_calories(
+    tdee: int,
+    bmr: int,
+    activity_level: str,
+    sleep_hours: float,
+    stress_level: str,
+    bmi: float,
+    expected: int,
+):
+    result = calculate_target_calories(
+        tdee=tdee,
+        bmr=bmr,
+        activity_level=activity_level,
+        sleep_hours=sleep_hours,
+        stress_level=stress_level,
+        bmi=bmi,
+    )
+    assert result == expected
