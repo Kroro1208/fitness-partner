@@ -6,6 +6,9 @@
 
 from typing import Literal
 
+from fitness_contracts.models.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+
 Sex = Literal["male", "female"]
 
 
@@ -119,3 +122,59 @@ def calculate_macros(*, target_calories: int, weight_kg: float) -> dict[str, int
     carbs_kcal = max(0, target_calories - protein_kcal - fat_kcal)
     carbs_g = round(carbs_kcal / 4)
     return {"protein_g": protein_g, "fat_g": fat_g, "carbs_g": carbs_g}
+
+
+def calculate_calories_and_macros(
+    input_: CalorieMacroInput,
+) -> CalorieMacroResult:
+    """4 ステップ計算をまとめて CalorieMacroResult を返すオーケストレータ。
+
+    1. BMR を Mifflin-St Jeor で計算
+    2. TDEE を活動係数で計算
+    3. deficit ルールで目標カロリーを決定
+    4. 体重から macros を算出
+
+    副作用なし、純粋関数。
+    """
+    bmr = calculate_bmr(
+        sex=input_.sex,
+        age=input_.age,
+        height_cm=input_.height_cm,
+        weight_kg=input_.weight_kg,
+    )
+    tdee = calculate_tdee(bmr=bmr, activity_level=input_.activity_level)
+    bmi = input_.weight_kg / ((input_.height_cm / 100) ** 2)
+    target_calories = calculate_target_calories(
+        tdee=tdee,
+        bmr=bmr,
+        activity_level=input_.activity_level,
+        sleep_hours=input_.sleep_hours,
+        stress_level=input_.stress_level,
+        bmi=bmi,
+    )
+    macros = calculate_macros(
+        target_calories=target_calories, weight_kg=input_.weight_kg
+    )
+
+    multiplier = ACTIVITY_MULTIPLIERS[input_.activity_level]
+    explanation = [
+        f"BMR: Mifflin-St Jeor ({input_.sex}, {input_.age}y, "
+        f"{input_.height_cm}cm, {input_.weight_kg}kg) = {bmr} kcal",
+        f"TDEE: BMR × {multiplier} ({input_.activity_level}) = {tdee} kcal",
+        f"Target: {tdee} - deficit = {target_calories} kcal",
+        (
+            f"Macros: P={macros['protein_g']}g / "
+            f"F={macros['fat_g']}g / C={macros['carbs_g']}g"
+        ),
+    ]
+
+    return CalorieMacroResult(
+        bmr=bmr,
+        activity_multiplier=multiplier,
+        tdee=tdee,
+        target_calories=target_calories,
+        protein_g=macros["protein_g"],
+        fat_g=macros["fat_g"],
+        carbs_g=macros["carbs_g"],
+        explanation=explanation,
+    )

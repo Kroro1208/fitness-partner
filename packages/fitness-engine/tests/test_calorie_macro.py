@@ -136,3 +136,52 @@ def test_calculate_macros_clips_negative_carbs_to_zero():
     assert result["protein_g"] == 180
     assert result["fat_g"] == 80
     assert result["carbs_g"] == 0
+
+
+from fitness_contracts.models.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+
+from fitness_engine.calorie_macro import calculate_calories_and_macros
+
+
+def test_calculate_calories_and_macros_full_pipeline():
+    input_ = CalorieMacroInput(
+        age=30,
+        sex="male",
+        height_cm=170.0,
+        weight_kg=70.0,
+        activity_level="moderately_active",
+        sleep_hours=7.5,
+        stress_level="moderate",
+    )
+    result = calculate_calories_and_macros(input_)
+
+    assert isinstance(result, CalorieMacroResult)
+    assert result.bmr == 1618
+    assert result.activity_multiplier == pytest.approx(1.55)
+    assert result.tdee == 2508  # 1618 * 1.55 = 2507.9 → 2508
+    # 通常条件なので TDEE - 400 = 2108
+    assert result.target_calories == 2108
+    assert result.protein_g == 126
+    assert result.fat_g == 56
+    # 2108 - 504 - 504 = 1100, / 4 = 275
+    assert result.carbs_g == 275
+    assert len(result.explanation) >= 3  # 最低でも BMR / TDEE / deficit の説明がある
+
+
+def test_calculate_calories_and_macros_result_is_valid_pydantic():
+    """出力が CalorieMacroResult の制約を満たすこと。"""
+    input_ = CalorieMacroInput(
+        age=25,
+        sex="female",
+        height_cm=160.0,
+        weight_kg=55.0,
+        activity_level="lightly_active",
+        sleep_hours=8.0,
+        stress_level="low",
+    )
+    result = calculate_calories_and_macros(input_)
+    assert result.bmr >= 0
+    assert result.tdee >= 0
+    assert result.target_calories >= 0
+    assert 1.0 <= result.activity_multiplier <= 2.0
