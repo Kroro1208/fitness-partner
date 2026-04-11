@@ -1,0 +1,47 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+.next/
+dist/
+
+# Python / uv
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# 退避キャッシュ (sandbox 制約対応: UV_CACHE_DIR / PNPM_STORE_DIR の出力先)
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+
+# 環境変数
+.env
+.env.local
+.env.*.local
+
+# Claude Code 設定 (追跡しない)
+.claude/
+
+# ログ
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# カバレッジ
+coverage/
+.coverage
+htmlcov/
