@@ -5,7 +5,7 @@ description = "ai-fitness-partner Python パッケージの workspace ルート"
 requires-python = ">=3.11"
 
 [tool.uv.workspace]
-members = ["packages/contracts-py"]
+members = ["packages/contracts-py", "packages/fitness-engine"]
 
 [tool.ruff]
 line-length = 100
@@ -16,5 +16,8 @@ select = ["E", "F", "I", "B", "UP", "N"]
 ignore = ["E501"]
 
 [tool.pytest.ini_options]
-testpaths = ["packages/contracts-py/tests"]
+testpaths = [
+  "packages/contracts-py/tests",
+  "packages/fitness-engine/tests",
+]
 python_files = ["test_*.py"]
