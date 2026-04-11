@@ -37,3 +37,36 @@ def calculate_bmr(*, sex: Sex, age: int, height_cm: float, weight_kg: float) -> 
             f"sex must be 'male' or 'female' (MVP limitation), got {sex!r}"
         )
     return round(bmr)
+
+
+ActivityLevel = Literal[
+    "sedentary",
+    "lightly_active",
+    "moderately_active",
+    "very_active",
+    "extremely_active",
+]
+
+ACTIVITY_MULTIPLIERS: dict[str, float] = {
+    "sedentary": 1.2,
+    "lightly_active": 1.375,
+    "moderately_active": 1.55,
+    "very_active": 1.725,
+    "extremely_active": 1.9,
+}
+
+
+def calculate_tdee(*, bmr: int, activity_level: ActivityLevel) -> int:
+    """BMR と活動レベルから TDEE (kcal/day) を計算する。
+
+    Raises:
+        ValueError: activity_level が ACTIVITY_MULTIPLIERS のキー以外の場合。
+    """
+    try:
+        multiplier = ACTIVITY_MULTIPLIERS[activity_level]
+    except KeyError as exc:
+        raise ValueError(
+            f"activity_level must be one of {list(ACTIVITY_MULTIPLIERS)}, "
+            f"got {activity_level!r}"
+        ) from exc
+    return round(bmr * multiplier)

@@ -32,3 +32,38 @@ def test_calculate_bmr_rejects_unknown_sex():
     """sex が male/female 以外なら ValueError。エラーメッセージ文言には依存しない。"""
     with pytest.raises(ValueError):
         calculate_bmr(sex="other", age=30, height_cm=170.0, weight_kg=70.0)
+
+
+from fitness_engine.calorie_macro import ACTIVITY_MULTIPLIERS, calculate_tdee
+
+
+def test_activity_multipliers_match_spec():
+    assert ACTIVITY_MULTIPLIERS == {
+        "sedentary": 1.2,
+        "lightly_active": 1.375,
+        "moderately_active": 1.55,
+        "very_active": 1.725,
+        "extremely_active": 1.9,
+    }
+
+
+@pytest.mark.parametrize(
+    ("bmr", "activity_level", "expected"),
+    [
+        (1500, "sedentary", 1800),  # 1500 * 1.2 = 1800
+        # Note: Python 3 の round() は banker's rounding (偶数丸め) を使うため
+        # 1500 * 1.375 = 2062.5 は 2062 になる (2062 が偶数)
+        (1500, "lightly_active", 2062),
+        (1618, "moderately_active", 2508),  # 1618 * 1.55 = 2507.9 → 2508
+        (2000, "very_active", 3450),  # 2000 * 1.725 = 3450
+        (2000, "extremely_active", 3800),
+    ],
+)
+def test_calculate_tdee(bmr: int, activity_level: str, expected: int):
+    assert calculate_tdee(bmr=bmr, activity_level=activity_level) == expected
+
+
+def test_calculate_tdee_rejects_unknown_level():
+    """未知の activity_level は ValueError。メッセージ文言には依存しない。"""
+    with pytest.raises(ValueError):
+        calculate_tdee(bmr=1500, activity_level="super_active")
