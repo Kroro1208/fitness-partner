@@ -5,7 +5,7 @@ on:
   pull_request:
 jobs:
   python:
-    name: Python (contracts-py)
+    name: Python (contracts-py + fitness-engine)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +21,10 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-packages --extra dev
 
-      - name: Run pytest
-        run: uv run pytest packages/contracts-py -v
+      - name: Run pytest with coverage
+        run: |
+          uv run pytest packages/contracts-py packages/fitness-engine -v \
+            --cov=fitness_engine --cov-report=term-missing --cov-fail-under=80
 
   typescript:
     name: TypeScript (contracts-ts)

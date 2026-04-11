@@ -29,7 +29,8 @@ contracts-ts:
 contracts: contracts-py contracts-ts
 
 test-py:
-	.venv/bin/pytest packages/contracts-py -v
+	.venv/bin/pytest packages/contracts-py packages/fitness-engine -v \
+	  --cov=fitness_engine --cov-report=term-missing --cov-fail-under=80
 
 test-ts:
 	pnpm --filter @fitness/contracts-ts test
