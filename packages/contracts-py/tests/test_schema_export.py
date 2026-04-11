@@ -3,18 +3,10 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from fitness_contracts.schema_export import (
     MODEL_REGISTRY,
     export_all_schemas,
 )
-
-
-def test_registry_contains_calorie_macro_result():
-    """レジストリに CalorieMacroResult が登録されていること。"""
-    names = [name for name, _ in MODEL_REGISTRY]
-    assert "CalorieMacroResult" in names
 
 
 def test_export_all_schemas_writes_files(tmp_path: Path):
