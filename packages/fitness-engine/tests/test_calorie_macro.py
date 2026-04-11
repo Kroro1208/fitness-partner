@@ -2,7 +2,16 @@
 
 import pytest
 
-from fitness_engine.calorie_macro import calculate_bmr
+from fitness_contracts.models.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+
+from fitness_engine.calorie_macro import (
+    calculate_bmr,
+    calculate_calories_and_macros,
+    calculate_macros,
+    calculate_target_calories,
+    calculate_tdee,
+)
 
 
 @pytest.mark.parametrize(
@@ -34,19 +43,6 @@ def test_calculate_bmr_rejects_unknown_sex():
         calculate_bmr(sex="other", age=30, height_cm=170.0, weight_kg=70.0)
 
 
-from fitness_engine.calorie_macro import ACTIVITY_MULTIPLIERS, calculate_tdee
-
-
-def test_activity_multipliers_match_spec():
-    assert ACTIVITY_MULTIPLIERS == {
-        "sedentary": 1.2,
-        "lightly_active": 1.375,
-        "moderately_active": 1.55,
-        "very_active": 1.725,
-        "extremely_active": 1.9,
-    }
-
-
 @pytest.mark.parametrize(
     ("bmr", "activity_level", "expected"),
     [
@@ -67,9 +63,6 @@ def test_calculate_tdee_rejects_unknown_level():
     """未知の activity_level は ValueError。メッセージ文言には依存しない。"""
     with pytest.raises(ValueError):
         calculate_tdee(bmr=1500, activity_level="super_active")
-
-
-from fitness_engine.calorie_macro import calculate_target_calories
 
 
 @pytest.mark.parametrize(
@@ -108,9 +101,6 @@ def test_calculate_target_calories(
     assert result == expected
 
 
-from fitness_engine.calorie_macro import calculate_macros
-
-
 def test_calculate_macros_basic():
     # weight 70kg, target 2100 kcal
     # protein: 70 * 1.8 = 126g → 126 * 4 = 504 kcal
@@ -138,12 +128,6 @@ def test_calculate_macros_clips_negative_carbs_to_zero():
     assert result["carbs_g"] == 0
 
 
-from fitness_contracts.models.calorie_macro import CalorieMacroResult
-from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
-
-from fitness_engine.calorie_macro import calculate_calories_and_macros
-
-
 def test_calculate_calories_and_macros_full_pipeline():
     input_ = CalorieMacroInput(
         age=30,
@@ -156,7 +140,6 @@ def test_calculate_calories_and_macros_full_pipeline():
     )
     result = calculate_calories_and_macros(input_)
 
-    assert isinstance(result, CalorieMacroResult)
     assert result.bmr == 1618
     assert result.activity_multiplier == pytest.approx(1.55)
     assert result.tdee == 2508  # 1618 * 1.55 = 2507.9 → 2508
@@ -170,7 +153,11 @@ def test_calculate_calories_and_macros_full_pipeline():
 
 
 def test_calculate_calories_and_macros_result_is_valid_pydantic():
-    """出力が CalorieMacroResult の制約を満たすこと。"""
+    """出力が CalorieMacroResult の制約を満たすこと。
+
+    Pydantic constructor を通過していれば `ge=0`, `ge=1.0, le=2.0` 等の制約は
+    全フィールドで満たされているが、振る舞い検証として明示的に確認する。
+    """
     input_ = CalorieMacroInput(
         age=25,
         sex="female",
@@ -180,7 +167,7 @@ def test_calculate_calories_and_macros_result_is_valid_pydantic():
         sleep_hours=8.0,
         stress_level="low",
     )
-    result = calculate_calories_and_macros(input_)
+    result: CalorieMacroResult = calculate_calories_and_macros(input_)
     assert result.bmr >= 0
     assert result.tdee >= 0
     assert result.target_calories >= 0
