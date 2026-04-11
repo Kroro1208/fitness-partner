@@ -1,0 +1,58 @@
+"""登録済みの Pydantic モデルを JSON Schema ファイルに書き出す。
+
+このモジュールを実行すると、MODEL_REGISTRY に登録された各モデルに対して
+`<ModelName>.schema.json` を出力ディレクトリに書き込む。出力先は
+`packages/contracts-ts/schemas/` を想定しており、TypeScript 側の生成
+スクリプトが入力として消費する。
+
+使い方:
+    python -m fitness_contracts.schema_export <output_dir>
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+from pydantic import BaseModel
+
+from fitness_contracts.models.calorie_macro import CalorieMacroResult
+
+MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
+    ("CalorieMacroResult", CalorieMacroResult),
+]
+
+
+def export_all_schemas(output_dir: Path) -> list[Path]:
+    """登録モデルすべての JSON Schema を書き出す。
+
+    Args:
+        output_dir: 出力ディレクトリ。存在しなければ作成する。
+
+    Returns:
+        書き込んだファイルのパス一覧。
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for name, model_cls in MODEL_REGISTRY:
+        schema = model_cls.model_json_schema()
+        target = output_dir / f"{name}.schema.json"
+        target.write_text(json.dumps(schema, indent=2, ensure_ascii=False) + "\n")
+        written.append(target)
+    return written
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2:
+        print("usage: python -m fitness_contracts.schema_export <output_dir>", file=sys.stderr)
+        return 2
+    output_dir = Path(argv[1])
+    written = export_all_schemas(output_dir)
+    for p in written:
+        print(f"wrote {p}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))
