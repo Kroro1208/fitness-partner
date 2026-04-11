@@ -21,6 +21,9 @@ testpaths = [
   "packages/fitness-engine/tests",
 ]
 python_files = ["test_*.py"]
+# 複数パッケージの tests/ モジュール名衝突を避けるため importlib モードを使用
+# (参考: https://docs.pytest.org/en/stable/explanation/pythonpath.html#import-modes)
+addopts = "--import-mode=importlib"
 
 [tool.coverage.run]
 source = ["packages/fitness-engine/src/fitness_engine"]
