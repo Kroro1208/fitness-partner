@@ -6,16 +6,25 @@ from pydantic import ValidationError
 from fitness_contracts.models.calorie_macro import CalorieMacroResult
 
 
+def _valid_payload(**overrides: object) -> dict[str, object]:
+    """基本ペイロードのファクトリ。境界値テスト用に一部フィールドだけ上書きできる。"""
+    base: dict[str, object] = {
+        "bmr": 1500,
+        "activity_multiplier": 1.55,
+        "tdee": 2325,
+        "target_calories": 1825,
+        "protein_g": 140,
+        "fat_g": 60,
+        "carbs_g": 180,
+    }
+    base.update(overrides)
+    return base
+
+
 def test_valid_calorie_macro_result():
     """妥当な値で正しくインスタンス化できること。"""
     result = CalorieMacroResult(
-        bmr=1500,
-        activity_multiplier=1.55,
-        tdee=2325,
-        target_calories=1825,
-        protein_g=140,
-        fat_g=60,
-        carbs_g=180,
+        **_valid_payload(),
         explanation=["BMR via Mifflin-St Jeor", "TDEE = BMR * 1.55"],
     )
     assert result.bmr == 1500
@@ -25,46 +34,41 @@ def test_valid_calorie_macro_result():
     assert len(result.explanation) == 2
 
 
-def test_negative_bmr_rejected():
-    """BMR が負の値なら拒否されること。"""
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        # 入力値の異常: 数値フィールドの負値
+        ("bmr", -1),
+        ("tdee", -1),
+        ("target_calories", -1),
+        ("protein_g", -1),
+        ("fat_g", -1),
+        ("carbs_g", -1),
+        # 入力値の異常: activity_multiplier の境界超過 (両端)
+        ("activity_multiplier", 0.99),  # 下限 1.0 未満
+        ("activity_multiplier", 2.01),  # 上限 2.0 超過
+    ],
+)
+def test_rejects_out_of_range(field: str, bad_value: object):
+    """範囲外の値は ValidationError で該当フィールドに紐付いたエラーになること。
+
+    `exc_info.value.errors()` の構造化 API を使うことで、Pydantic のエラー
+    メッセージ文字列フォーマットに依存しない振る舞い検証にする。
+    """
+    payload = _valid_payload(**{field: bad_value})
     with pytest.raises(ValidationError) as exc_info:
-        CalorieMacroResult(
-            bmr=-100,
-            activity_multiplier=1.2,
-            tdee=2000,
-            target_calories=1500,
-            protein_g=100,
-            fat_g=50,
-            carbs_g=200,
-        )
-    assert "bmr" in str(exc_info.value).lower()
+        CalorieMacroResult(**payload)
 
-
-def test_activity_multiplier_out_of_range_rejected():
-    """activity_multiplier が範囲外 (>2.0) なら拒否されること。"""
-    with pytest.raises(ValidationError):
-        CalorieMacroResult(
-            bmr=1500,
-            activity_multiplier=3.0,
-            tdee=2000,
-            target_calories=1500,
-            protein_g=100,
-            fat_g=50,
-            carbs_g=200,
-        )
+    error_locs = {err["loc"] for err in exc_info.value.errors()}
+    assert (field,) in error_locs, (
+        f"ValidationError は {field} フィールドに紐付くべきだが、"
+        f"実際の loc は {error_locs}"
+    )
 
 
 def test_explanation_defaults_to_empty_list():
     """explanation は未指定時は空リストになること。"""
-    result = CalorieMacroResult(
-        bmr=1500,
-        activity_multiplier=1.2,
-        tdee=1800,
-        target_calories=1500,
-        protein_g=100,
-        fat_g=50,
-        carbs_g=180,
-    )
+    result = CalorieMacroResult(**_valid_payload())
     assert result.explanation == []
 
 
