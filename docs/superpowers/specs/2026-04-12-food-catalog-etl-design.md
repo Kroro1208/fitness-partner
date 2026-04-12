@@ -203,10 +203,10 @@ DynamoDB FitnessTable (etl#import#<timestamp> / meta)
 ### エントリポイント
 
 ```bash
-python scripts/import_fct2020.py --file data/fct2020.xlsx --table-name <TableName> --region <Region>
+python -m food_catalog_etl.cli --file data/fct2020.xlsx --table-name <TableName> --region <Region>
 ```
 
-`--table-name` は Plan 03 の CfnOutput `TableName`、`--region` はスタックのリージョン。
+`--table-name` は Plan 03 の CfnOutput `TableName`、`--region` はスタックのリージョン。package 内の CLI として git 追跡対象。
 
 ---
 
@@ -234,10 +234,11 @@ python scripts/import_fct2020.py --file data/fct2020.xlsx --table-name <TableNam
 #### Layer 3: Writer テスト (単体、boto3 モック)
 
 - boto3 は外部境界のためモック許容 (testing-guidelines Step 1 OK)
-- 25 件以下 → 1 回の batch_write
-- 26 件以上 → 複数回に分割
-- 空リスト → 書き込みなし
-- UnprocessedItems 返却 → retry が呼ばれること
+- batch_writer() にチャンク分割と retry を委譲するため、テストは以下 4 点に絞る:
+  - item shape: pk/sk が正しく付与されること
+  - empty list: 書き込みなし
+  - flush exception: 全件 failed として返却されること
+  - manifest write: etl#import# pk で監査ログが記録されること
 
 ### カバレッジ目標: 80%+
 
