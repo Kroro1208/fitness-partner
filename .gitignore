@@ -5,6 +5,9 @@ node_modules/
 .next/
 dist/
 
+# CDK
+cdk.out/
+
 # Python / uv
 __pycache__/
 *.py[cod]

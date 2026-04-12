@@ -1,0 +1,19 @@
+{
+  "name": "@fitness/infra",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.147",
+    "@types/node": "^22.10.0",
+    "aws-cdk": "^2.180.0",
+    "aws-cdk-lib": "^2.180.0",
+    "constructs": "^10.4.2",
+    "esbuild": "^0.25.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
