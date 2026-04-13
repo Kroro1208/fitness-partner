@@ -17,7 +17,7 @@
 
 - fetchUserProfile / updateUserProfile / logMeal / logWeight / fetchWeeklyPlan の 5 Lambda
 - API Gateway ルート追加 (Cognito JWT Authorizer で保護)
-- 共通モジュール (JWT sub 抽出、DynamoDB client、レスポンスヘルパー)
+- 共通モジュール (JWT sub 抽出、Branded Type、DynamoDB key helper、DynamoDB client、レスポンス/Fail-Fast helper)
 - CDK construct + テスト
 - 入力 DTO を contracts-py 起点で定義 (UpdateUserProfileInput, LogMealInput, LogWeightInput)。schema export + contracts-ts 再生成まで含む
 
@@ -31,7 +31,7 @@
 
 ## 入力 DTO (contracts-py 起点)
 
-design-decisions.md の「DTO の唯一の真実は Pydantic v2」に従い、CRUD Lambda の入力を contracts-py で定義する。Lambda (TS) では生成された JSON Schema で手書き if ガードの参照元にする。Zod は Lambda バンドルに含めない。
+design-decisions.md の「DTO の唯一の真実は Pydantic v2」に従い、CRUD Lambda の入力を contracts-py で定義する。Lambda (TS) では生成された JSON Schema で手書き if ガードの参照元にし、生成された TS 型を field 名・literal union の single source of truth として参照する。Zod は Lambda バンドルに含めない。`userId` / `mealId` / `foodId` / `YYYY-MM-DD` は boundary parse 後に Branded Type へ昇格し、pk/sk は専用 helper で組み立てる。
 
 ### UpdateUserProfileInput
 
@@ -65,8 +65,8 @@ class UpdateUserProfileInput(BaseModel):
 class LogMealInput(BaseModel):
     """食事ログの入力。"""
 
-    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="YYYY-MM-DD")
-    food_id: str
+    date: date = Field(description="YYYY-MM-DD (datetime.date — Pydantic が自動パース、不存在日付を拒否)")
+    food_id: str = Field(min_length=1, description="FCT2020 食品番号")
     amount_g: float = Field(gt=0)
     meal_type: Literal["breakfast", "lunch", "dinner", "snack"]
 ```
@@ -77,7 +77,7 @@ class LogMealInput(BaseModel):
 class LogWeightInput(BaseModel):
     """体重ログの入力。"""
 
-    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="YYYY-MM-DD")
+    date: date = Field(description="YYYY-MM-DD (datetime.date — Pydantic が自動パース、不存在日付を拒否)")
     weight_kg: float = Field(gt=0, lt=500)
 ```
 
@@ -85,13 +85,13 @@ class LogWeightInput(BaseModel):
 
 ## Lambda 一覧と API Gateway ルート
 
-| Lambda | メソッド | パス | DynamoDB 操作 | IAM 権限 |
-|--------|----------|------|---------------|----------|
-| fetchUserProfile | GET | `/users/me/profile` | GetItem | dynamodb:GetItem |
-| updateUserProfile | PATCH | `/users/me/profile` | UpdateItem | dynamodb:UpdateItem |
-| logMeal | POST | `/users/me/meals` | PutItem | dynamodb:PutItem |
-| logWeight | POST | `/users/me/weight` | PutItem | dynamodb:PutItem |
-| fetchWeeklyPlan | GET | `/users/me/plans/{weekStart}` | GetItem | dynamodb:GetItem |
+| Lambda            | メソッド | パス                          | DynamoDB 操作 | IAM 権限            |
+| ----------------- | -------- | ----------------------------- | ------------- | ------------------- |
+| fetchUserProfile  | GET      | `/users/me/profile`           | GetItem       | dynamodb:GetItem    |
+| updateUserProfile | PATCH    | `/users/me/profile`           | UpdateItem    | dynamodb:UpdateItem |
+| logMeal           | POST     | `/users/me/meals`             | PutItem       | dynamodb:PutItem    |
+| logWeight         | POST     | `/users/me/weight`            | PutItem       | dynamodb:PutItem    |
+| fetchWeeklyPlan   | GET      | `/users/me/plans/{weekStart}` | GetItem       | dynamodb:GetItem    |
 
 - パスは `/users/me/...` で統一。`me` は JWT の `sub` に解決 (IDOR 防止)
 - 全ルートは Plan 03 の Cognito JWT Authorizer (defaultAuthorizer) で保護
@@ -102,13 +102,13 @@ class LogWeightInput(BaseModel):
 
 Plan 03 の FitnessTable (single-table) を使用。
 
-| Lambda | pk | sk |
-|--------|----|----|
-| fetchUserProfile | `user#<sub>` | `profile` |
-| updateUserProfile | `user#<sub>` | `profile` |
-| logMeal | `user#<sub>` | `meal#<date>#<uuid>` |
-| logWeight | `user#<sub>` | `weight#<date>` |
-| fetchWeeklyPlan | `user#<sub>` | `plan#<weekStart>` |
+| Lambda            | pk           | sk                   |
+| ----------------- | ------------ | -------------------- |
+| fetchUserProfile  | `user#<sub>` | `profile`            |
+| updateUserProfile | `user#<sub>` | `profile`            |
+| logMeal           | `user#<sub>` | `meal#<date>#<uuid>` |
+| logWeight         | `user#<sub>` | `weight#<date>`      |
+| fetchWeeklyPlan   | `user#<sub>` | `plan#<weekStart>`   |
 
 ---
 
@@ -126,7 +126,7 @@ Plan 03 の FitnessTable (single-table) を使用。
 - **入力**: リクエストボディに UpdateUserProfileInput の部分フィールド
 - **バリデーション**: 手書き if ガード。参照元は contracts-py 生成の JSON Schema (UpdateUserProfileInput.schema.json)。空 `{}` は 400 (at least one field required)。`null` 値のフィールドは更新式から除外 (属性削除ではない)
 - **出力**: `{ profile: { ... } }` (更新後の全フィールド。UpdateItem の ReturnValues=ALL_NEW)
-- **DynamoDB**: `UpdateItem(pk=user#<sub>, sk=profile)` — リクエストに含まれる非 null フィールドのみ更新。未送信/null フィールドは既存値を保持
+- **DynamoDB**: `UpdateItem(pk=user#<sub>, sk=profile)` — リクエストに含まれる非 null フィールドのみ更新。未送信/null フィールドは既存値を保持。`updated_at` (ISO 8601) を自動付与 (監査・競合調査用)
 - **セマンティクス**: PATCH (部分更新)。オンボーディングの段階保存と互換
 - **プロフィール未作成時**: UpdateItem が自動的にアイテムを作成 (DynamoDB の挙動)
 
@@ -157,17 +157,70 @@ Plan 03 の FitnessTable (single-table) を使用。
 
 `infra/lambdas/shared/` に配置。esbuild が各 Lambda バンドル時にインライン化。
 
+### types.ts — Branded Type と DTO 由来型
+
+```typescript
+type Brand<T, B extends string> = T & { readonly __brand: B };
+
+type UserId = Brand<string, "UserId">;
+type MealId = Brand<string, "MealId">;
+type FoodId = Brand<string, "FoodId">;
+type IsoDateString = Brand<string, "IsoDateString">;
+
+// generated TS 型から field 名 / literal union を参照し、手書き string を減らす
+type ProfilePatch = Partial<UpdateUserProfileInput>;
+type MealType = LogMealInput["meal_type"];
+```
+
+Branded Type の `as` は生成関数の内部だけで許可する。handler・テスト・key 組み立てでは素の `string` を直接受け渡さない。
+
 ### auth.ts — JWT sub 抽出
 
 ```typescript
-export function getUserId(event: APIGatewayProxyEventV2): string {
+type AuthResult = { ok: true; userId: UserId } | { ok: false };
+type RequireUserResult =
+  | { ok: true; userId: UserId }
+  | { ok: false; response: APIGatewayProxyResultV2 };
+
+export function getUserId(event: APIGatewayProxyEventV2): AuthResult {
   const sub = event.requestContext.authorizer?.jwt?.claims?.sub;
   if (typeof sub !== "string" || sub.length === 0) {
-    throw new Error("Unauthorized: missing sub claim");
+    return { ok: false };
   }
-  return sub;
+  return { ok: true, userId: toUserId(sub) };
+}
+
+export function requireUserId(
+  event: APIGatewayProxyEventV2,
+): RequireUserResult {
+  const auth = getUserId(event);
+  return auth.ok ? auth : { ok: false, response: unauthorized() };
 }
 ```
+
+例外ではなく Result 型で返す。handler では `requireUserId()` を使って 401 fail-fast を共通化する。
+
+### keys.ts — pk/sk 組み立て
+
+```typescript
+export function profileKey(userId: UserId) {
+  return { pk: `user#${userId}`, sk: "profile" };
+}
+
+export function mealKey(userId: UserId, date: IsoDateString, mealId: MealId) {
+  return { pk: `user#${userId}`, sk: `meal#${date}#${mealId}` };
+}
+
+export function weightKey(userId: UserId, date: IsoDateString) {
+  return { pk: `user#${userId}`, sk: `weight#${date}` };
+}
+
+export function planKey(userId: UserId, weekStart: IsoDateString) {
+  return { pk: `user#${userId}`, sk: `plan#${weekStart}` };
+}
+```
+
+pk/sk のテンプレート文字列を各 handler に散らさず、userId/date/uuid の取り違えを型で防ぐ。
 
 ### dynamo.ts — DynamoDB client
 
@@ -184,10 +237,13 @@ export function badRequest(message: string) { ... }   // 400
 export function unauthorized() { ... }                // 401
 export function notFound() { ... }                    // 404
 export function serverError() { ... }                 // 500
+export function parseJsonBody(event) { ... }          // { ok: true, body } | { ok: false, reason }
+export function requireJsonBody(event) { ... }        // 400 fail-fast
+export function withServerError(label, work) { ... }  // 共通 try/catch
 // エラーレスポンスに内部情報を含めない
 ```
 
-`unauthorized()` は Authorizer が通常弾くが、getUserId の例外キャッチ用に用意する。
+`parseJsonBody()` は body 未送信と JSON 壊れを別 reason で返し、`requireJsonBody()` が 400 レスポンスへ変換する。これにより「missing body」と「invalid JSON」を黙って同一視しない。
 
 ---
 
@@ -219,9 +275,12 @@ infra/lib/constructs/crud-lambdas.ts
 ```
 infra/lambdas/
 ├── shared/
+│   ├── types.ts
 │   ├── auth.ts
+│   ├── keys.ts
 │   ├── dynamo.ts
-│   └── response.ts
+│   ├── response.ts
+│   └── validation.ts
 ├── fetch-user-profile/
 │   └── index.ts
 ├── update-user-profile/
@@ -241,6 +300,7 @@ infra/lambdas/
 ### CDK テスト (infra/test/fitness-stack.test.ts)
 
 既存テストに追加。route key と construct ID ベースで特定の CRUD Lambda を検証:
+
 - `GET /users/me/profile` ルートが存在すること
 - `PATCH /users/me/profile` ルートが存在すること
 - `POST /users/me/meals` ルートが存在すること
@@ -260,7 +320,10 @@ infra/lambdas/
 ### shared モジュールテスト
 
 - `getUserId`: 正常 (sub あり) / 異常 (sub なし、空文字)
-- `response`: 各ヘルパー (ok, badRequest, unauthorized, notFound, serverError) のステータスコードとフォーマット
+- `requireUserId`: 401 fail-fast を返すこと
+- `keys`: branded input から正しい pk/sk が組み立つこと
+- `response`: 各ヘルパー (ok, badRequest, unauthorized, notFound, serverError, withServerError) のステータスコードとフォーマット
+- `parseJsonBody` / `requireJsonBody`: missing body と invalid JSON を区別すること
 
 ---
 
