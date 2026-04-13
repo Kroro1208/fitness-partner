@@ -1,0 +1,22 @@
+{
+  "description": "レシピの構成食材。",
+  "properties": {
+    "food_id": {
+      "description": "FoodItem.food_id への参照",
+      "title": "Food Id",
+      "type": "string"
+    },
+    "amount_g": {
+      "description": "グラム数",
+      "exclusiveMinimum": 0,
+      "title": "Amount G",
+      "type": "number"
+    }
+  },
+  "required": [
+    "food_id",
+    "amount_g"
+  ],
+  "title": "Ingredient",
+  "type": "object"
+}

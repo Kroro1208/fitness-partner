@@ -1,6 +1,8 @@
 // @ts-check
 /**
  * JSON Schema ファイルから TypeScript 型宣言を生成する。
+ * 複数スキーマ間で $defs を共有するモデル (FoodItem → NutrientValue 等) の
+ * 重複型定義を除去する。
  *
  * 入力:  packages/contracts-ts/schemas/*.schema.json
  * 出力:  packages/contracts-ts/generated/types.d.ts
@@ -14,6 +16,97 @@ import { compile } from "json-schema-to-typescript";
 const pkgRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const schemasDir = join(pkgRoot, "schemas");
 const outFile = join(pkgRoot, "generated", "types.d.ts");
+
+/**
+ * コンパイル済み TS コードから重複する export type / export interface を除去する。
+ * 最初に出現した定義のみを残す。
+ * @param {string} code
+ * @returns {string}
+ */
+function deduplicateTypes(code) {
+	/** @type {Set<string>} */
+	const seen = new Set();
+	const lines = code.split("\n");
+	/** @type {string[]} */
+	const result = [];
+	let skipBlock = false;
+	let braceDepth = 0;
+	// 直前の JSDoc コメントブロックを一時保持 (重複時に一緒に破棄)
+	/** @type {string[]} */
+	let pendingComment = [];
+	let inComment = false;
+
+	for (const line of lines) {
+		// JSDoc コメントの開始・終了を追跡
+		if (line.trimStart().startsWith("/**")) {
+			inComment = true;
+			pendingComment = [line];
+			continue;
+		}
+		if (inComment) {
+			pendingComment.push(line);
+			if (line.trimStart().startsWith("*/") || line.includes("*/")) {
+				inComment = false;
+			}
+			continue;
+		}
+
+		// export type X = ... or export interface X {
+		const typeMatch = line.match(/^export\s+type\s+(\w+)\s*=/);
+		const ifaceMatch = line.match(/^export\s+interface\s+(\w+)\s*\{/);
+
+		if (typeMatch) {
+			const name = typeMatch[1];
+			if (seen.has(name)) {
+				pendingComment = []; // 直前コメントも破棄
+				continue;
+			}
+			seen.add(name);
+			result.push(...pendingComment, line);
+			pendingComment = [];
+			continue;
+		}
+
+		if (ifaceMatch) {
+			const name = ifaceMatch[1];
+			if (seen.has(name)) {
+				pendingComment = []; // 直前コメントも破棄
+				skipBlock = true;
+				braceDepth = 1;
+				continue;
+			}
+			seen.add(name);
+			result.push(...pendingComment, line);
+			pendingComment = [];
+			continue;
+		}
+
+		if (skipBlock) {
+			for (const ch of line) {
+				if (ch === "{") braceDepth++;
+				if (ch === "}") braceDepth--;
+			}
+			if (braceDepth <= 0) {
+				skipBlock = false;
+			}
+			continue;
+		}
+
+		// コメントでも宣言でもない行 (空行など)
+		if (pendingComment.length > 0) {
+			result.push(...pendingComment);
+			pendingComment = [];
+		}
+		result.push(line);
+	}
+
+	// 末尾に残ったコメントがあれば出力
+	if (pendingComment.length > 0) {
+		result.push(...pendingComment);
+	}
+
+	return result.join("\n");
+}
 
 async function main() {
 	const schemaFiles = readdirSync(schemasDir)
@@ -47,8 +140,11 @@ async function main() {
 		parts.push(ts);
 	}
 
+	const raw = parts.join("\n");
+	const deduplicated = deduplicateTypes(raw);
+
 	mkdirSync(dirname(outFile), { recursive: true });
-	writeFileSync(outFile, parts.join("\n"));
+	writeFileSync(outFile, deduplicated);
 	console.log(`wrote ${resolve(outFile)}`);
 }
 

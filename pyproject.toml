@@ -5,7 +5,7 @@ description = "ai-fitness-partner Python パッケージの workspace ルート"
 requires-python = ">=3.11"
 
 [tool.uv.workspace]
-members = ["packages/contracts-py", "packages/fitness-engine"]
+members = ["packages/contracts-py", "packages/fitness-engine", "packages/food-catalog-etl"]
 
 [tool.ruff]
 line-length = 100
@@ -19,6 +19,7 @@ ignore = ["E501"]
 testpaths = [
   "packages/contracts-py/tests",
   "packages/fitness-engine/tests",
+  "packages/food-catalog-etl/tests",
 ]
 python_files = ["test_*.py"]
 # 複数パッケージの tests/ モジュール名衝突を避けるため importlib モードを使用

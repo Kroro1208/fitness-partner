@@ -1,6 +1,8 @@
 // @ts-check
 /**
  * JSON Schema ファイルから Zod スキーマを生成する。
+ * $ref を $defs からインライン展開してから json-schema-to-zod に渡すことで、
+ * z.any() へのフォールバックを防ぐ。
  *
  * 入力:  packages/contracts-ts/schemas/*.schema.json
  * 出力:  packages/contracts-ts/generated/zod.ts
@@ -14,6 +16,43 @@ import { jsonSchemaToZod } from "json-schema-to-zod";
 const pkgRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const schemasDir = join(pkgRoot, "schemas");
 const outFile = join(pkgRoot, "generated", "zod.ts");
+
+/**
+ * JSON Schema 内の $ref を $defs からインライン展開する。
+ * json-schema-to-zod が $ref を z.any() にフォールバックする問題を回避。
+ */
+function derefSchema(schema) {
+	const defs = schema.$defs || {};
+
+	function resolveNode(node) {
+		if (node === null || typeof node !== "object") {
+			return node;
+		}
+
+		if (Array.isArray(node)) {
+			return node.map(resolveNode);
+		}
+
+		// $ref を解決
+		if (node.$ref && typeof node.$ref === "string") {
+			const match = node.$ref.match(/^#\/\$defs\/(.+)$/);
+			if (match && defs[match[1]]) {
+				// $ref 先の定義をインライン展開 (再帰的に解決)
+				return resolveNode(structuredClone(defs[match[1]]));
+			}
+		}
+
+		// オブジェクトの各プロパティを再帰的に解決
+		const resolved = {};
+		for (const [key, value] of Object.entries(node)) {
+			if (key === "$defs") continue; // $defs 自体は出力に含めない
+			resolved[key] = resolveNode(value);
+		}
+		return resolved;
+	}
+
+	return resolveNode(schema);
+}
 
 function main() {
 	const schemaFiles = readdirSync(schemasDir)
@@ -39,14 +78,14 @@ function main() {
 		const modelName = file.replace(/\.schema\.json$/, "");
 		const exportName = `${modelName}Schema`;
 
-		const zodCode = jsonSchemaToZod(schema, {
+		// $ref をインライン展開してから Zod 生成
+		const dereffed = derefSchema(schema);
+
+		const zodCode = jsonSchemaToZod(dereffed, {
 			name: exportName,
 			module: "none",
 		});
 
-		// `jsonSchemaToZod` を `module: "none"` で呼ぶと、返ってくる文字列は
-		// `const CalorieMacroResultSchema = z.object({ ... })` の形。
-		// export するため先頭に `export ` を付与する。
 		parts.push(`export ${zodCode}`);
 		parts.push("");
 	}

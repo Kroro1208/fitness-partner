@@ -8,6 +8,9 @@ dist/
 # CDK
 cdk.out/
 
+# ETL データ (ユーザーがローカルに配置)
+data/
+
 # Python / uv
 __pycache__/
 *.py[cod]

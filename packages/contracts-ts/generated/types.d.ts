@@ -93,9 +93,60 @@ export interface CalorieMacroResult {
 }
 
 /**
- * 現在体重 (kg)。
+ * FCT2020 食品番号 (例: 01001)
  */
-export type WeightKg = number;
+export type FoodId = string;
+/**
+ * 日本語名
+ */
+export type NameJa = string;
+/**
+ * 食品群 (例: 01: 穀類)
+ */
+export type Category = string;
+export type Value = number;
+/**
+ * FCT2020 の栄養値の品質区分。
+ */
+export type NutrientQuality = "exact" | "trace" | "missing";
+/**
+ * デフォルト 1食分 (g)
+ */
+export type ServingG = number;
+/**
+ * データソースバージョン
+ */
+export type SourceVersion = string;
+/**
+ * Excel の行番号
+ */
+export type SourceRowNumber = number;
+
+/**
+ * FCT2020 ベースの食品データ。全栄養値は 100g あたり。
+ */
+export interface FoodItem {
+  food_id: FoodId;
+  name_ja: NameJa;
+  category: Category;
+  energy_kcal: NutrientValue;
+  protein_g: NutrientValue;
+  fat_g: NutrientValue;
+  carbs_g: NutrientValue;
+  fiber_g: NutrientValue;
+  sodium_mg: NutrientValue;
+  serving_g?: ServingG;
+  source_version?: SourceVersion;
+  source_row_number: SourceRowNumber;
+}
+/**
+ * 品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。
+ */
+export interface NutrientValue {
+  value: Value;
+  quality: NutrientQuality;
+}
+
 /**
  * 週の運動頻度 (回)。
  */
@@ -150,17 +201,49 @@ export interface HydrationResult {
 }
 
 /**
- * 年齢。18 歳未満は block される。
+ * グラム数
  */
-export type Age = number;
-export type WeightKg = number;
-export type HeightCm = number;
+export type AmountG = number;
+
+/**
+ * レシピの構成食材。
+ */
+export interface Ingredient {
+  food_id: FoodId;
+  amount_g: AmountG;
+}
+
+
+
+/**
+ * レシピ ID (例: recipe_chicken_salad)
+ */
+export type RecipeId = string;
+export type Ingredients = Ingredient[];
+export type TotalEnergyKcal = number;
+export type TotalProteinG = number;
+export type TotalFatG = number;
+export type TotalCarbsG = number;
+export type Tags = string[];
+
+/**
+ * 手動キュレーションされたレシピテンプレート。
+ */
+export interface RecipeTemplate {
+  recipe_id: RecipeId;
+  name_ja: NameJa;
+  ingredients: Ingredients;
+  total_energy_kcal: TotalEnergyKcal;
+  total_protein_g: TotalProteinG;
+  total_fat_g: TotalFatG;
+  total_carbs_g: TotalCarbsG;
+  tags?: Tags;
+}
+
 /**
  * 減量ペース希望。aggressive は caution として扱う。
  */
 export type DesiredPace = "steady" | "aggressive";
-export type SleepHours = number;
-export type StressLevel = "low" | "moderate" | "high";
 /**
  * 週の飲酒杯数。
  */
@@ -210,8 +293,6 @@ export interface SafetyResult {
  * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
  */
 export type ProteinGapG = number;
-export type WorkoutsPerWeek = number;
-export type SleepHours = number;
 /**
  * 週の魚摂取回数 (オメガ3 推奨トリガー)。
  */
@@ -269,26 +350,6 @@ export interface SupplementRecommendation {
   caution?: Caution;
 }
 
-/**
- * サプリ名 (whey / creatine / magnesium / omega3 等)。
- */
-export type Name = string;
-/**
- * 推奨用量 (人間が読める形式)。
- */
-export type Dose = string;
-/**
- * 摂取タイミング。
- */
-export type Timing = string;
-/**
- * なぜこのユーザーに関係があるか。
- */
-export type WhyRelevant = string;
-/**
- * 注意事項 (ある場合)。
- */
-export type Caution = string | null;
 export type Items = SupplementRecommendation[];
 
 /**
@@ -296,14 +357,4 @@ export type Items = SupplementRecommendation[];
  */
 export interface SupplementRecommendationList {
   items?: Items;
-}
-/**
- * 1 件のサプリ推奨。
- */
-export interface SupplementRecommendation {
-  name: Name;
-  dose: Dose;
-  timing: Timing;
-  why_relevant: WhyRelevant;
-  caution?: Caution;
 }

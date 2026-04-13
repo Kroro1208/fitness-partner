@@ -21,6 +21,12 @@ from fitness_contracts.models.calorie_macro import CalorieMacroResult
 from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
 from fitness_contracts.models.hydration import HydrationInput, HydrationResult
 from fitness_contracts.models.safety import SafetyInput, SafetyResult
+from fitness_contracts.models.food_item import FoodItem
+from fitness_contracts.models.nutrient import NutrientValue
+from fitness_contracts.models.recipe_template import (
+    Ingredient,
+    RecipeTemplate,
+)
 from fitness_contracts.models.supplement import (
     SupplementInput,
     SupplementRecommendation,
@@ -37,6 +43,11 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("SupplementRecommendationList", SupplementRecommendationList),
     ("SafetyInput", SafetyInput),
     ("SafetyResult", SafetyResult),
+    # NutrientQuality は Enum → 単体登録不要 (NutrientValue の JSON Schema $defs に含まれる)
+    ("NutrientValue", NutrientValue),
+    ("FoodItem", FoodItem),
+    ("Ingredient", Ingredient),
+    ("RecipeTemplate", RecipeTemplate),
 ]
 
 

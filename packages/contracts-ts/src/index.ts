@@ -6,4 +6,4 @@
  */
 
 export type * from "../generated/types";
-export * from "../generated/zod.ts";
+export * from "../generated/zod";

@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "Ingredient": {
+      "description": "レシピの構成食材。",
+      "properties": {
+        "food_id": {
+          "description": "FoodItem.food_id への参照",
+          "title": "Food Id",
+          "type": "string"
+        },
+        "amount_g": {
+          "description": "グラム数",
+          "exclusiveMinimum": 0,
+          "title": "Amount G",
+          "type": "number"
+        }
+      },
+      "required": [
+        "food_id",
+        "amount_g"
+      ],
+      "title": "Ingredient",
+      "type": "object"
+    }
+  },
+  "description": "手動キュレーションされたレシピテンプレート。",
+  "properties": {
+    "recipe_id": {
+      "description": "レシピ ID (例: recipe_chicken_salad)",
+      "title": "Recipe Id",
+      "type": "string"
+    },
+    "name_ja": {
+      "description": "日本語名",
+      "title": "Name Ja",
+      "type": "string"
+    },
+    "ingredients": {
+      "items": {
+        "$ref": "#/$defs/Ingredient"
+      },
+      "title": "Ingredients",
+      "type": "array"
+    },
+    "total_energy_kcal": {
+      "minimum": 0,
+      "title": "Total Energy Kcal",
+      "type": "number"
+    },
+    "total_protein_g": {
+      "minimum": 0,
+      "title": "Total Protein G",
+      "type": "number"
+    },
+    "total_fat_g": {
+      "minimum": 0,
+      "title": "Total Fat G",
+      "type": "number"
+    },
+    "total_carbs_g": {
+      "minimum": 0,
+      "title": "Total Carbs G",
+      "type": "number"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    }
+  },
+  "required": [
+    "recipe_id",
+    "name_ja",
+    "ingredients",
+    "total_energy_kcal",
+    "total_protein_g",
+    "total_fat_g",
+    "total_carbs_g"
+  ],
+  "title": "RecipeTemplate",
+  "type": "object"
+}

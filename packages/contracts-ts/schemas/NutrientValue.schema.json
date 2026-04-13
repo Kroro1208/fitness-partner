@@ -1,0 +1,30 @@
+{
+  "$defs": {
+    "NutrientQuality": {
+      "description": "FCT2020 の栄養値の品質区分。",
+      "enum": [
+        "exact",
+        "trace",
+        "missing"
+      ],
+      "title": "NutrientQuality",
+      "type": "string"
+    }
+  },
+  "description": "品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。",
+  "properties": {
+    "value": {
+      "title": "Value",
+      "type": "number"
+    },
+    "quality": {
+      "$ref": "#/$defs/NutrientQuality"
+    }
+  },
+  "required": [
+    "value",
+    "quality"
+  ],
+  "title": "NutrientValue",
+  "type": "object"
+}
