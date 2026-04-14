@@ -28,6 +28,7 @@ export class FitnessApi extends Construct {
           CorsHttpMethod.GET,
           CorsHttpMethod.POST,
           CorsHttpMethod.PUT,
+          CorsHttpMethod.PATCH,
           CorsHttpMethod.DELETE,
           CorsHttpMethod.OPTIONS,
         ],

@@ -4,6 +4,7 @@ import { FitnessDatabase } from "./constructs/database";
 import { FitnessAuth } from "./constructs/auth";
 import { FitnessApi } from "./constructs/api";
 import { HelloLambda } from "./constructs/hello-lambda";
+import { CrudLambdas } from "./constructs/crud-lambdas";
 
 export class FitnessStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -31,6 +32,11 @@ export class FitnessStack extends cdk.Stack {
 
     new HelloLambda(this, "HelloLambda", {
       httpApi: api.httpApi,
+    });
+
+    new CrudLambdas(this, "CrudLambdas", {
+      httpApi: api.httpApi,
+      table: database.table,
     });
 
     new cdk.CfnOutput(this, "ApiUrl", {

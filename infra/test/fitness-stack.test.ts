@@ -1,5 +1,5 @@
 import * as cdk from "aws-cdk-lib";
-import { Template } from "aws-cdk-lib/assertions";
+import { Match, Template } from "aws-cdk-lib/assertions";
 import { describe, expect, it } from "vitest";
 import { FitnessStack } from "../lib/fitness-stack";
 
@@ -81,6 +81,74 @@ describe("FitnessStack", () => {
         "TableName",
       ]),
     );
+  });
+
+  // ── CRUD Lambda ルート ──────────────────────────────────────────
+
+  it("creates a GET /users/me/profile route with JWT auth", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+      RouteKey: "GET /users/me/profile",
+      AuthorizationType: "JWT",
+    });
+  });
+
+  it("creates a PATCH /users/me/profile route with JWT auth", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+      RouteKey: "PATCH /users/me/profile",
+      AuthorizationType: "JWT",
+    });
+  });
+
+  it("creates a POST /users/me/meals route with JWT auth", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+      RouteKey: "POST /users/me/meals",
+      AuthorizationType: "JWT",
+    });
+  });
+
+  it("creates a POST /users/me/weight route with JWT auth", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+      RouteKey: "POST /users/me/weight",
+      AuthorizationType: "JWT",
+    });
+  });
+
+  it("creates a GET /users/me/plans/{weekStart} route with JWT auth", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+      RouteKey: "GET /users/me/plans/{weekStart}",
+      AuthorizationType: "JWT",
+    });
+  });
+
+  // construct ID ベースで各 CRUD Lambda を個別に検証
+  const crudConstructIds = [
+    "FetchUserProfileFn",
+    "UpdateUserProfileFn",
+    "LogMealFn",
+    "LogWeightFn",
+    "FetchWeeklyPlanFn",
+  ];
+
+  for (const constructId of crudConstructIds) {
+    it(`creates ${constructId} with TABLE_NAME`, () => {
+      const allFunctions = template.findResources("AWS::Lambda::Function");
+      const matched = Object.entries(allFunctions).filter(([logicalId]) =>
+        logicalId.includes(constructId),
+      );
+      expect(matched.length).toBeGreaterThanOrEqual(1);
+      const [, resource] = matched[0];
+      expect(resource.Properties.Environment.Variables).toHaveProperty(
+        "TABLE_NAME",
+      );
+    });
+  }
+
+  it("includes PATCH in CORS allowed methods", () => {
+    template.hasResourceProperties("AWS::ApiGatewayV2::Api", {
+      CorsConfiguration: {
+        AllowMethods: Match.arrayWith(["PATCH"]),
+      },
+    });
   });
 
   it("throws when inviteCodes context is not provided", () => {
