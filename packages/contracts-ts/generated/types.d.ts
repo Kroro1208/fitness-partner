@@ -4,188 +4,156 @@
  */
 
 /**
- * 年齢 (成人のみ)。
- */
-export type Age = number;
-/**
- * 生物学的性別 (BMR 計算に必要)。
- */
-export type Sex = "male" | "female";
-/**
- * 身長 (cm)。
- */
-export type HeightCm = number;
-/**
- * 現在体重 (kg)。
- */
-export type WeightKg = number;
-/**
- * PAL 活動係数を決める活動レベル。
- */
-export type ActivityLevel = "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
-/**
- * 平均睡眠時間 (caution 条件判定に使う)。
- */
-export type SleepHours = number;
-/**
- * ストレスレベル (caution 条件判定に使う)。
- */
-export type StressLevel = "low" | "moderate" | "high";
-
-/**
  * Calorie Macro Engine の入力。
  */
 export interface CalorieMacroInput {
-  age: Age;
-  sex: Sex;
-  height_cm: HeightCm;
-  weight_kg: WeightKg;
-  activity_level: ActivityLevel;
-  sleep_hours: SleepHours;
-  stress_level: StressLevel;
+	/**
+	 * 年齢 (成人のみ)。
+	 */
+	age: number;
+	/**
+	 * 生物学的性別 (BMR 計算に必要)。
+	 */
+	sex: "male" | "female";
+	/**
+	 * 身長 (cm)。
+	 */
+	height_cm: number;
+	/**
+	 * 現在体重 (kg)。
+	 */
+	weight_kg: number;
+	/**
+	 * PAL 活動係数を決める活動レベル。
+	 */
+	activity_level:
+		| "sedentary"
+		| "lightly_active"
+		| "moderately_active"
+		| "very_active"
+		| "extremely_active";
+	/**
+	 * 平均睡眠時間 (caution 条件判定に使う)。
+	 */
+	sleep_hours: number;
+	/**
+	 * ストレスレベル (caution 条件判定に使う)。
+	 */
+	stress_level: "low" | "moderate" | "high";
 }
-
-/**
- * Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。
- */
-export type Bmr = number;
-/**
- * TDEE 計算に使う PAL 活動係数。
- */
-export type ActivityMultiplier = number;
-/**
- * Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。
- */
-export type Tdee = number;
-/**
- * deficit ルール適用後の 1 日目標カロリー。
- */
-export type TargetCalories = number;
-/**
- * 1 日のタンパク質目標 (g)。
- */
-export type ProteinG = number;
-/**
- * 1 日の脂質目標 (g)。
- */
-export type FatG = number;
-/**
- * 1 日の炭水化物目標 (g)。
- */
-export type CarbsG = number;
-/**
- * 人間が読める計算根拠を step-by-step で列挙したもの。
- */
-export type Explanation = string[];
 
 /**
  * Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。
  */
 export interface CalorieMacroResult {
-  bmr: Bmr;
-  activity_multiplier: ActivityMultiplier;
-  tdee: Tdee;
-  target_calories: TargetCalories;
-  protein_g: ProteinG;
-  fat_g: FatG;
-  carbs_g: CarbsG;
-  explanation?: Explanation;
+	/**
+	 * Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。
+	 */
+	bmr: number;
+	/**
+	 * TDEE 計算に使う PAL 活動係数。
+	 */
+	activity_multiplier: number;
+	/**
+	 * Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。
+	 */
+	tdee: number;
+	/**
+	 * deficit ルール適用後の 1 日目標カロリー。
+	 */
+	target_calories: number;
+	/**
+	 * 1 日のタンパク質目標 (g)。
+	 */
+	protein_g: number;
+	/**
+	 * 1 日の脂質目標 (g)。
+	 */
+	fat_g: number;
+	/**
+	 * 1 日の炭水化物目標 (g)。
+	 */
+	carbs_g: number;
+	/**
+	 * 人間が読める計算根拠を step-by-step で列挙したもの。
+	 */
+	explanation?: string[];
 }
 
-/**
- * FCT2020 食品番号 (例: 01001)
- */
-export type FoodId = string;
-/**
- * 日本語名
- */
-export type NameJa = string;
-/**
- * 食品群 (例: 01: 穀類)
- */
-export type Category = string;
-export type Value = number;
 /**
  * FCT2020 の栄養値の品質区分。
  */
 export type NutrientQuality = "exact" | "trace" | "missing";
-/**
- * デフォルト 1食分 (g)
- */
-export type ServingG = number;
-/**
- * データソースバージョン
- */
-export type SourceVersion = string;
-/**
- * Excel の行番号
- */
-export type SourceRowNumber = number;
 
 /**
  * FCT2020 ベースの食品データ。全栄養値は 100g あたり。
  */
 export interface FoodItem {
-  food_id: FoodId;
-  name_ja: NameJa;
-  category: Category;
-  energy_kcal: NutrientValue;
-  protein_g: NutrientValue;
-  fat_g: NutrientValue;
-  carbs_g: NutrientValue;
-  fiber_g: NutrientValue;
-  sodium_mg: NutrientValue;
-  serving_g?: ServingG;
-  source_version?: SourceVersion;
-  source_row_number: SourceRowNumber;
+	/**
+	 * FCT2020 食品番号 (例: 01001)
+	 */
+	food_id: string;
+	/**
+	 * 日本語名
+	 */
+	name_ja: string;
+	/**
+	 * 食品群 (例: 01: 穀類)
+	 */
+	category: string;
+	energy_kcal: NutrientValue;
+	protein_g: NutrientValue;
+	fat_g: NutrientValue;
+	carbs_g: NutrientValue;
+	fiber_g: NutrientValue;
+	sodium_mg: NutrientValue;
+	/**
+	 * デフォルト 1食分 (g)
+	 */
+	serving_g?: number;
+	/**
+	 * データソースバージョン
+	 */
+	source_version?: string;
+	/**
+	 * Excel の行番号
+	 */
+	source_row_number: number;
 }
 /**
  * 品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。
  */
 export interface NutrientValue {
-  value: Value;
-  quality: NutrientQuality;
+	value: number;
+	quality: NutrientQuality;
 }
-
-/**
- * 週の運動頻度 (回)。
- */
-export type WorkoutsPerWeek = number;
-/**
- * 1 回あたりの平均運動時間 (分)。
- */
-export type AvgWorkoutMinutes = number;
-/**
- * 仕事の身体負荷タイプ。
- */
-export type JobType = "desk" | "standing" | "light_physical" | "manual_labour" | "outdoor";
 
 /**
  * Hydration Engine への入力。
  */
 export interface HydrationInput {
-  weight_kg: WeightKg;
-  workouts_per_week: WorkoutsPerWeek;
-  avg_workout_minutes: AvgWorkoutMinutes;
-  job_type: JobType;
+	/**
+	 * 現在体重 (kg)。
+	 */
+	weight_kg: number;
+	/**
+	 * 週の運動頻度 (回)。
+	 */
+	workouts_per_week: number;
+	/**
+	 * 1 回あたりの平均運動時間 (分)。
+	 */
+	avg_workout_minutes: number;
+	/**
+	 * 仕事の身体負荷タイプ。
+	 */
+	job_type:
+		| "desk"
+		| "standing"
+		| "light_physical"
+		| "manual_labour"
+		| "outdoor";
 }
-
-/**
- * 1 日の水分目標 (リットル)。
- */
-export type TargetLiters = number;
-/**
- * 計算の内訳 (base + workout + job)。
- */
-export type FormulaBreakdown = string[];
-/**
- * 生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。
- */
-export type PracticalTips = string[];
-/**
- * なぜ水分が重要かの簡潔な説明 (1-3 項目)。
- */
-export type WhyItMatters = string[];
 
 /**
  * Hydration Engine の出力。
@@ -194,94 +162,93 @@ export type WhyItMatters = string[];
  * practical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。
  */
 export interface HydrationResult {
-  target_liters: TargetLiters;
-  formula_breakdown?: FormulaBreakdown;
-  practical_tips?: PracticalTips;
-  why_it_matters?: WhyItMatters;
+	/**
+	 * 1 日の水分目標 (リットル)。
+	 */
+	target_liters: number;
+	/**
+	 * 計算の内訳 (base + workout + job)。
+	 */
+	formula_breakdown?: string[];
+	/**
+	 * 生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。
+	 */
+	practical_tips?: string[];
+	/**
+	 * なぜ水分が重要かの簡潔な説明 (1-3 項目)。
+	 */
+	why_it_matters?: string[];
 }
-
-/**
- * グラム数
- */
-export type AmountG = number;
 
 /**
  * レシピの構成食材。
  */
 export interface Ingredient {
-  food_id: FoodId;
-  amount_g: AmountG;
+	/**
+	 * FoodItem.food_id への参照
+	 */
+	food_id: string;
+	/**
+	 * グラム数
+	 */
+	amount_g: number;
 }
-
-/**
- * YYYY-MM-DD
- */
-export type Date = string;
-/**
- * 食事タイプ
- */
-export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
 /**
  * 食事ログの入力。
  */
 export interface LogMealInput {
-  date: Date;
-  food_id: FoodId;
-  amount_g: AmountG;
-  meal_type: MealType;
+	/**
+	 * YYYY-MM-DD
+	 */
+	date: string;
+	/**
+	 * FCT2020 食品番号
+	 */
+	food_id: string;
+	/**
+	 * グラム数
+	 */
+	amount_g: number;
+	/**
+	 * 食事タイプ
+	 */
+	meal_type: "breakfast" | "lunch" | "dinner" | "snack";
 }
-
 
 /**
  * 体重ログの入力。
  */
 export interface LogWeightInput {
-  date: Date;
-  weight_kg: WeightKg;
+	/**
+	 * YYYY-MM-DD
+	 */
+	date: string;
+	/**
+	 * 体重 (kg)
+	 */
+	weight_kg: number;
 }
-
-
-
-/**
- * レシピ ID (例: recipe_chicken_salad)
- */
-export type RecipeId = string;
-export type Ingredients = Ingredient[];
-export type TotalEnergyKcal = number;
-export type TotalProteinG = number;
-export type TotalFatG = number;
-export type TotalCarbsG = number;
-export type Tags = string[];
 
 /**
  * 手動キュレーションされたレシピテンプレート。
  */
 export interface RecipeTemplate {
-  recipe_id: RecipeId;
-  name_ja: NameJa;
-  ingredients: Ingredients;
-  total_energy_kcal: TotalEnergyKcal;
-  total_protein_g: TotalProteinG;
-  total_fat_g: TotalFatG;
-  total_carbs_g: TotalCarbsG;
-  tags?: Tags;
+	/**
+	 * レシピ ID (例: recipe_chicken_salad)
+	 */
+	recipe_id: string;
+	/**
+	 * 日本語名
+	 */
+	name_ja: string;
+	ingredients: Ingredient[];
+	total_energy_kcal: number;
+	total_protein_g: number;
+	total_fat_g: number;
+	total_carbs_g: number;
+	tags?: string[];
 }
-
-/**
- * 減量ペース希望。aggressive は caution として扱う。
- */
-export type DesiredPace = "steady" | "aggressive";
-/**
- * 週の飲酒杯数。
- */
-export type AlcoholPerWeek = number;
-export type PregnancyOrBreastfeeding = boolean;
-export type EatingDisorderHistory = boolean;
-/**
- * 既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。
- */
-export type MedicalConditions = string[];
 
 /**
  * Safety Guard への入力 (UserProfile の安全関連サブセット)。
@@ -290,117 +257,116 @@ export type MedicalConditions = string[];
  * 体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。
  */
 export interface SafetyInput {
-  age: Age;
-  weight_kg: WeightKg;
-  height_cm: HeightCm;
-  desired_pace: DesiredPace;
-  sleep_hours: SleepHours;
-  stress_level: StressLevel;
-  alcohol_per_week: AlcoholPerWeek;
-  pregnancy_or_breastfeeding?: PregnancyOrBreastfeeding;
-  eating_disorder_history?: EatingDisorderHistory;
-  medical_conditions?: MedicalConditions;
+	/**
+	 * 年齢。18 歳未満は block される。
+	 */
+	age: number;
+	weight_kg: number;
+	height_cm: number;
+	/**
+	 * 減量ペース希望。aggressive は caution として扱う。
+	 */
+	desired_pace: "steady" | "aggressive";
+	sleep_hours: number;
+	stress_level: "low" | "moderate" | "high";
+	/**
+	 * 週の飲酒杯数。
+	 */
+	alcohol_per_week: number;
+	pregnancy_or_breastfeeding?: boolean;
+	eating_disorder_history?: boolean;
+	/**
+	 * 既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。
+	 */
+	medical_conditions?: string[];
 }
-
-export type Level = "safe" | "caution" | "blocked";
-export type Reasons = string[];
-export type AllowedToGeneratePlan = boolean;
-export type ResponseMode = "normal" | "limited" | "medical_redirect";
 
 /**
  * Safety Guard の出力。
  */
 export interface SafetyResult {
-  level: Level;
-  reasons?: Reasons;
-  allowed_to_generate_plan: AllowedToGeneratePlan;
-  response_mode: ResponseMode;
+	level: "safe" | "caution" | "blocked";
+	reasons?: string[];
+	allowed_to_generate_plan: boolean;
+	response_mode: "normal" | "limited" | "medical_redirect";
 }
-
-/**
- * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
- */
-export type ProteinGapG = number;
-/**
- * 週の魚摂取回数 (オメガ3 推奨トリガー)。
- */
-export type FishPerWeek = number;
-/**
- * 早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。
- */
-export type EarlyMorningTraining = boolean;
-/**
- * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
- */
-export type LowSunlightExposure = boolean;
 
 /**
  * Supplement Recommender への入力。
  */
 export interface SupplementInput {
-  protein_gap_g: ProteinGapG;
-  workouts_per_week: WorkoutsPerWeek;
-  sleep_hours: SleepHours;
-  fish_per_week: FishPerWeek;
-  early_morning_training?: EarlyMorningTraining;
-  low_sunlight_exposure?: LowSunlightExposure;
+	/**
+	 * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
+	 */
+	protein_gap_g: number;
+	workouts_per_week: number;
+	sleep_hours: number;
+	/**
+	 * 週の魚摂取回数 (オメガ3 推奨トリガー)。
+	 */
+	fish_per_week: number;
+	/**
+	 * 早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。
+	 */
+	early_morning_training?: boolean;
+	/**
+	 * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
+	 */
+	low_sunlight_exposure?: boolean;
 }
-
-/**
- * サプリ名 (whey / creatine / magnesium / omega3 等)。
- */
-export type Name = string;
-/**
- * 推奨用量 (人間が読める形式)。
- */
-export type Dose = string;
-/**
- * 摂取タイミング。
- */
-export type Timing = string;
-/**
- * なぜこのユーザーに関係があるか。
- */
-export type WhyRelevant = string;
-/**
- * 注意事項 (ある場合)。
- */
-export type Caution = string | null;
 
 /**
  * 1 件のサプリ推奨。
  */
 export interface SupplementRecommendation {
-  name: Name;
-  dose: Dose;
-  timing: Timing;
-  why_relevant: WhyRelevant;
-  caution?: Caution;
+	/**
+	 * サプリ名 (whey / creatine / magnesium / omega3 等)。
+	 */
+	name: string;
+	/**
+	 * 推奨用量 (人間が読める形式)。
+	 */
+	dose: string;
+	/**
+	 * 摂取タイミング。
+	 */
+	timing: string;
+	/**
+	 * なぜこのユーザーに関係があるか。
+	 */
+	why_relevant: string;
+	/**
+	 * 注意事項 (ある場合)。
+	 */
+	caution?: string | null;
 }
-
-export type Items = SupplementRecommendation[];
 
 /**
  * Supplement Recommender の出力 (0 件以上の推奨)。
  */
 export interface SupplementRecommendationList {
-  items?: Items;
+	items?: SupplementRecommendation[];
 }
-
-  | ("sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active")
-  | null;
 
 /**
  * プロフィール部分更新の入力。
  */
 export interface UpdateUserProfileInput {
-  name?: Name;
-  age?: Age;
-  sex?: Sex;
-  height_cm?: HeightCm;
-  weight_kg?: WeightKg;
-  activity_level?: ActivityLevel;
-  desired_pace?: DesiredPace;
-  sleep_hours?: SleepHours;
-  stress_level?: StressLevel;
+	name?: string | null;
+	age?: number | null;
+	sex?: ("male" | "female") | null;
+	height_cm?: number | null;
+	weight_kg?: number | null;
+	activity_level?:
+		| (
+				| "sedentary"
+				| "lightly_active"
+				| "moderately_active"
+				| "very_active"
+				| "extremely_active"
+		  )
+		| null;
+	desired_pace?: ("steady" | "aggressive") | null;
+	sleep_hours?: number | null;
+	stress_level?: ("low" | "moderate" | "high") | null;
 }

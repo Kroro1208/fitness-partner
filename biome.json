@@ -1,0 +1,24 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.4.11/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"maxSize": 1048576,
+		"includes": [
+			"**",
+			"!**/.cache",
+			"!**/.pnpm-store",
+			"!**/node_modules",
+			"!**/.venv",
+			"!**/coverage",
+			"!**/htmlcov",
+			"!**/.next",
+			"!**/dist",
+			"!**/cdk.out"
+		]
+	}
+}

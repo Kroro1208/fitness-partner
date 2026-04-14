@@ -1,84 +1,77 @@
 {
-  "description": "Safety Guard への入力 (UserProfile の安全関連サブセット)。\n\nNote: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの\n体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。",
-  "properties": {
-    "age": {
-      "description": "年齢。18 歳未満は block される。",
-      "maximum": 120,
-      "minimum": 0,
-      "title": "Age",
-      "type": "integer"
-    },
-    "weight_kg": {
-      "exclusiveMaximum": 500,
-      "exclusiveMinimum": 0,
-      "title": "Weight Kg",
-      "type": "number"
-    },
-    "height_cm": {
-      "exclusiveMaximum": 300,
-      "exclusiveMinimum": 0,
-      "title": "Height Cm",
-      "type": "number"
-    },
-    "desired_pace": {
-      "description": "減量ペース希望。aggressive は caution として扱う。",
-      "enum": [
-        "steady",
-        "aggressive"
-      ],
-      "title": "Desired Pace",
-      "type": "string"
-    },
-    "sleep_hours": {
-      "maximum": 24,
-      "minimum": 0,
-      "title": "Sleep Hours",
-      "type": "number"
-    },
-    "stress_level": {
-      "enum": [
-        "low",
-        "moderate",
-        "high"
-      ],
-      "title": "Stress Level",
-      "type": "string"
-    },
-    "alcohol_per_week": {
-      "description": "週の飲酒杯数。",
-      "maximum": 100,
-      "minimum": 0,
-      "title": "Alcohol Per Week",
-      "type": "integer"
-    },
-    "pregnancy_or_breastfeeding": {
-      "default": false,
-      "title": "Pregnancy Or Breastfeeding",
-      "type": "boolean"
-    },
-    "eating_disorder_history": {
-      "default": false,
-      "title": "Eating Disorder History",
-      "type": "boolean"
-    },
-    "medical_conditions": {
-      "description": "既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。",
-      "items": {
-        "type": "string"
-      },
-      "title": "Medical Conditions",
-      "type": "array"
-    }
-  },
-  "required": [
-    "age",
-    "weight_kg",
-    "height_cm",
-    "desired_pace",
-    "sleep_hours",
-    "stress_level",
-    "alcohol_per_week"
-  ],
-  "title": "SafetyInput",
-  "type": "object"
+	"description": "Safety Guard への入力 (UserProfile の安全関連サブセット)。\n\nNote: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの\n体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。",
+	"properties": {
+		"age": {
+			"description": "年齢。18 歳未満は block される。",
+			"maximum": 120,
+			"minimum": 0,
+			"title": "Age",
+			"type": "integer"
+		},
+		"weight_kg": {
+			"exclusiveMaximum": 500,
+			"exclusiveMinimum": 0,
+			"title": "Weight Kg",
+			"type": "number"
+		},
+		"height_cm": {
+			"exclusiveMaximum": 300,
+			"exclusiveMinimum": 0,
+			"title": "Height Cm",
+			"type": "number"
+		},
+		"desired_pace": {
+			"description": "減量ペース希望。aggressive は caution として扱う。",
+			"enum": ["steady", "aggressive"],
+			"title": "Desired Pace",
+			"type": "string"
+		},
+		"sleep_hours": {
+			"maximum": 24,
+			"minimum": 0,
+			"title": "Sleep Hours",
+			"type": "number"
+		},
+		"stress_level": {
+			"enum": ["low", "moderate", "high"],
+			"title": "Stress Level",
+			"type": "string"
+		},
+		"alcohol_per_week": {
+			"description": "週の飲酒杯数。",
+			"maximum": 100,
+			"minimum": 0,
+			"title": "Alcohol Per Week",
+			"type": "integer"
+		},
+		"pregnancy_or_breastfeeding": {
+			"default": false,
+			"title": "Pregnancy Or Breastfeeding",
+			"type": "boolean"
+		},
+		"eating_disorder_history": {
+			"default": false,
+			"title": "Eating Disorder History",
+			"type": "boolean"
+		},
+		"medical_conditions": {
+			"description": "既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。",
+			"items": {
+				"type": "string"
+			},
+			"title": "Medical Conditions",
+			"type": "array"
+		}
+	},
+	"required": [
+		"age",
+		"weight_kg",
+		"height_cm",
+		"desired_pace",
+		"sleep_hours",
+		"stress_level",
+		"alcohol_per_week"
+	],
+	"title": "SafetyInput",
+	"type": "object"
 }

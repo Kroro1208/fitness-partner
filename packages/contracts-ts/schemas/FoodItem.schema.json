@@ -1,99 +1,92 @@
 {
-  "$defs": {
-    "NutrientQuality": {
-      "description": "FCT2020 の栄養値の品質区分。",
-      "enum": [
-        "exact",
-        "trace",
-        "missing"
-      ],
-      "title": "NutrientQuality",
-      "type": "string"
-    },
-    "NutrientValue": {
-      "description": "品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。",
-      "properties": {
-        "value": {
-          "title": "Value",
-          "type": "number"
-        },
-        "quality": {
-          "$ref": "#/$defs/NutrientQuality"
-        }
-      },
-      "required": [
-        "value",
-        "quality"
-      ],
-      "title": "NutrientValue",
-      "type": "object"
-    }
-  },
-  "description": "FCT2020 ベースの食品データ。全栄養値は 100g あたり。",
-  "properties": {
-    "food_id": {
-      "description": "FCT2020 食品番号 (例: 01001)",
-      "title": "Food Id",
-      "type": "string"
-    },
-    "name_ja": {
-      "description": "日本語名",
-      "title": "Name Ja",
-      "type": "string"
-    },
-    "category": {
-      "description": "食品群 (例: 01: 穀類)",
-      "title": "Category",
-      "type": "string"
-    },
-    "energy_kcal": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "protein_g": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "fat_g": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "carbs_g": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "fiber_g": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "sodium_mg": {
-      "$ref": "#/$defs/NutrientValue"
-    },
-    "serving_g": {
-      "default": 100.0,
-      "description": "デフォルト 1食分 (g)",
-      "title": "Serving G",
-      "type": "number"
-    },
-    "source_version": {
-      "default": "FCT2020",
-      "description": "データソースバージョン",
-      "title": "Source Version",
-      "type": "string"
-    },
-    "source_row_number": {
-      "description": "Excel の行番号",
-      "title": "Source Row Number",
-      "type": "integer"
-    }
-  },
-  "required": [
-    "food_id",
-    "name_ja",
-    "category",
-    "energy_kcal",
-    "protein_g",
-    "fat_g",
-    "carbs_g",
-    "fiber_g",
-    "sodium_mg",
-    "source_row_number"
-  ],
-  "title": "FoodItem",
-  "type": "object"
+	"$defs": {
+		"NutrientQuality": {
+			"description": "FCT2020 の栄養値の品質区分。",
+			"enum": ["exact", "trace", "missing"],
+			"title": "NutrientQuality",
+			"type": "string"
+		},
+		"NutrientValue": {
+			"description": "品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。",
+			"properties": {
+				"value": {
+					"title": "Value",
+					"type": "number"
+				},
+				"quality": {
+					"$ref": "#/$defs/NutrientQuality"
+				}
+			},
+			"required": ["value", "quality"],
+			"title": "NutrientValue",
+			"type": "object"
+		}
+	},
+	"description": "FCT2020 ベースの食品データ。全栄養値は 100g あたり。",
+	"properties": {
+		"food_id": {
+			"description": "FCT2020 食品番号 (例: 01001)",
+			"title": "Food Id",
+			"type": "string"
+		},
+		"name_ja": {
+			"description": "日本語名",
+			"title": "Name Ja",
+			"type": "string"
+		},
+		"category": {
+			"description": "食品群 (例: 01: 穀類)",
+			"title": "Category",
+			"type": "string"
+		},
+		"energy_kcal": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"protein_g": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"fat_g": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"carbs_g": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"fiber_g": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"sodium_mg": {
+			"$ref": "#/$defs/NutrientValue"
+		},
+		"serving_g": {
+			"default": 100.0,
+			"description": "デフォルト 1食分 (g)",
+			"title": "Serving G",
+			"type": "number"
+		},
+		"source_version": {
+			"default": "FCT2020",
+			"description": "データソースバージョン",
+			"title": "Source Version",
+			"type": "string"
+		},
+		"source_row_number": {
+			"description": "Excel の行番号",
+			"title": "Source Row Number",
+			"type": "integer"
+		}
+	},
+	"required": [
+		"food_id",
+		"name_ja",
+		"category",
+		"energy_kcal",
+		"protein_g",
+		"fat_g",
+		"carbs_g",
+		"fiber_g",
+		"sodium_mg",
+		"source_row_number"
+	],
+	"title": "FoodItem",
+	"type": "object"
 }

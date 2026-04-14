@@ -1,41 +1,29 @@
 {
-  "description": "Safety Guard の出力。",
-  "properties": {
-    "level": {
-      "enum": [
-        "safe",
-        "caution",
-        "blocked"
-      ],
-      "title": "Level",
-      "type": "string"
-    },
-    "reasons": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Reasons",
-      "type": "array"
-    },
-    "allowed_to_generate_plan": {
-      "title": "Allowed To Generate Plan",
-      "type": "boolean"
-    },
-    "response_mode": {
-      "enum": [
-        "normal",
-        "limited",
-        "medical_redirect"
-      ],
-      "title": "Response Mode",
-      "type": "string"
-    }
-  },
-  "required": [
-    "level",
-    "allowed_to_generate_plan",
-    "response_mode"
-  ],
-  "title": "SafetyResult",
-  "type": "object"
+	"description": "Safety Guard の出力。",
+	"properties": {
+		"level": {
+			"enum": ["safe", "caution", "blocked"],
+			"title": "Level",
+			"type": "string"
+		},
+		"reasons": {
+			"items": {
+				"type": "string"
+			},
+			"title": "Reasons",
+			"type": "array"
+		},
+		"allowed_to_generate_plan": {
+			"title": "Allowed To Generate Plan",
+			"type": "boolean"
+		},
+		"response_mode": {
+			"enum": ["normal", "limited", "medical_redirect"],
+			"title": "Response Mode",
+			"type": "string"
+		}
+	},
+	"required": ["level", "allowed_to_generate_plan", "response_mode"],
+	"title": "SafetyResult",
+	"type": "object"
 }

@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Harnessing Claude's Intelligence（2026-04-13）
+
+- Anthropic blog "Harnessing Claude's intelligence"（2026-04-02）の原則をこの repo の標準運用とする
+- **Claude に既に得意な汎用ツールを使わせる**。`Bash` / editor / file read を中心にし、モデル能力の不足を補うためだけの専用 command・hook・wrapper を増やさない
+- 新しい harness ルールや workflow を足す前に、必ず **「何をやめられるか」** を先に検討する。古い前提に基づく hard-coded filter、context reset、過剰な system 指示は削除候補として扱う
+- **タスク固有の文脈は progressive disclosure で扱う**。常時プリロードするのは安定した原則・索引だけに留め、詳細は `.claude/rules/`、`.claude/skills/`、実ファイルを必要時に読みに行く
+- **長時間タスクの記憶は `tasks/memories/` に要約して残す**。逐語ログは残さず、再利用価値の高い決定・前提・ユーザー嗜好だけを書く
+- **専用の境界は security / UX / observability のためにだけ作る**。外部 API 呼び出し、破壊的変更、ユーザー確認が必要な操作、監査対象の操作のみ dedicated hook / tool / command に昇格させる
+- モデル切り替えやツール追加はキャッシュ効率を壊すため、同一 workflow 内で頻繁に変えない。軽量化が必要なら別 agent / subagent に分離する
+
 ## セキュリティ（必須）
 
 - 本番環境のクレデンシャルをソースコードに含めない
@@ -64,6 +74,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Claude Harness Rules
 
+- `.claude/rules/harnessing-claude-intelligence.md` を、harness を追加・簡素化・分割するときの上位原則として参照すること
 - Claude Code の command / agent を追加・更新するときは、`.claude/contracts/README.md` を参照し、artifact 契約を明記すること
 - `/bug-review` と `/synth` は run metadata を `.claude/runs/` に保存する。新しい workflow も同じ構造に揃えること
 - validator がある workflow では、artifact 生成後に validator を通すまで完了扱いにしないこと

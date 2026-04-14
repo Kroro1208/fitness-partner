@@ -1,40 +1,38 @@
 {
-  "description": "Hydration Engine の出力。\n\narchitecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、\npractical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。",
-  "properties": {
-    "target_liters": {
-      "description": "1 日の水分目標 (リットル)。",
-      "minimum": 0,
-      "title": "Target Liters",
-      "type": "number"
-    },
-    "formula_breakdown": {
-      "description": "計算の内訳 (base + workout + job)。",
-      "items": {
-        "type": "string"
-      },
-      "title": "Formula Breakdown",
-      "type": "array"
-    },
-    "practical_tips": {
-      "description": "生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。",
-      "items": {
-        "type": "string"
-      },
-      "title": "Practical Tips",
-      "type": "array"
-    },
-    "why_it_matters": {
-      "description": "なぜ水分が重要かの簡潔な説明 (1-3 項目)。",
-      "items": {
-        "type": "string"
-      },
-      "title": "Why It Matters",
-      "type": "array"
-    }
-  },
-  "required": [
-    "target_liters"
-  ],
-  "title": "HydrationResult",
-  "type": "object"
+	"description": "Hydration Engine の出力。\n\narchitecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、\npractical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。",
+	"properties": {
+		"target_liters": {
+			"description": "1 日の水分目標 (リットル)。",
+			"minimum": 0,
+			"title": "Target Liters",
+			"type": "number"
+		},
+		"formula_breakdown": {
+			"description": "計算の内訳 (base + workout + job)。",
+			"items": {
+				"type": "string"
+			},
+			"title": "Formula Breakdown",
+			"type": "array"
+		},
+		"practical_tips": {
+			"description": "生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。",
+			"items": {
+				"type": "string"
+			},
+			"title": "Practical Tips",
+			"type": "array"
+		},
+		"why_it_matters": {
+			"description": "なぜ水分が重要かの簡潔な説明 (1-3 項目)。",
+			"items": {
+				"type": "string"
+			},
+			"title": "Why It Matters",
+			"type": "array"
+		}
+	},
+	"required": ["target_liters"],
+	"title": "HydrationResult",
+	"type": "object"
 }

@@ -17,6 +17,17 @@ class UpdateUserProfileInput(BaseModel):
         json_schema_extra={
             "title": "UpdateUserProfileInput",
             "description": "プロフィール部分更新の入力。",
+            "x-at-least-one-not-null": [
+                "name",
+                "age",
+                "sex",
+                "height_cm",
+                "weight_kg",
+                "activity_level",
+                "desired_pace",
+                "sleep_hours",
+                "stress_level",
+            ],
         }
     )
 

@@ -1,49 +1,49 @@
 {
-  "description": "Supplement Recommender への入力。",
-  "properties": {
-    "protein_gap_g": {
-      "description": "タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。",
-      "title": "Protein Gap G",
-      "type": "number"
-    },
-    "workouts_per_week": {
-      "maximum": 14,
-      "minimum": 0,
-      "title": "Workouts Per Week",
-      "type": "integer"
-    },
-    "sleep_hours": {
-      "maximum": 24,
-      "minimum": 0,
-      "title": "Sleep Hours",
-      "type": "number"
-    },
-    "fish_per_week": {
-      "description": "週の魚摂取回数 (オメガ3 推奨トリガー)。",
-      "maximum": 21,
-      "minimum": 0,
-      "title": "Fish Per Week",
-      "type": "integer"
-    },
-    "early_morning_training": {
-      "default": false,
-      "description": "早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。",
-      "title": "Early Morning Training",
-      "type": "boolean"
-    },
-    "low_sunlight_exposure": {
-      "default": false,
-      "description": "日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。",
-      "title": "Low Sunlight Exposure",
-      "type": "boolean"
-    }
-  },
-  "required": [
-    "protein_gap_g",
-    "workouts_per_week",
-    "sleep_hours",
-    "fish_per_week"
-  ],
-  "title": "SupplementInput",
-  "type": "object"
+	"description": "Supplement Recommender への入力。",
+	"properties": {
+		"protein_gap_g": {
+			"description": "タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。",
+			"title": "Protein Gap G",
+			"type": "number"
+		},
+		"workouts_per_week": {
+			"maximum": 14,
+			"minimum": 0,
+			"title": "Workouts Per Week",
+			"type": "integer"
+		},
+		"sleep_hours": {
+			"maximum": 24,
+			"minimum": 0,
+			"title": "Sleep Hours",
+			"type": "number"
+		},
+		"fish_per_week": {
+			"description": "週の魚摂取回数 (オメガ3 推奨トリガー)。",
+			"maximum": 21,
+			"minimum": 0,
+			"title": "Fish Per Week",
+			"type": "integer"
+		},
+		"early_morning_training": {
+			"default": false,
+			"description": "早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。",
+			"title": "Early Morning Training",
+			"type": "boolean"
+		},
+		"low_sunlight_exposure": {
+			"default": false,
+			"description": "日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。",
+			"title": "Low Sunlight Exposure",
+			"type": "boolean"
+		}
+	},
+	"required": [
+		"protein_gap_g",
+		"workouts_per_week",
+		"sleep_hours",
+		"fish_per_week"
+	],
+	"title": "SupplementInput",
+	"type": "object"
 }

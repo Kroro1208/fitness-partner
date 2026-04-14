@@ -59,6 +59,18 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
 ]
 
 
+def normalize_schema(schema: dict) -> dict:
+    """生成した JSON Schema を公開契約向けに補正する。"""
+    fields = schema.get("x-at-least-one-not-null")
+    properties = schema.get("properties")
+    if isinstance(fields, list) and isinstance(properties, dict):
+        for field in fields:
+            prop = properties.get(field)
+            if isinstance(prop, dict) and prop.get("default") is None:
+                prop.pop("default", None)
+    return schema
+
+
 def export_all_schemas(output_dir: Path) -> list[Path]:
     """登録モデルすべての JSON Schema を書き出す。
 
@@ -71,7 +83,7 @@ def export_all_schemas(output_dir: Path) -> list[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
     for name, model_cls in MODEL_REGISTRY:
-        schema = model_cls.model_json_schema()
+        schema = normalize_schema(model_cls.model_json_schema())
         target = output_dir / f"{name}.schema.json"
         target.write_text(json.dumps(schema, indent=2, ensure_ascii=False) + "\n")
         written.append(target)

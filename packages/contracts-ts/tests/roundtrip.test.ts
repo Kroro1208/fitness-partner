@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { CalorieMacroResult } from "../generated/types";
-import { CalorieMacroResultSchema } from "../generated/zod.ts";
+import {
+	CalorieMacroResultSchema,
+	LogMealInputSchema,
+	LogWeightInputSchema,
+	UpdateUserProfileInputSchema,
+} from "../generated/zod.ts";
 
 describe("Pydantic → JSON Schema → TS + Zod の round trip", () => {
 	it("Python モデルから生成された妥当なペイロードを受け入れる", () => {
@@ -15,10 +20,7 @@ describe("Pydantic → JSON Schema → TS + Zod の round trip", () => {
 			explanation: ["BMR via Mifflin-St Jeor", "TDEE = BMR * 1.55"],
 		};
 
-		const parsed = CalorieMacroResultSchema.parse(payload);
-
-		// 型アサーション: parse 結果が生成された TS 型に代入可能であること。
-		const typed: CalorieMacroResult = parsed as CalorieMacroResult;
+		const typed: CalorieMacroResult = CalorieMacroResultSchema.parse(payload);
 		expect(typed.bmr).toBe(1500);
 		expect(typed.explanation).toHaveLength(2);
 	});
@@ -60,5 +62,38 @@ describe("Pydantic → JSON Schema → TS + Zod の round trip", () => {
 			carbs_g: 200,
 		};
 		expect(() => CalorieMacroResultSchema.parse(bad)).toThrow();
+	});
+
+	it("UpdateUserProfileInput は空 object を拒否する", () => {
+		const result = UpdateUserProfileInputSchema.safeParse({});
+		expect(result.success).toBe(false);
+	});
+
+	it("UpdateUserProfileInput は all-null object を拒否する", () => {
+		const result = UpdateUserProfileInputSchema.safeParse({
+			name: null,
+			age: null,
+		});
+		expect(result.success).toBe(false);
+	});
+
+	it("LogMealInput の date は string として parse される", () => {
+		const parsed = LogMealInputSchema.parse({
+			date: "2026-04-13",
+			food_id: "01001",
+			amount_g: 150,
+			meal_type: "breakfast",
+		});
+		expect(parsed.date).toBe("2026-04-13");
+		expect(typeof parsed.date).toBe("string");
+	});
+
+	it("LogWeightInput の date は string として parse される", () => {
+		const parsed = LogWeightInputSchema.parse({
+			date: "2026-04-13",
+			weight_kg: 70.5,
+		});
+		expect(parsed.date).toBe("2026-04-13");
+		expect(typeof parsed.date).toBe("string");
 	});
 });

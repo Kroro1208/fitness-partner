@@ -1,24 +1,21 @@
 {
-  "description": "体重ログの入力。",
-  "properties": {
-    "date": {
-      "description": "YYYY-MM-DD",
-      "format": "date",
-      "title": "Date",
-      "type": "string"
-    },
-    "weight_kg": {
-      "description": "体重 (kg)",
-      "exclusiveMaximum": 500,
-      "exclusiveMinimum": 0,
-      "title": "Weight Kg",
-      "type": "number"
-    }
-  },
-  "required": [
-    "date",
-    "weight_kg"
-  ],
-  "title": "LogWeightInput",
-  "type": "object"
+	"description": "体重ログの入力。",
+	"properties": {
+		"date": {
+			"description": "YYYY-MM-DD",
+			"format": "date",
+			"title": "Date",
+			"type": "string"
+		},
+		"weight_kg": {
+			"description": "体重 (kg)",
+			"exclusiveMaximum": 500,
+			"exclusiveMinimum": 0,
+			"title": "Weight Kg",
+			"type": "number"
+		}
+	},
+	"required": ["date", "weight_kg"],
+	"title": "LogWeightInput",
+	"type": "object"
 }

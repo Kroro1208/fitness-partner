@@ -37,3 +37,25 @@ def test_export_all_schemas_overwrites_existing(tmp_path: Path):
     export_all_schemas(tmp_path)
     reloaded = json.loads(target.read_text())
     assert reloaded != {}
+
+
+def test_update_user_profile_schema_preserves_patch_semantics(tmp_path: Path):
+    """UpdateUserProfileInput の schema が PATCH 契約を表現すること。"""
+    export_all_schemas(tmp_path)
+
+    schema = json.loads(
+        (tmp_path / "UpdateUserProfileInput.schema.json").read_text(),
+    )
+    assert schema["x-at-least-one-not-null"] == [
+        "name",
+        "age",
+        "sex",
+        "height_cm",
+        "weight_kg",
+        "activity_level",
+        "desired_pace",
+        "sleep_hours",
+        "stress_level",
+    ]
+    assert "default" not in schema["properties"]["name"]
+    assert "required" not in schema

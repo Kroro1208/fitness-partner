@@ -4,34 +4,376 @@
  */
 import { z } from "zod";
 
-export const CalorieMacroInputSchema = z.object({ "age": z.number().int().gte(18).lte(120).describe("年齢 (成人のみ)。"), "sex": z.enum(["male","female"]).describe("生物学的性別 (BMR 計算に必要)。"), "height_cm": z.number().gt(0).lt(300).describe("身長 (cm)。"), "weight_kg": z.number().gt(0).lt(500).describe("現在体重 (kg)。"), "activity_level": z.enum(["sedentary","lightly_active","moderately_active","very_active","extremely_active"]).describe("PAL 活動係数を決める活動レベル。"), "sleep_hours": z.number().gte(0).lte(24).describe("平均睡眠時間 (caution 条件判定に使う)。"), "stress_level": z.enum(["low","moderate","high"]).describe("ストレスレベル (caution 条件判定に使う)。") }).describe("Calorie Macro Engine の入力。")
+export const CalorieMacroInputSchema = z
+	.object({
+		age: z.number().int().gte(18).lte(120).describe("年齢 (成人のみ)。"),
+		sex: z.enum(["male", "female"]).describe("生物学的性別 (BMR 計算に必要)。"),
+		height_cm: z.number().gt(0).lt(300).describe("身長 (cm)。"),
+		weight_kg: z.number().gt(0).lt(500).describe("現在体重 (kg)。"),
+		activity_level: z
+			.enum([
+				"sedentary",
+				"lightly_active",
+				"moderately_active",
+				"very_active",
+				"extremely_active",
+			])
+			.describe("PAL 活動係数を決める活動レベル。"),
+		sleep_hours: z
+			.number()
+			.gte(0)
+			.lte(24)
+			.describe("平均睡眠時間 (caution 条件判定に使う)。"),
+		stress_level: z
+			.enum(["low", "moderate", "high"])
+			.describe("ストレスレベル (caution 条件判定に使う)。"),
+	})
+	.describe("Calorie Macro Engine の入力。");
 
-export const CalorieMacroResultSchema = z.object({ "bmr": z.number().int().gte(0).describe("Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。"), "activity_multiplier": z.number().gte(1).lte(2).describe("TDEE 計算に使う PAL 活動係数。"), "tdee": z.number().int().gte(0).describe("Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。"), "target_calories": z.number().int().gte(0).describe("deficit ルール適用後の 1 日目標カロリー。"), "protein_g": z.number().int().gte(0).describe("1 日のタンパク質目標 (g)。"), "fat_g": z.number().int().gte(0).describe("1 日の脂質目標 (g)。"), "carbs_g": z.number().int().gte(0).describe("1 日の炭水化物目標 (g)。"), "explanation": z.array(z.string()).describe("人間が読める計算根拠を step-by-step で列挙したもの。").optional() }).describe("Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。")
+export const CalorieMacroResultSchema = z
+	.object({
+		bmr: z
+			.number()
+			.int()
+			.gte(0)
+			.describe("Mifflin-St Jeor 式で計算した Basal Metabolic Rate (kcal)。"),
+		activity_multiplier: z
+			.number()
+			.gte(1)
+			.lte(2)
+			.describe("TDEE 計算に使う PAL 活動係数。"),
+		tdee: z
+			.number()
+			.int()
+			.gte(0)
+			.describe(
+				"Total Daily Energy Expenditure (kcal) = BMR * activity_multiplier。",
+			),
+		target_calories: z
+			.number()
+			.int()
+			.gte(0)
+			.describe("deficit ルール適用後の 1 日目標カロリー。"),
+		protein_g: z.number().int().gte(0).describe("1 日のタンパク質目標 (g)。"),
+		fat_g: z.number().int().gte(0).describe("1 日の脂質目標 (g)。"),
+		carbs_g: z.number().int().gte(0).describe("1 日の炭水化物目標 (g)。"),
+		explanation: z
+			.array(z.string())
+			.describe("人間が読める計算根拠を step-by-step で列挙したもの。")
+			.optional(),
+	})
+	.describe(
+		"Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。",
+	);
 
-export const FoodItemSchema = z.object({ "food_id": z.string().describe("FCT2020 食品番号 (例: 01001)"), "name_ja": z.string().describe("日本語名"), "category": z.string().describe("食品群 (例: 01: 穀類)"), "energy_kcal": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "protein_g": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "fat_g": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "carbs_g": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "fiber_g": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "sodium_mg": z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"), "serving_g": z.number().describe("デフォルト 1食分 (g)").default(100), "source_version": z.string().describe("データソースバージョン").default("FCT2020"), "source_row_number": z.number().int().describe("Excel の行番号") }).describe("FCT2020 ベースの食品データ。全栄養値は 100g あたり。")
+export const FoodItemSchema = z
+	.object({
+		food_id: z.string().describe("FCT2020 食品番号 (例: 01001)"),
+		name_ja: z.string().describe("日本語名"),
+		category: z.string().describe("食品群 (例: 01: 穀類)"),
+		energy_kcal: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		protein_g: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		fat_g: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		carbs_g: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		fiber_g: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		sodium_mg: z
+			.object({
+				value: z.number(),
+				quality: z
+					.enum(["exact", "trace", "missing"])
+					.describe("FCT2020 の栄養値の品質区分。"),
+			})
+			.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。"),
+		serving_g: z.number().describe("デフォルト 1食分 (g)").default(100),
+		source_version: z
+			.string()
+			.describe("データソースバージョン")
+			.default("FCT2020"),
+		source_row_number: z.number().int().describe("Excel の行番号"),
+	})
+	.describe("FCT2020 ベースの食品データ。全栄養値は 100g あたり。");
 
-export const HydrationInputSchema = z.object({ "weight_kg": z.number().gt(0).lt(500).describe("現在体重 (kg)。"), "workouts_per_week": z.number().int().gte(0).lte(14).describe("週の運動頻度 (回)。"), "avg_workout_minutes": z.number().int().gte(0).lte(300).describe("1 回あたりの平均運動時間 (分)。"), "job_type": z.enum(["desk","standing","light_physical","manual_labour","outdoor"]).describe("仕事の身体負荷タイプ。") }).describe("Hydration Engine への入力。")
+export const HydrationInputSchema = z
+	.object({
+		weight_kg: z.number().gt(0).lt(500).describe("現在体重 (kg)。"),
+		workouts_per_week: z
+			.number()
+			.int()
+			.gte(0)
+			.lte(14)
+			.describe("週の運動頻度 (回)。"),
+		avg_workout_minutes: z
+			.number()
+			.int()
+			.gte(0)
+			.lte(300)
+			.describe("1 回あたりの平均運動時間 (分)。"),
+		job_type: z
+			.enum(["desk", "standing", "light_physical", "manual_labour", "outdoor"])
+			.describe("仕事の身体負荷タイプ。"),
+	})
+	.describe("Hydration Engine への入力。");
 
-export const HydrationResultSchema = z.object({ "target_liters": z.number().gte(0).describe("1 日の水分目標 (リットル)。"), "formula_breakdown": z.array(z.string()).describe("計算の内訳 (base + workout + job)。").optional(), "practical_tips": z.array(z.string()).describe("生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。").optional(), "why_it_matters": z.array(z.string()).describe("なぜ水分が重要かの簡潔な説明 (1-3 項目)。").optional() }).describe("Hydration Engine の出力。\n\narchitecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、\npractical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。")
+export const HydrationResultSchema = z
+	.object({
+		target_liters: z.number().gte(0).describe("1 日の水分目標 (リットル)。"),
+		formula_breakdown: z
+			.array(z.string())
+			.describe("計算の内訳 (base + workout + job)。")
+			.optional(),
+		practical_tips: z
+			.array(z.string())
+			.describe(
+				"生活導線に乗せるための実務的なヒント (例: 朝起きてすぐ 1 杯)。",
+			)
+			.optional(),
+		why_it_matters: z
+			.array(z.string())
+			.describe("なぜ水分が重要かの簡潔な説明 (1-3 項目)。")
+			.optional(),
+	})
+	.describe(
+		"Hydration Engine の出力。\n\narchitecture.md 11.6 に合わせて target_liters / formula_breakdown に加え、\npractical_tips (生活導線に乗るアクション提案) と why_it_matters (理由) を返す。",
+	);
 
-export const IngredientSchema = z.object({ "food_id": z.string().describe("FoodItem.food_id への参照"), "amount_g": z.number().gt(0).describe("グラム数") }).describe("レシピの構成食材。")
+export const IngredientSchema = z
+	.object({
+		food_id: z.string().describe("FoodItem.food_id への参照"),
+		amount_g: z.number().gt(0).describe("グラム数"),
+	})
+	.describe("レシピの構成食材。");
 
-export const LogMealInputSchema = z.object({ "date": z.string().date().describe("YYYY-MM-DD"), "food_id": z.string().min(1).describe("FCT2020 食品番号"), "amount_g": z.number().gt(0).describe("グラム数"), "meal_type": z.enum(["breakfast","lunch","dinner","snack"]).describe("食事タイプ") }).describe("食事ログの入力。")
+export const LogMealInputSchema = z
+	.object({
+		date: z.string().date().describe("YYYY-MM-DD"),
+		food_id: z.string().min(1).describe("FCT2020 食品番号"),
+		amount_g: z.number().gt(0).describe("グラム数"),
+		meal_type: z
+			.enum(["breakfast", "lunch", "dinner", "snack"])
+			.describe("食事タイプ"),
+	})
+	.describe("食事ログの入力。");
 
-export const LogWeightInputSchema = z.object({ "date": z.string().date().describe("YYYY-MM-DD"), "weight_kg": z.number().gt(0).lt(500).describe("体重 (kg)") }).describe("体重ログの入力。")
+export const LogWeightInputSchema = z
+	.object({
+		date: z.string().date().describe("YYYY-MM-DD"),
+		weight_kg: z.number().gt(0).lt(500).describe("体重 (kg)"),
+	})
+	.describe("体重ログの入力。");
 
-export const NutrientValueSchema = z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。")
+export const NutrientValueSchema = z
+	.object({
+		value: z.number(),
+		quality: z
+			.enum(["exact", "trace", "missing"])
+			.describe("FCT2020 の栄養値の品質区分。"),
+	})
+	.describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。");
 
-export const RecipeTemplateSchema = z.object({ "recipe_id": z.string().describe("レシピ ID (例: recipe_chicken_salad)"), "name_ja": z.string().describe("日本語名"), "ingredients": z.array(z.object({ "food_id": z.string().describe("FoodItem.food_id への参照"), "amount_g": z.number().gt(0).describe("グラム数") }).describe("レシピの構成食材。")), "total_energy_kcal": z.number().gte(0), "total_protein_g": z.number().gte(0), "total_fat_g": z.number().gte(0), "total_carbs_g": z.number().gte(0), "tags": z.array(z.string()).optional() }).describe("手動キュレーションされたレシピテンプレート。")
+export const RecipeTemplateSchema = z
+	.object({
+		recipe_id: z.string().describe("レシピ ID (例: recipe_chicken_salad)"),
+		name_ja: z.string().describe("日本語名"),
+		ingredients: z.array(
+			z
+				.object({
+					food_id: z.string().describe("FoodItem.food_id への参照"),
+					amount_g: z.number().gt(0).describe("グラム数"),
+				})
+				.describe("レシピの構成食材。"),
+		),
+		total_energy_kcal: z.number().gte(0),
+		total_protein_g: z.number().gte(0),
+		total_fat_g: z.number().gte(0),
+		total_carbs_g: z.number().gte(0),
+		tags: z.array(z.string()).optional(),
+	})
+	.describe("手動キュレーションされたレシピテンプレート。");
 
-export const SafetyInputSchema = z.object({ "age": z.number().int().gte(0).lte(120).describe("年齢。18 歳未満は block される。"), "weight_kg": z.number().gt(0).lt(500), "height_cm": z.number().gt(0).lt(300), "desired_pace": z.enum(["steady","aggressive"]).describe("減量ペース希望。aggressive は caution として扱う。"), "sleep_hours": z.number().gte(0).lte(24), "stress_level": z.enum(["low","moderate","high"]), "alcohol_per_week": z.number().int().gte(0).lte(100).describe("週の飲酒杯数。"), "pregnancy_or_breastfeeding": z.boolean().default(false), "eating_disorder_history": z.boolean().default(false), "medical_conditions": z.array(z.string()).describe("既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。").optional() }).describe("Safety Guard への入力 (UserProfile の安全関連サブセット)。\n\nNote: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの\n体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。")
+export const SafetyInputSchema = z
+	.object({
+		age: z
+			.number()
+			.int()
+			.gte(0)
+			.lte(120)
+			.describe("年齢。18 歳未満は block される。"),
+		weight_kg: z.number().gt(0).lt(500),
+		height_cm: z.number().gt(0).lt(300),
+		desired_pace: z
+			.enum(["steady", "aggressive"])
+			.describe("減量ペース希望。aggressive は caution として扱う。"),
+		sleep_hours: z.number().gte(0).lte(24),
+		stress_level: z.enum(["low", "moderate", "high"]),
+		alcohol_per_week: z
+			.number()
+			.int()
+			.gte(0)
+			.lte(100)
+			.describe("週の飲酒杯数。"),
+		pregnancy_or_breastfeeding: z.boolean().default(false),
+		eating_disorder_history: z.boolean().default(false),
+		medical_conditions: z
+			.array(z.string())
+			.describe(
+				"既往症の列挙。diabetes_insulin / severe_kidney / severe_hypertension / heart_condition_acute 等。",
+			)
+			.optional(),
+	})
+	.describe(
+		"Safety Guard への入力 (UserProfile の安全関連サブセット)。\n\nNote: Plan 02 では `goal_weight_kg` は入力に含めない。数値ベースの\n体重ギャップ判定 (例: 1 週間で 5% 減) は Plan 03 以降で扱う。",
+	);
 
-export const SafetyResultSchema = z.object({ "level": z.enum(["safe","caution","blocked"]), "reasons": z.array(z.string()).optional(), "allowed_to_generate_plan": z.boolean(), "response_mode": z.enum(["normal","limited","medical_redirect"]) }).describe("Safety Guard の出力。")
+export const SafetyResultSchema = z
+	.object({
+		level: z.enum(["safe", "caution", "blocked"]),
+		reasons: z.array(z.string()).optional(),
+		allowed_to_generate_plan: z.boolean(),
+		response_mode: z.enum(["normal", "limited", "medical_redirect"]),
+	})
+	.describe("Safety Guard の出力。");
 
-export const SupplementInputSchema = z.object({ "protein_gap_g": z.number().describe("タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。"), "workouts_per_week": z.number().int().gte(0).lte(14), "sleep_hours": z.number().gte(0).lte(24), "fish_per_week": z.number().int().gte(0).lte(21).describe("週の魚摂取回数 (オメガ3 推奨トリガー)。"), "early_morning_training": z.boolean().describe("早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。").default(false), "low_sunlight_exposure": z.boolean().describe("日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。").default(false) }).describe("Supplement Recommender への入力。")
+export const SupplementInputSchema = z
+	.object({
+		protein_gap_g: z
+			.number()
+			.describe(
+				"タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。",
+			),
+		workouts_per_week: z.number().int().gte(0).lte(14),
+		sleep_hours: z.number().gte(0).lte(24),
+		fish_per_week: z
+			.number()
+			.int()
+			.gte(0)
+			.lte(21)
+			.describe("週の魚摂取回数 (オメガ3 推奨トリガー)。"),
+		early_morning_training: z
+			.boolean()
+			.describe(
+				"早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。",
+			)
+			.default(false),
+		low_sunlight_exposure: z
+			.boolean()
+			.describe("日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。")
+			.default(false),
+	})
+	.describe("Supplement Recommender への入力。");
 
-export const SupplementRecommendationSchema = z.object({ "name": z.string().describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"), "dose": z.string().describe("推奨用量 (人間が読める形式)。"), "timing": z.string().describe("摂取タイミング。"), "why_relevant": z.string().describe("なぜこのユーザーに関係があるか。"), "caution": z.union([z.string(), z.null()]).describe("注意事項 (ある場合)。").default(null) }).describe("1 件のサプリ推奨。")
+export const SupplementRecommendationSchema = z
+	.object({
+		name: z
+			.string()
+			.describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"),
+		dose: z.string().describe("推奨用量 (人間が読める形式)。"),
+		timing: z.string().describe("摂取タイミング。"),
+		why_relevant: z.string().describe("なぜこのユーザーに関係があるか。"),
+		caution: z
+			.union([z.string(), z.null()])
+			.describe("注意事項 (ある場合)。")
+			.default(null),
+	})
+	.describe("1 件のサプリ推奨。");
 
-export const SupplementRecommendationListSchema = z.object({ "items": z.array(z.object({ "name": z.string().describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"), "dose": z.string().describe("推奨用量 (人間が読める形式)。"), "timing": z.string().describe("摂取タイミング。"), "why_relevant": z.string().describe("なぜこのユーザーに関係があるか。"), "caution": z.union([z.string(), z.null()]).describe("注意事項 (ある場合)。").default(null) }).describe("1 件のサプリ推奨。")).optional() }).describe("Supplement Recommender の出力 (0 件以上の推奨)。")
+export const SupplementRecommendationListSchema = z
+	.object({
+		items: z
+			.array(
+				z
+					.object({
+						name: z
+							.string()
+							.describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"),
+						dose: z.string().describe("推奨用量 (人間が読める形式)。"),
+						timing: z.string().describe("摂取タイミング。"),
+						why_relevant: z
+							.string()
+							.describe("なぜこのユーザーに関係があるか。"),
+						caution: z
+							.union([z.string(), z.null()])
+							.describe("注意事項 (ある場合)。")
+							.default(null),
+					})
+					.describe("1 件のサプリ推奨。"),
+			)
+			.optional(),
+	})
+	.describe("Supplement Recommender の出力 (0 件以上の推奨)。");
 
-export const UpdateUserProfileInputSchema = z.object({ "name": z.union([z.string(), z.null()]).default(null), "age": z.union([z.number().int().gte(18).lte(120), z.null()]).default(null), "sex": z.union([z.enum(["male","female"]), z.null()]).default(null), "height_cm": z.union([z.number().gt(0).lt(300), z.null()]).default(null), "weight_kg": z.union([z.number().gt(0).lt(500), z.null()]).default(null), "activity_level": z.union([z.enum(["sedentary","lightly_active","moderately_active","very_active","extremely_active"]), z.null()]).default(null), "desired_pace": z.union([z.enum(["steady","aggressive"]), z.null()]).default(null), "sleep_hours": z.union([z.number().gte(0).lte(24), z.null()]).default(null), "stress_level": z.union([z.enum(["low","moderate","high"]), z.null()]).default(null) }).describe("プロフィール部分更新の入力。")
+export const UpdateUserProfileInputSchema = z
+	.object({
+		name: z.union([z.string(), z.null()]).optional(),
+		age: z.union([z.number().int().gte(18).lte(120), z.null()]).optional(),
+		sex: z.union([z.enum(["male", "female"]), z.null()]).optional(),
+		height_cm: z.union([z.number().gt(0).lt(300), z.null()]).optional(),
+		weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).optional(),
+		activity_level: z
+			.union([
+				z.enum([
+					"sedentary",
+					"lightly_active",
+					"moderately_active",
+					"very_active",
+					"extremely_active",
+				]),
+				z.null(),
+			])
+			.optional(),
+		desired_pace: z
+			.union([z.enum(["steady", "aggressive"]), z.null()])
+			.optional(),
+		sleep_hours: z.union([z.number().gte(0).lte(24), z.null()]).optional(),
+		stress_level: z
+			.union([z.enum(["low", "moderate", "high"]), z.null()])
+			.optional(),
+	})
+	.describe("プロフィール部分更新の入力。")
+	.refine(
+		(value) =>
+			(value.name !== undefined && value.name !== null) ||
+			(value.age !== undefined && value.age !== null) ||
+			(value.sex !== undefined && value.sex !== null) ||
+			(value.height_cm !== undefined && value.height_cm !== null) ||
+			(value.weight_kg !== undefined && value.weight_kg !== null) ||
+			(value.activity_level !== undefined && value.activity_level !== null) ||
+			(value.desired_pace !== undefined && value.desired_pace !== null) ||
+			(value.sleep_hours !== undefined && value.sleep_hours !== null) ||
+			(value.stress_level !== undefined && value.stress_level !== null),
+		{ message: "At least one field must be provided" },
+	);

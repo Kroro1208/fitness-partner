@@ -1,46 +1,41 @@
 {
-  "description": "1 件のサプリ推奨。",
-  "properties": {
-    "name": {
-      "description": "サプリ名 (whey / creatine / magnesium / omega3 等)。",
-      "title": "Name",
-      "type": "string"
-    },
-    "dose": {
-      "description": "推奨用量 (人間が読める形式)。",
-      "title": "Dose",
-      "type": "string"
-    },
-    "timing": {
-      "description": "摂取タイミング。",
-      "title": "Timing",
-      "type": "string"
-    },
-    "why_relevant": {
-      "description": "なぜこのユーザーに関係があるか。",
-      "title": "Why Relevant",
-      "type": "string"
-    },
-    "caution": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "description": "注意事項 (ある場合)。",
-      "title": "Caution"
-    }
-  },
-  "required": [
-    "name",
-    "dose",
-    "timing",
-    "why_relevant"
-  ],
-  "title": "SupplementRecommendation",
-  "type": "object"
+	"description": "1 件のサプリ推奨。",
+	"properties": {
+		"name": {
+			"description": "サプリ名 (whey / creatine / magnesium / omega3 等)。",
+			"title": "Name",
+			"type": "string"
+		},
+		"dose": {
+			"description": "推奨用量 (人間が読める形式)。",
+			"title": "Dose",
+			"type": "string"
+		},
+		"timing": {
+			"description": "摂取タイミング。",
+			"title": "Timing",
+			"type": "string"
+		},
+		"why_relevant": {
+			"description": "なぜこのユーザーに関係があるか。",
+			"title": "Why Relevant",
+			"type": "string"
+		},
+		"caution": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"description": "注意事項 (ある場合)。",
+			"title": "Caution"
+		}
+	},
+	"required": ["name", "dose", "timing", "why_relevant"],
+	"title": "SupplementRecommendation",
+	"type": "object"
 }

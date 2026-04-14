@@ -3,7 +3,7 @@ import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const tableName = process.env.TABLE_NAME;
 if (!tableName) {
-  throw new Error("TABLE_NAME environment variable is required");
+	throw new Error("TABLE_NAME environment variable is required");
 }
 
 /** DynamoDB テーブル名。CDK が環境変数で注入。 */
@@ -18,8 +18,8 @@ export const docClient = DynamoDBDocumentClient.from(client);
  * handler がレスポンスを組み立てる際に使う。
  */
 export function stripKeys<T extends Record<string, unknown>>(
-  item: T,
+	item: T,
 ): Omit<T, "pk" | "sk"> {
-  const { pk, sk, ...rest } = item;
-  return rest;
+	const { pk, sk, ...rest } = item;
+	return rest;
 }

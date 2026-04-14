@@ -29,7 +29,8 @@ function deduplicateTypes(code) {
 	const lines = code.split("\n");
 	/** @type {string[]} */
 	const result = [];
-	let skipBlock = false;
+	/** @type {"interface" | "type" | null} */
+	let skipBlock = null;
 	let braceDepth = 0;
 	// 直前の JSDoc コメントブロックを一時保持 (重複時に一緒に破棄)
 	/** @type {string[]} */
@@ -37,6 +38,24 @@ function deduplicateTypes(code) {
 	let inComment = false;
 
 	for (const line of lines) {
+		if (skipBlock === "interface") {
+			for (const ch of line) {
+				if (ch === "{") braceDepth++;
+				if (ch === "}") braceDepth--;
+			}
+			if (braceDepth <= 0) {
+				skipBlock = null;
+			}
+			continue;
+		}
+
+		if (skipBlock === "type") {
+			if (line.trimEnd().endsWith(";")) {
+				skipBlock = null;
+			}
+			continue;
+		}
+
 		// JSDoc コメントの開始・終了を追跡
 		if (line.trimStart().startsWith("/**")) {
 			inComment = true;
@@ -55,23 +74,11 @@ function deduplicateTypes(code) {
 		const typeMatch = line.match(/^export\s+type\s+(\w+)\s*=/);
 		const ifaceMatch = line.match(/^export\s+interface\s+(\w+)\s*\{/);
 
-		if (typeMatch) {
-			const name = typeMatch[1];
-			if (seen.has(name)) {
-				pendingComment = []; // 直前コメントも破棄
-				continue;
-			}
-			seen.add(name);
-			result.push(...pendingComment, line);
-			pendingComment = [];
-			continue;
-		}
-
 		if (ifaceMatch) {
 			const name = ifaceMatch[1];
 			if (seen.has(name)) {
 				pendingComment = []; // 直前コメントも破棄
-				skipBlock = true;
+				skipBlock = "interface";
 				braceDepth = 1;
 				continue;
 			}
@@ -81,14 +88,18 @@ function deduplicateTypes(code) {
 			continue;
 		}
 
-		if (skipBlock) {
-			for (const ch of line) {
-				if (ch === "{") braceDepth++;
-				if (ch === "}") braceDepth--;
+		if (typeMatch) {
+			const name = typeMatch[1];
+			if (seen.has(name)) {
+				pendingComment = [];
+				if (!line.trimEnd().endsWith(";")) {
+					skipBlock = "type";
+				}
+				continue;
 			}
-			if (braceDepth <= 0) {
-				skipBlock = false;
-			}
+			seen.add(name);
+			result.push(...pendingComment, line);
+			pendingComment = [];
 			continue;
 		}
 
@@ -106,6 +117,25 @@ function deduplicateTypes(code) {
 	}
 
 	return result.join("\n");
+}
+
+function normalizeSchemaForTypes(node, isRoot = true) {
+	if (node === null || typeof node !== "object") {
+		return node;
+	}
+
+	if (Array.isArray(node)) {
+		return node.map((item) => normalizeSchemaForTypes(item, false));
+	}
+
+	const normalized = {};
+	for (const [key, value] of Object.entries(node)) {
+		if (key === "title" && !isRoot) continue;
+		if (key === "format" && value === "date") continue;
+		if (key === "x-at-least-one-not-null") continue;
+		normalized[key] = normalizeSchemaForTypes(value, false);
+	}
+	return normalized;
 }
 
 async function main() {
@@ -128,7 +158,7 @@ async function main() {
 	for (const file of schemaFiles) {
 		const schemaPath = join(schemasDir, file);
 		const schemaText = readFileSync(schemaPath, "utf8");
-		const schema = JSON.parse(schemaText);
+		const schema = normalizeSchemaForTypes(JSON.parse(schemaText));
 		const modelName = file.replace(/\.schema\.json$/, "");
 
 		const ts = await compile(schema, modelName, {

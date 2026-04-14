@@ -1,19 +1,19 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "commonjs",
-    "lib": ["ES2022"],
-    "declaration": true,
-    "strict": true,
-    "noImplicitReturns": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "outDir": "./cdk.out",
-    "rootDir": "."
-  },
-  "exclude": ["node_modules", "cdk.out"]
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "commonjs",
+		"lib": ["ES2022"],
+		"declaration": true,
+		"strict": true,
+		"noImplicitReturns": true,
+		"inlineSourceMap": true,
+		"inlineSources": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"outDir": "./cdk.out",
+		"rootDir": "."
+	},
+	"exclude": ["node_modules", "cdk.out"]
 }

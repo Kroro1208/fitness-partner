@@ -54,6 +54,51 @@ function derefSchema(schema) {
 	return resolveNode(schema);
 }
 
+function normalizeSchemaForZod(node, fieldNamesToStripDefaults = null) {
+	if (node === null || typeof node !== "object") {
+		return node;
+	}
+
+	if (Array.isArray(node)) {
+		return node.map((item) =>
+			normalizeSchemaForZod(item, fieldNamesToStripDefaults),
+		);
+	}
+
+	const normalized = {};
+	for (const [key, value] of Object.entries(node)) {
+		if (key === "x-at-least-one-not-null") continue;
+		if (
+			key === "default" &&
+			value === null &&
+			fieldNamesToStripDefaults instanceof Set
+		) {
+			continue;
+		}
+		normalized[key] = normalizeSchemaForZod(value, fieldNamesToStripDefaults);
+	}
+	return normalized;
+}
+
+function withAtLeastOneNotNullRefinement(zodCode, fieldNames) {
+	if (!Array.isArray(fieldNames) || fieldNames.length === 0) {
+		return zodCode;
+	}
+
+	const predicate = fieldNames
+		.map((field) => `value.${field} !== undefined && value.${field} !== null`)
+		.join(" || ");
+	return `${zodCode}.refine((value) => ${predicate}, { message: "At least one field must be provided" })`;
+}
+
+function rewriteNullableDefaultsToOptional(zodCode, fieldNames) {
+	if (!Array.isArray(fieldNames) || fieldNames.length === 0) {
+		return zodCode;
+	}
+
+	return zodCode.replaceAll(".default(null)", ".optional()");
+}
+
 function main() {
 	const schemaFiles = readdirSync(schemasDir)
 		.filter((f) => f.endsWith(".schema.json"))
@@ -77,16 +122,28 @@ function main() {
 		const schema = JSON.parse(readFileSync(schemaPath, "utf8"));
 		const modelName = file.replace(/\.schema\.json$/, "");
 		const exportName = `${modelName}Schema`;
+		const atLeastOneNotNull = schema["x-at-least-one-not-null"];
 
 		// $ref をインライン展開してから Zod 生成
-		const dereffed = derefSchema(schema);
+		const dereffed = derefSchema(
+			normalizeSchemaForZod(
+				schema,
+				Array.isArray(atLeastOneNotNull) ? new Set(atLeastOneNotNull) : null,
+			),
+		);
 
 		const zodCode = jsonSchemaToZod(dereffed, {
 			name: exportName,
 			module: "none",
 		});
 
-		parts.push(`export ${zodCode}`);
+		const normalizedZodCode = rewriteNullableDefaultsToOptional(
+			zodCode,
+			atLeastOneNotNull,
+		);
+		parts.push(
+			`export ${withAtLeastOneNotNullRefinement(normalizedZodCode, atLeastOneNotNull)}`,
+		);
 		parts.push("");
 	}
 
