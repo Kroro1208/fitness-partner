@@ -4,5 +4,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    env: {
+      TABLE_NAME: "test-table",
+    },
   },
 });
