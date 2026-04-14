@@ -1,0 +1,42 @@
+{
+  "description": "食事ログの入力。",
+  "properties": {
+    "date": {
+      "description": "YYYY-MM-DD",
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+    },
+    "food_id": {
+      "description": "FCT2020 食品番号",
+      "minLength": 1,
+      "title": "Food Id",
+      "type": "string"
+    },
+    "amount_g": {
+      "description": "グラム数",
+      "exclusiveMinimum": 0,
+      "title": "Amount G",
+      "type": "number"
+    },
+    "meal_type": {
+      "description": "食事タイプ",
+      "enum": [
+        "breakfast",
+        "lunch",
+        "dinner",
+        "snack"
+      ],
+      "title": "Meal Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "date",
+    "food_id",
+    "amount_g",
+    "meal_type"
+  ],
+  "title": "LogMealInput",
+  "type": "object"
+}

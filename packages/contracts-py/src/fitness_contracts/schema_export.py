@@ -32,6 +32,11 @@ from fitness_contracts.models.supplement import (
     SupplementRecommendation,
     SupplementRecommendationList,
 )
+from fitness_contracts.models.update_user_profile_input import (
+    UpdateUserProfileInput,
+)
+from fitness_contracts.models.log_meal_input import LogMealInput
+from fitness_contracts.models.log_weight_input import LogWeightInput
 
 MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("CalorieMacroInput", CalorieMacroInput),
@@ -48,6 +53,9 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("FoodItem", FoodItem),
     ("Ingredient", Ingredient),
     ("RecipeTemplate", RecipeTemplate),
+    ("UpdateUserProfileInput", UpdateUserProfileInput),
+    ("LogMealInput", LogMealInput),
+    ("LogWeightInput", LogWeightInput),
 ]
 
 

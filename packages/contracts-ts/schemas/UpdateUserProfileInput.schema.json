@@ -1,0 +1,143 @@
+{
+  "description": "プロフィール部分更新の入力。",
+  "properties": {
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Name"
+    },
+    "age": {
+      "anyOf": [
+        {
+          "maximum": 120,
+          "minimum": 18,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Age"
+    },
+    "sex": {
+      "anyOf": [
+        {
+          "enum": [
+            "male",
+            "female"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sex"
+    },
+    "height_cm": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 300,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Height Cm"
+    },
+    "weight_kg": {
+      "anyOf": [
+        {
+          "exclusiveMaximum": 500,
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Weight Kg"
+    },
+    "activity_level": {
+      "anyOf": [
+        {
+          "enum": [
+            "sedentary",
+            "lightly_active",
+            "moderately_active",
+            "very_active",
+            "extremely_active"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Activity Level"
+    },
+    "desired_pace": {
+      "anyOf": [
+        {
+          "enum": [
+            "steady",
+            "aggressive"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Desired Pace"
+    },
+    "sleep_hours": {
+      "anyOf": [
+        {
+          "maximum": 24,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sleep Hours"
+    },
+    "stress_level": {
+      "anyOf": [
+        {
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Stress Level"
+    }
+  },
+  "title": "UpdateUserProfileInput",
+  "type": "object"
+}

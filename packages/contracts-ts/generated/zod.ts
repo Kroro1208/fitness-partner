@@ -16,6 +16,10 @@ export const HydrationResultSchema = z.object({ "target_liters": z.number().gte(
 
 export const IngredientSchema = z.object({ "food_id": z.string().describe("FoodItem.food_id への参照"), "amount_g": z.number().gt(0).describe("グラム数") }).describe("レシピの構成食材。")
 
+export const LogMealInputSchema = z.object({ "date": z.string().date().describe("YYYY-MM-DD"), "food_id": z.string().min(1).describe("FCT2020 食品番号"), "amount_g": z.number().gt(0).describe("グラム数"), "meal_type": z.enum(["breakfast","lunch","dinner","snack"]).describe("食事タイプ") }).describe("食事ログの入力。")
+
+export const LogWeightInputSchema = z.object({ "date": z.string().date().describe("YYYY-MM-DD"), "weight_kg": z.number().gt(0).lt(500).describe("体重 (kg)") }).describe("体重ログの入力。")
+
 export const NutrientValueSchema = z.object({ "value": z.number(), "quality": z.enum(["exact","trace","missing"]).describe("FCT2020 の栄養値の品質区分。") }).describe("品質付き栄養値。value は常に float (TRACE/MISSING は 0.0)。")
 
 export const RecipeTemplateSchema = z.object({ "recipe_id": z.string().describe("レシピ ID (例: recipe_chicken_salad)"), "name_ja": z.string().describe("日本語名"), "ingredients": z.array(z.object({ "food_id": z.string().describe("FoodItem.food_id への参照"), "amount_g": z.number().gt(0).describe("グラム数") }).describe("レシピの構成食材。")), "total_energy_kcal": z.number().gte(0), "total_protein_g": z.number().gte(0), "total_fat_g": z.number().gte(0), "total_carbs_g": z.number().gte(0), "tags": z.array(z.string()).optional() }).describe("手動キュレーションされたレシピテンプレート。")
@@ -29,3 +33,5 @@ export const SupplementInputSchema = z.object({ "protein_gap_g": z.number().desc
 export const SupplementRecommendationSchema = z.object({ "name": z.string().describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"), "dose": z.string().describe("推奨用量 (人間が読める形式)。"), "timing": z.string().describe("摂取タイミング。"), "why_relevant": z.string().describe("なぜこのユーザーに関係があるか。"), "caution": z.union([z.string(), z.null()]).describe("注意事項 (ある場合)。").default(null) }).describe("1 件のサプリ推奨。")
 
 export const SupplementRecommendationListSchema = z.object({ "items": z.array(z.object({ "name": z.string().describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"), "dose": z.string().describe("推奨用量 (人間が読める形式)。"), "timing": z.string().describe("摂取タイミング。"), "why_relevant": z.string().describe("なぜこのユーザーに関係があるか。"), "caution": z.union([z.string(), z.null()]).describe("注意事項 (ある場合)。").default(null) }).describe("1 件のサプリ推奨。")).optional() }).describe("Supplement Recommender の出力 (0 件以上の推奨)。")
+
+export const UpdateUserProfileInputSchema = z.object({ "name": z.union([z.string(), z.null()]).default(null), "age": z.union([z.number().int().gte(18).lte(120), z.null()]).default(null), "sex": z.union([z.enum(["male","female"]), z.null()]).default(null), "height_cm": z.union([z.number().gt(0).lt(300), z.null()]).default(null), "weight_kg": z.union([z.number().gt(0).lt(500), z.null()]).default(null), "activity_level": z.union([z.enum(["sedentary","lightly_active","moderately_active","very_active","extremely_active"]), z.null()]).default(null), "desired_pace": z.union([z.enum(["steady","aggressive"]), z.null()]).default(null), "sleep_hours": z.union([z.number().gte(0).lte(24), z.null()]).default(null), "stress_level": z.union([z.enum(["low","moderate","high"]), z.null()]).default(null) }).describe("プロフィール部分更新の入力。")

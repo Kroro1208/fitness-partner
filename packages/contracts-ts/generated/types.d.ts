@@ -213,6 +213,34 @@ export interface Ingredient {
   amount_g: AmountG;
 }
 
+/**
+ * YYYY-MM-DD
+ */
+export type Date = string;
+/**
+ * 食事タイプ
+ */
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+/**
+ * 食事ログの入力。
+ */
+export interface LogMealInput {
+  date: Date;
+  food_id: FoodId;
+  amount_g: AmountG;
+  meal_type: MealType;
+}
+
+
+/**
+ * 体重ログの入力。
+ */
+export interface LogWeightInput {
+  date: Date;
+  weight_kg: WeightKg;
+}
+
 
 
 /**
@@ -357,4 +385,22 @@ export type Items = SupplementRecommendation[];
  */
 export interface SupplementRecommendationList {
   items?: Items;
+}
+
+  | ("sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active")
+  | null;
+
+/**
+ * プロフィール部分更新の入力。
+ */
+export interface UpdateUserProfileInput {
+  name?: Name;
+  age?: Age;
+  sex?: Sex;
+  height_cm?: HeightCm;
+  weight_kg?: WeightKg;
+  activity_level?: ActivityLevel;
+  desired_pace?: DesiredPace;
+  sleep_hours?: SleepHours;
+  stress_level?: StressLevel;
 }
