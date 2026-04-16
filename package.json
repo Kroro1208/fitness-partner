@@ -2,7 +2,7 @@
 	"name": "ai-fitness-partner",
 	"version": "0.0.0",
 	"private": true,
-	"packageManager": "pnpm@10.21.0",
+	"packageManager": "pnpm@10.33.0",
 	"engines": {
 		"node": ">=22.0.0"
 	},
@@ -10,5 +10,8 @@
 		"contracts:generate": "pnpm --filter @fitness/contracts-ts generate",
 		"contracts:test": "pnpm --filter @fitness/contracts-ts test",
 		"test": "pnpm -r test"
+	},
+	"devDependencies": {
+		"vitest": "^2.1.9"
 	}
 }

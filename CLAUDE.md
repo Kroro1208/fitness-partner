@@ -79,3 +79,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `/bug-review` と `/synth` は run metadata を `.claude/runs/` に保存する。新しい workflow も同じ構造に揃えること
 - validator がある workflow では、artifact 生成後に validator を通すまで完了扱いにしないこと
 - workflow ごとの中間成果物は、固定パスが必要なケースを除き run directory の `artifacts/` に閉じ込めること
+
+## Agent Infrastructure
+
+このプロジェクトは `.agent/` ディレクトリに agentic memory / skills / protocols を持つ。
+セッション開始時に `.agent/AGENTS.md` を読み、必要な memory・skills・protocols の所在を把握すること。
+
+- 判断前に `.agent/memory/semantic/LESSONS.md` と `.agent/memory/semantic/DECISIONS.md` を確認する
+- 必要に応じて `.agent/memory/semantic/DOMAIN_KNOWLEDGE.md` を参照する
+- タスク開始時に `.agent/memory/working/WORKSPACE.md` と `ACTIVE_PLAN.md` を更新する
+- 重要な失敗や再利用価値のある実行結果は `.agent/memory/episodic/AGENT_LEARNINGS.jsonl` に残す
+- agent 自律スキルは `.agent/skills/_index.md` のトリガーで必要時のみ読む
+- ツール実行の制約は `.agent/protocols/permissions.md` と `.agent/protocols/tool_schemas/` を確認する
+
+## Skill Sources
+
+- `.claude/skills/`: コーディング規約・技術スキル。コード変更時はこちらを優先する
+- `.agent/skills/`: agent 自律スキル。memory 運用や反復作業の改善に使う
+- `tasks/memories/`: 既存の判断履歴。`.agent/memory/` の初期ソースとして扱う
