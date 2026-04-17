@@ -1,96 +1,75 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { decodeSessionFromIdToken } from "../jwt";
+const { verifyMock, createMock } = vi.hoisted(() => ({
+	verifyMock: vi.fn(),
+	createMock: vi.fn(),
+}));
 
-function buildToken(payload: Record<string, unknown>): string {
-	const header = Buffer.from(
-		JSON.stringify({ alg: "RS256", typ: "JWT" }),
-	).toString("base64url");
-	const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-	return `${header}.${body}.signature`;
-}
+vi.mock("aws-jwt-verify", () => ({
+	CognitoJwtVerifier: {
+		create: createMock,
+	},
+}));
+
+import {
+	decodeSessionFromIdToken,
+	resetIdTokenVerifierCacheForTest,
+} from "../jwt";
 
 describe("decodeSessionFromIdToken", () => {
-	// --- 正常系 ---
-	it("有効な id token から userId と email を取り出す", () => {
-		const token = buildToken({
+	beforeEach(() => {
+		process.env.COGNITO_USER_POOL_ID = "ap-northeast-1_test";
+		process.env.COGNITO_CLIENT_ID = "client-id";
+		process.env.COGNITO_REGION = "ap-northeast-1";
+		verifyMock.mockReset();
+		createMock.mockReset();
+		createMock.mockReturnValue({ verify: verifyMock });
+		resetIdTokenVerifierCacheForTest();
+	});
+
+	it("検証済み id token から userId と email を取り出す", async () => {
+		verifyMock.mockResolvedValueOnce({
 			sub: "user-123",
 			email: "taro@example.com",
-			exp: Math.floor(Date.now() / 1000) + 3600,
 		});
 
-		const result = decodeSessionFromIdToken(token);
-
-		expect(result).toEqual({ userId: "user-123", email: "taro@example.com" });
-	});
-
-	it("exp が未来の時刻なら session を返す", () => {
-		const now = new Date("2026-04-17T00:00:00Z");
-		const token = buildToken({
-			sub: "user-1",
-			email: "a@b.com",
-			exp: Math.floor(now.getTime() / 1000) + 1,
-		});
-
-		const result = decodeSessionFromIdToken(token, now);
-
-		expect(result).toEqual({ userId: "user-1", email: "a@b.com" });
-	});
-
-	// --- 入力値の異常 ---
-	it("空文字の場合は null を返す", () => {
-		expect(decodeSessionFromIdToken("")).toBeNull();
-	});
-
-	it("ドットで 3 分割できない文字列の場合は null を返す", () => {
-		expect(decodeSessionFromIdToken("only.two")).toBeNull();
-	});
-
-	it("payload が base64url として不正な場合は null を返す", () => {
-		const result = decodeSessionFromIdToken("header.!@#$%.signature");
-		expect(result).toBeNull();
-	});
-
-	it("payload が JSON としてパースできない場合は null を返す", () => {
-		const badBody = Buffer.from("not-json").toString("base64url");
-		expect(decodeSessionFromIdToken(`header.${badBody}.signature`)).toBeNull();
-	});
-
-	// --- 状態の異常 ---
-	it("payload に sub が無い場合は null を返す", () => {
-		const token = buildToken({
+		await expect(decodeSessionFromIdToken("signed-token")).resolves.toEqual({
+			userId: "user-123",
 			email: "taro@example.com",
-			exp: Math.floor(Date.now() / 1000) + 3600,
 		});
-		expect(decodeSessionFromIdToken(token)).toBeNull();
+		expect(createMock).toHaveBeenCalledWith({
+			userPoolId: "ap-northeast-1_test",
+			clientId: "client-id",
+			tokenUse: "id",
+		});
+		expect(verifyMock).toHaveBeenCalledWith("signed-token");
 	});
 
-	it("payload に email が無い場合は null を返す", () => {
-		const token = buildToken({
-			sub: "user-1",
-			exp: Math.floor(Date.now() / 1000) + 3600,
-		});
-		expect(decodeSessionFromIdToken(token)).toBeNull();
+	it("空文字は検証せず null を返す", async () => {
+		await expect(decodeSessionFromIdToken("")).resolves.toBeNull();
+		expect(verifyMock).not.toHaveBeenCalled();
 	});
 
-	it("exp が過去の時刻の場合は null を返す（期限切れ）", () => {
-		const now = new Date("2026-04-17T00:00:00Z");
-		const token = buildToken({
-			sub: "user-1",
-			email: "a@b.com",
-			exp: Math.floor(now.getTime() / 1000) - 1,
-		});
-		expect(decodeSessionFromIdToken(token, now)).toBeNull();
+	it("JWT 検証失敗時は null を返す", async () => {
+		verifyMock.mockRejectedValueOnce(new Error("invalid jwt"));
+		await expect(decodeSessionFromIdToken("forged-token")).resolves.toBeNull();
 	});
 
-	// --- 境界値 ---
-	it("exp が現在時刻と同値の場合は null を返す（期限到達）", () => {
-		const now = new Date("2026-04-17T00:00:00Z");
-		const token = buildToken({
-			sub: "user-1",
-			email: "a@b.com",
-			exp: Math.floor(now.getTime() / 1000),
+	it("検証済みでも email が欠けていれば null を返す", async () => {
+		verifyMock.mockResolvedValueOnce({ sub: "user-123" });
+		await expect(decodeSessionFromIdToken("signed-token")).resolves.toBeNull();
+	});
+
+	it("同じ環境設定では verifier を再利用する", async () => {
+		verifyMock.mockResolvedValue({
+			sub: "user-123",
+			email: "taro@example.com",
 		});
-		expect(decodeSessionFromIdToken(token, now)).toBeNull();
+
+		await decodeSessionFromIdToken("token-1");
+		await decodeSessionFromIdToken("token-2");
+
+		expect(createMock).toHaveBeenCalledTimes(1);
+		expect(verifyMock).toHaveBeenCalledTimes(2);
 	});
 });

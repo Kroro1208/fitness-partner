@@ -1,4 +1,9 @@
+import "server-only";
+
+import { CognitoJwtVerifier } from "aws-jwt-verify";
 import { z } from "zod";
+
+import { getCognitoEnv } from "./cognito";
 
 export type SessionFromIdToken = {
 	userId: string;
@@ -8,37 +13,53 @@ export type SessionFromIdToken = {
 const idTokenPayloadSchema = z.object({
 	sub: z.string().min(1),
 	email: z.string().email(),
-	exp: z.number().optional(),
 });
 
-function safeJsonParse(
-	input: string,
-): { ok: true; value: unknown } | { ok: false } {
+type IdTokenVerifier = ReturnType<typeof CognitoJwtVerifier.create>;
+
+let verifierCache:
+	| {
+			key: string;
+			verifier: IdTokenVerifier;
+	  }
+	| undefined;
+
+function getIdTokenVerifier(): IdTokenVerifier {
+	const env = getCognitoEnv();
+	const key = [
+		env.COGNITO_REGION,
+		env.COGNITO_USER_POOL_ID,
+		env.COGNITO_CLIENT_ID,
+	].join(":");
+
+	if (verifierCache?.key === key) {
+		return verifierCache.verifier;
+	}
+
+	const verifier = CognitoJwtVerifier.create({
+		userPoolId: env.COGNITO_USER_POOL_ID,
+		clientId: env.COGNITO_CLIENT_ID,
+		tokenUse: "id",
+	});
+	verifierCache = { key, verifier };
+	return verifier;
+}
+
+export async function decodeSessionFromIdToken(
+	idToken: string,
+): Promise<SessionFromIdToken | null> {
+	if (!idToken) return null;
+
 	try {
-		return { ok: true, value: JSON.parse(input) };
+		const payload = await getIdTokenVerifier().verify(idToken);
+		const parsed = idTokenPayloadSchema.safeParse(payload);
+		if (!parsed.success) return null;
+		return { userId: parsed.data.sub, email: parsed.data.email };
 	} catch {
-		return { ok: false };
+		return null;
 	}
 }
 
-export function decodeSessionFromIdToken(
-	idToken: string,
-	now: Date = new Date(),
-): SessionFromIdToken | null {
-	if (!idToken) return null;
-	const parts = idToken.split(".");
-	if (parts.length !== 3) return null;
-
-	const json = Buffer.from(parts[1], "base64url").toString("utf-8");
-	const decoded = safeJsonParse(json);
-	if (!decoded.ok) return null;
-
-	const parsed = idTokenPayloadSchema.safeParse(decoded.value);
-	if (!parsed.success) return null;
-
-	const payload = parsed.data;
-	if (payload.exp !== undefined && payload.exp * 1000 <= now.getTime()) {
-		return null;
-	}
-	return { userId: payload.sub, email: payload.email };
+export function resetIdTokenVerifierCacheForTest(): void {
+	verifierCache = undefined;
 }

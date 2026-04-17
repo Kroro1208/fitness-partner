@@ -35,10 +35,11 @@ export default function SignInPage() {
 			});
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
-				if (res.status === 401)
-					setError("メールアドレスまたはパスワードが違います");
-				else if (res.status === 403) setError("メール確認が未完了です");
-				else setError(body.error ?? "ログインに失敗しました");
+				if (body.error === "invalid_input") {
+					setError("入力内容を確認してください");
+				} else {
+					setError("ログインに失敗しました");
+				}
 				return;
 			}
 			router.push("/home");

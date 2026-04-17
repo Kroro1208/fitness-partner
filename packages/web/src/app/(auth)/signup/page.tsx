@@ -80,11 +80,9 @@ export default function SignUpPage() {
 			const body = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				const message =
-					res.status === 409
-						? "このメールアドレスは既に登録されています"
-						: res.status === 400
-							? "入力内容を確認してください"
-							: (body.error ?? "登録に失敗しました");
+					body.error === "invalid_input"
+						? "入力内容を確認してください"
+						: "登録に失敗しました";
 				dispatch({ type: "submit_error", error: message });
 				return;
 			}
@@ -106,11 +104,9 @@ export default function SignUpPage() {
 			if (!res.ok) {
 				const body = await res.json().catch(() => ({}));
 				const message =
-					body.error === "code_mismatch"
-						? "確認コードが違います"
-						: body.error === "expired_code"
-							? "確認コードの有効期限が切れました"
-							: (body.error ?? "確認に失敗しました");
+					body.error === "invalid_input"
+						? "入力内容を確認してください"
+						: "確認に失敗しました";
 				dispatch({ type: "submit_error", error: message });
 				return;
 			}

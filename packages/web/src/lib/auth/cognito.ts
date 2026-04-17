@@ -14,7 +14,7 @@ const envSchema = z.object({
 	COGNITO_REGION: z.string().min(1).default("ap-northeast-1"),
 });
 
-function getEnv() {
+export function getCognitoEnv() {
 	return envSchema.parse({
 		COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
 		COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
@@ -25,7 +25,7 @@ function getEnv() {
 let clientCache: CognitoIdentityProviderClient | null = null;
 function getClient(): CognitoIdentityProviderClient {
 	if (!clientCache) {
-		const env = getEnv();
+		const env = getCognitoEnv();
 		clientCache = new CognitoIdentityProviderClient({
 			region: env.COGNITO_REGION,
 		});
@@ -45,7 +45,7 @@ export async function cognitoSignUp(
 	inviteCode: string,
 ): Promise<{ userSub: string | undefined }> {
 	const parsed = signUpInput.parse({ email, password, inviteCode });
-	const env = getEnv();
+	const env = getCognitoEnv();
 	const res = await getClient().send(
 		new SignUpCommand({
 			ClientId: env.COGNITO_CLIENT_ID,
@@ -70,7 +70,7 @@ export async function cognitoConfirmSignUp(
 	code: string,
 ): Promise<void> {
 	const parsed = confirmInput.parse({ email, code });
-	const env = getEnv();
+	const env = getCognitoEnv();
 	await getClient().send(
 		new ConfirmSignUpCommand({
 			ClientId: env.COGNITO_CLIENT_ID,
@@ -97,7 +97,7 @@ export async function cognitoSignIn(
 	password: string,
 ): Promise<CognitoTokens> {
 	const parsed = signInInput.parse({ email, password });
-	const env = getEnv();
+	const env = getCognitoEnv();
 	const res = await getClient().send(
 		new InitiateAuthCommand({
 			ClientId: env.COGNITO_CLIENT_ID,
@@ -128,7 +128,7 @@ export async function cognitoRefreshTokens(
 	refreshToken: string,
 ): Promise<Omit<CognitoTokens, "refreshToken">> {
 	const parsed = refreshInput.parse({ refreshToken });
-	const env = getEnv();
+	const env = getCognitoEnv();
 	const res = await getClient().send(
 		new InitiateAuthCommand({
 			ClientId: env.COGNITO_CLIENT_ID,

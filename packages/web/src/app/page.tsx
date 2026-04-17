@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+
+import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
 	title: "AI Fitness Partner",
@@ -9,7 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default async function RootPage() {
-	const cookieStore = await cookies();
-	const hasSession = cookieStore.has("__fitness_id");
-	redirect(hasSession ? "/home" : "/signin");
+	const session = await getSession();
+	redirect(session ? "/home" : "/signin");
 }

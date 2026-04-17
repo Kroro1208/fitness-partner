@@ -36,8 +36,8 @@ describe("handleAuthError", () => {
 		const { status, body } = await asJson(
 			handleAuthError(new CognitoLikeError("UsernameExistsException")),
 		);
-		expect(status).toBe(409);
-		expect(body).toEqual({ error: "username_exists" });
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("InvalidPasswordException は 400 invalid_password を返す", async () => {
@@ -45,7 +45,7 @@ describe("handleAuthError", () => {
 			handleAuthError(new CognitoLikeError("InvalidPasswordException")),
 		);
 		expect(status).toBe(400);
-		expect(body).toEqual({ error: "invalid_password" });
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("CodeMismatchException は 400 code_mismatch を返す", async () => {
@@ -53,7 +53,7 @@ describe("handleAuthError", () => {
 			handleAuthError(new CognitoLikeError("CodeMismatchException")),
 		);
 		expect(status).toBe(400);
-		expect(body).toEqual({ error: "code_mismatch" });
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("ExpiredCodeException は 400 expired_code を返す", async () => {
@@ -61,31 +61,31 @@ describe("handleAuthError", () => {
 			handleAuthError(new CognitoLikeError("ExpiredCodeException")),
 		);
 		expect(status).toBe(400);
-		expect(body).toEqual({ error: "expired_code" });
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("NotAuthorizedException は 401 not_authorized を返す", async () => {
 		const { status, body } = await asJson(
 			handleAuthError(new CognitoLikeError("NotAuthorizedException")),
 		);
-		expect(status).toBe(401);
-		expect(body).toEqual({ error: "not_authorized" });
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("UserNotConfirmedException は 403 user_not_confirmed を返す", async () => {
 		const { status, body } = await asJson(
 			handleAuthError(new CognitoLikeError("UserNotConfirmedException")),
 		);
-		expect(status).toBe(403);
-		expect(body).toEqual({ error: "user_not_confirmed" });
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("UserNotFoundException は 404 user_not_found を返す", async () => {
 		const { status, body } = await asJson(
 			handleAuthError(new CognitoLikeError("UserNotFoundException")),
 		);
-		expect(status).toBe(404);
-		expect(body).toEqual({ error: "user_not_found" });
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "auth_failed" });
 	});
 
 	it("未知の Error は 500 internal_error を返す", async () => {
