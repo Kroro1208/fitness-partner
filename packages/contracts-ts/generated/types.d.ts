@@ -282,33 +282,14 @@ export interface SafetyInput {
 }
 
 /**
- * Safety Guard の出力。level ごとに必須フィールドと許容値が異なる Discriminated Union。
+ * Safety Guard の出力。
  */
-export type SafetyResult =
-	| {
-			level: "safe";
-			allowed_to_generate_plan: true;
-			response_mode: "normal";
-			reasons?: string[];
-	  }
-	| {
-			level: "caution";
-			allowed_to_generate_plan: boolean;
-			response_mode: "normal" | "limited";
-			/**
-			 * @minItems 1
-			 */
-			reasons: [string, ...string[]];
-	  }
-	| {
-			level: "blocked";
-			allowed_to_generate_plan: false;
-			response_mode: "limited" | "medical_redirect";
-			/**
-			 * @minItems 1
-			 */
-			reasons: [string, ...string[]];
-	  };
+export interface SafetyResult {
+	level: "safe" | "caution" | "blocked";
+	reasons?: string[];
+	allowed_to_generate_plan: boolean;
+	response_mode: "normal" | "limited" | "medical_redirect";
+}
 
 /**
  * Supplement Recommender への入力。

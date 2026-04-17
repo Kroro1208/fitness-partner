@@ -260,51 +260,13 @@ export const SafetyInputSchema = z
 	);
 
 export const SafetyResultSchema = z
-	.any()
-	.superRefine((x, ctx) => {
-		const schemas = [
-			z
-				.object({
-					level: z.literal("safe"),
-					allowed_to_generate_plan: z.literal(true),
-					response_mode: z.literal("normal"),
-					reasons: z.array(z.string()).optional(),
-				})
-				.strict()
-				.describe("safe: 制限なくプラン生成可能。"),
-			z
-				.object({
-					level: z.literal("caution"),
-					allowed_to_generate_plan: z.boolean(),
-					response_mode: z.enum(["normal", "limited"]),
-					reasons: z.array(z.string()).min(1),
-				})
-				.strict()
-				.describe("caution: 注意付きでプラン生成可能。reasons 必須。"),
-			z
-				.object({
-					level: z.literal("blocked"),
-					allowed_to_generate_plan: z.literal(false),
-					response_mode: z.enum(["limited", "medical_redirect"]),
-					reasons: z.array(z.string()).min(1),
-				})
-				.strict()
-				.describe(
-					"blocked: プラン生成不可。reasons 必須、allowed=false 固定。",
-				),
-		];
-		const passed = schemas.filter((s) => s.safeParse(x).success).length;
-		if (passed !== 1) {
-			ctx.addIssue({
-				path: [],
-				code: "custom",
-				message: `Invalid input: Should pass single schema. Passed ${passed}`,
-			});
-		}
+	.object({
+		level: z.enum(["safe", "caution", "blocked"]),
+		reasons: z.array(z.string()).optional(),
+		allowed_to_generate_plan: z.boolean(),
+		response_mode: z.enum(["normal", "limited", "medical_redirect"]),
 	})
-	.describe(
-		"Safety Guard の出力。level ごとに必須フィールドと許容値が異なる Discriminated Union。",
-	);
+	.describe("Safety Guard の出力。");
 
 export const SupplementInputSchema = z
 	.object({
