@@ -1,0 +1,66 @@
+{
+	"description": "永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。",
+	"properties": {
+		"name": {
+			"type": "string",
+			"title": "Name"
+		},
+		"age": {
+			"type": "integer",
+			"minimum": 18,
+			"maximum": 120,
+			"title": "Age"
+		},
+		"sex": {
+			"enum": ["male", "female"],
+			"type": "string",
+			"title": "Sex"
+		},
+		"height_cm": {
+			"type": "number",
+			"exclusiveMinimum": 0,
+			"exclusiveMaximum": 300,
+			"title": "Height Cm"
+		},
+		"weight_kg": {
+			"type": "number",
+			"exclusiveMinimum": 0,
+			"exclusiveMaximum": 500,
+			"title": "Weight Kg"
+		},
+		"activity_level": {
+			"enum": [
+				"sedentary",
+				"lightly_active",
+				"moderately_active",
+				"very_active",
+				"extremely_active"
+			],
+			"type": "string",
+			"title": "Activity Level"
+		},
+		"desired_pace": {
+			"enum": ["steady", "aggressive"],
+			"type": "string",
+			"title": "Desired Pace"
+		},
+		"sleep_hours": {
+			"type": "number",
+			"minimum": 0,
+			"maximum": 24,
+			"title": "Sleep Hours"
+		},
+		"stress_level": {
+			"enum": ["low", "moderate", "high"],
+			"type": "string",
+			"title": "Stress Level"
+		},
+		"updated_at": {
+			"type": "string",
+			"description": "ISO 8601 タイムスタンプ。update-user-profile が書き込む。",
+			"title": "Updated At"
+		}
+	},
+	"title": "UserProfile",
+	"type": "object"
+}

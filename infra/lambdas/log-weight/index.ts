@@ -1,73 +1,52 @@
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
+import { LogWeightInputSchema } from "@fitness/contracts-ts";
 import type {
 	APIGatewayProxyEventV2WithJWTAuthorizer,
 	APIGatewayProxyStructuredResultV2,
 } from "aws-lambda";
-import type { LogWeightInput } from "../../../packages/contracts-ts/generated/types";
 import { requireUserId } from "../shared/auth";
+import { type Clock, systemClock } from "../shared/clock";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { weightKey } from "../shared/keys";
-import {
-	badRequest,
-	ok,
-	requireJsonBody,
-	withServerError,
-} from "../shared/response";
-import type { IsoDateString } from "../shared/types";
-import { isInRange, isRecord, isValidDate } from "../shared/validation";
+import { parseRequest } from "../shared/parse";
+import { ok, requireJsonBody, withServerError } from "../shared/response";
+import { unsafeBrand } from "../shared/types";
 
-type ValidatedLogWeightInput = {
-	date: IsoDateString;
-	weight_kg: LogWeightInput["weight_kg"];
-};
+const brandIsoDate = unsafeBrand<"IsoDateString">();
 
-function validateLogWeightInput(
-	body: unknown,
-):
-	| { valid: true; data: ValidatedLogWeightInput }
-	| { valid: false; message: string } {
-	if (!isRecord(body)) {
-		return { valid: false, message: "Request body must be a JSON object" };
-	}
+export function createHandler(deps: { clock: Clock }) {
+	return async (
+		event: APIGatewayProxyEventV2WithJWTAuthorizer,
+	): Promise<APIGatewayProxyStructuredResultV2> => {
+		// ── Input ──────────────────────────────────────────────
+		const auth = requireUserId(event);
+		if (!auth.ok) return auth.response;
 
-	const { date, weight_kg } = body;
+		const body = requireJsonBody(event);
+		if (!body.ok) return body.response;
 
-	if (!isValidDate(date)) {
-		return { valid: false, message: "date must be a valid YYYY-MM-DD date" };
-	}
-	if (!isInRange(weight_kg, { gt: 0, lt: 500 })) {
-		return { valid: false, message: "weight_kg must be > 0 and < 500" };
-	}
+		const parsed = parseRequest(LogWeightInputSchema, body.body);
+		if (!parsed.ok) return parsed.response;
 
-	return { valid: true, data: { date, weight_kg } };
-}
+		const loggedAt = deps.clock.now().toISOString();
 
-export async function handler(
-	event: APIGatewayProxyEventV2WithJWTAuthorizer,
-): Promise<APIGatewayProxyStructuredResultV2> {
-	const auth = requireUserId(event);
-	if (!auth.ok) return auth.response;
+		// ── Process ────────────────────────────────────────────
+		const date = brandIsoDate(parsed.data.date);
+		const item = {
+			...weightKey(auth.userId, date),
+			date,
+			weight_kg: parsed.data.weight_kg,
+			logged_at: loggedAt,
+		};
 
-	const parsed = requireJsonBody(event);
-	if (!parsed.ok) return parsed.response;
-
-	const loggedAt = new Date().toISOString();
-
-	const validation = validateLogWeightInput(parsed.body);
-	if (!validation.valid) {
-		return badRequest(validation.message);
-	}
-
-	const item = {
-		...weightKey(auth.userId, validation.data.date),
-		date: validation.data.date,
-		weight_kg: validation.data.weight_kg,
-		logged_at: loggedAt,
+		// ── Output ─────────────────────────────────────────────
+		return withServerError("logWeight", async () => {
+			await docClient.send(
+				new PutCommand({ TableName: TABLE_NAME, Item: item }),
+			);
+			return ok({ weight: stripKeys(item) });
+		});
 	};
-
-	return withServerError("logWeight", async () => {
-		await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
-		const weight = stripKeys(item);
-		return ok({ weight });
-	});
 }
+
+export const handler = createHandler({ clock: systemClock });

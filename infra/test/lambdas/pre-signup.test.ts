@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import {
 	GetParameterCommand,
 	type GetParameterCommandOutput,
@@ -130,8 +131,9 @@ describe("pre-signup handler", () => {
 				makeParameterValueResponse(`${VALID_TOKEN_A},${VALID_TOKEN_B}`),
 			);
 		ddbMock.on(PutCommand).rejects(
-			Object.assign(new Error("already used"), {
-				name: "ConditionalCheckFailedException",
+			new ConditionalCheckFailedException({
+				message: "already used",
+				$metadata: {},
 			}),
 		);
 

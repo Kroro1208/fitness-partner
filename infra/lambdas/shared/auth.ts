@@ -19,10 +19,14 @@ export function getUserId(
 	event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): AuthResult {
 	const sub = event.requestContext.authorizer?.jwt?.claims?.sub;
-	if (typeof sub !== "string" || sub.length === 0) {
+	if (typeof sub !== "string") {
 		return { ok: false };
 	}
-	return { ok: true, userId: toUserId(sub) };
+	const userId = toUserId(sub);
+	if (!userId) {
+		return { ok: false };
+	}
+	return { ok: true, userId };
 }
 
 export function requireUserId(

@@ -7,7 +7,8 @@
 	"scripts": {
 		"generate:types": "node scripts/generate-types.mjs",
 		"generate:zod": "node scripts/generate-zod.mjs",
-		"generate": "pnpm run generate:types && pnpm run generate:zod",
+		"generate:format": "biome format --write generated/",
+		"generate": "pnpm run generate:types && pnpm run generate:zod && pnpm run generate:format",
 		"test": "vitest run"
 	},
 	"dependencies": {

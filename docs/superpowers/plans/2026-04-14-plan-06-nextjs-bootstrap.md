@@ -36,7 +36,7 @@
 | `packages/web/.env.local.example`                       | 環境変数テンプレート                       |
 | `packages/web/middleware.ts`                            | Edge Middleware auth guard                 |
 | `packages/web/src/app/layout.tsx`                       | Root layout (Providers, fonts, metadata)   |
-| `packages/web/src/app/page.tsx`                         | Landing → redirect                         |
+| `packages/web/src/app/page.tsx`                         | Root auth gate redirect                    |
 | `packages/web/src/app/globals.css`                      | Tailwind directives + design tokens        |
 | `packages/web/src/lib/utils.ts`                         | `cn()` helper (clsx + tailwind-merge)      |
 | `packages/web/src/lib/auth/cognito.ts`                  | Cognito SDK ラッパー (server-only)         |
@@ -54,6 +54,9 @@
 | `packages/web/src/app/(auth)/signup/page.tsx`           | Sign-up page (2-step)                      |
 | `packages/web/src/app/(app)/layout.tsx`                 | AppShell layout                            |
 | `packages/web/src/app/(app)/home/page.tsx`              | Home placeholder                           |
+| `packages/web/src/app/(app)/plan/page.tsx`              | Plan placeholder                           |
+| `packages/web/src/app/(app)/chat/page.tsx`              | Chat placeholder                           |
+| `packages/web/src/app/(app)/progress/page.tsx`          | Progress placeholder                       |
 | `packages/web/src/app/(app)/profile/page.tsx`           | Profile E2E CRUD proof                     |
 | `packages/web/src/app/api/auth/signup/route.ts`         | BFF signup handler                         |
 | `packages/web/src/app/api/auth/signup/confirm/route.ts` | BFF confirm handler                        |
@@ -137,9 +140,9 @@
 
   html/body、metadata title "AI Fitness Partner"。
 
-- [ ] **Step 6: Landing page placeholder を作成**
+- [ ] **Step 6: Root auth gate redirect を作成**
 
-  シンプルな h1 + /signin へのリンク。
+  `cookies()` で `__fitness_id` の有無を確認し、存在する場合は `/home`、なければ `/signin` に redirect。
 
 - [ ] **Step 7: pnpm install → dev server 起動確認**
 
@@ -183,8 +186,8 @@
 
 - [ ] **Step 3: globals.css に design tokens 追加**
 
-  ui-architecture.md §16 のトークン:
-  - Colors: primary-500 #4F7A5A, primary-600 #3F6549, primary-100 #E5EFE7, accent-500 #D98F5C, accent-100 #F8E8DD, bg-canvas #F7F8F5, bg-surface #FFFFFF, bg-subtle #F1F4EE, danger-500 #C65A5A, danger-100 #FBE8E8, warning-500 #C98A2E, warning-100 #FAF0DA
+  ui-architecture.md §16 のトークンを Tailwind CSS v4 の `@theme` または CSS custom properties として定義:
+  - Colors: primary-500 #4F7A5A, primary-600 #3F6549, primary-100 #E5EFE7, accent-500 #D98F5C, accent-100 #F8E8DD, neutral-900 #1F2937, neutral-700 #4B5563, neutral-500 #6B7280, neutral-200 #E5E7EB, neutral-100 #F3F4F6, bg-canvas #F7F8F5, bg-surface #FFFFFF, bg-subtle #F1F4EE, danger-500 #C65A5A, danger-100 #FBE8E8, warning-500 #C98A2E, warning-100 #FAF0DA
   - Radius: sm 8px, md 14px, lg 20px, xl 28px
   - Shadows: sm/md/lg
 
@@ -209,7 +212,7 @@
 
 - [ ] **Step 7: Tailwind レンダリング確認**
 
-  landing page に design token カラーを適用して表示確認。
+  `/signin` ページまたは auth layout 上で design token カラーを適用して表示確認。
 
 - [ ] **Step 8: コミット**
 
@@ -233,7 +236,6 @@
   COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
   COGNITO_REGION=ap-northeast-1
   API_GATEWAY_URL=https://xxxxxxxxxx.execute-api.ap-northeast-1.amazonaws.com
-  SESSION_SECRET=change-me-to-random-32-char-string
   ```
 
 - [ ] **Step 2: @aws-sdk/client-cognito-identity-provider を追加**
@@ -251,6 +253,7 @@
   - `getSession()`: id token JWT payload デコード → `{ userId, email }` | null
   - `clearSession()`: 3 cookie 削除
   - id token maxAge: 1h, refresh maxAge: 30d
+  - 独自署名 cookie は作らない。Cognito token を HttpOnly cookie に直接保持する
 
 - [ ] **Step 5: TypeScript コンパイル確認**
 
@@ -424,6 +427,9 @@
 - Create: `packages/web/src/components/domain/top-bar.tsx`
 - Create: `packages/web/src/app/(app)/layout.tsx`
 - Create: `packages/web/src/app/(app)/home/page.tsx`
+- Create: `packages/web/src/app/(app)/plan/page.tsx`
+- Create: `packages/web/src/app/(app)/chat/page.tsx`
+- Create: `packages/web/src/app/(app)/progress/page.tsx`
 - Modify: `packages/web/package.json`
 
 - [ ] **Step 1: lucide-react を追加**
@@ -435,7 +441,7 @@
   // Auth: /signin, /signup
   // cookie __fitness_id なし + protected → redirect /signin
   // cookie __fitness_id あり + auth path → redirect /home
-  // matcher: /((?!api|_next/static|_next/image|favicon.ico).*)
+  // matcher: /((?!api|_next|favicon.ico).*)
   ```
 
 - [ ] **Step 3: TopBar を作成**
@@ -462,11 +468,18 @@
   `useAuth()` で email 取得、"Welcome, {email}" 表示。
   empty state cards: "オンボーディングを完了して食事プランを作成しましょう"。
 
-- [ ] **Step 8: 認証フロー検証**
+- [ ] **Step 8: Plan / Chat / Progress placeholder page を作成**
+
+  BottomTabBar の 5 タブが全て 404 にならないように、以下の placeholder route を用意:
+  - `/plan`: 7日プラン画面の準備中メッセージ
+  - `/chat`: AI chat 機能は未実装である旨の placeholder
+  - `/progress`: Progress 画面の準備中メッセージ
+
+- [ ] **Step 9: 認証フロー検証**
 
   未認証で /home → /signin redirect。認証後 → AppShell + 5 tabs 表示。
 
-- [ ] **Step 9: コミット**
+- [ ] **Step 10: コミット**
 
   `feat(web): add AppShell with BottomTabBar and middleware auth guard`
 
@@ -484,12 +497,17 @@
   ```typescript
   import { UpdateUserProfileInputSchema } from "@fitness/contracts-ts";
   // useProfile(): useQuery GET /api/proxy/users/me/profile
+  //   runtime payload は { profile: Record<string, unknown> }
+  //   response.profile を unwrap して UI で使う
   // useUpdateProfile(): useMutation PATCH /api/proxy/users/me/profile
   //   UpdateUserProfileInputSchema.parse(data) で入力検証
   //   onSuccess: invalidate ["profile"]
   ```
 
-  **contracts-ts の Zod スキーマを import することで全パイプライン疎通を証明。**
+  **重要**:
+  - `UpdateUserProfileInputSchema` は PATCH 入力検証専用
+  - GET レスポンス全体を `UpdateUserProfileInputSchema` で parse しない
+  - 理由: 現在の runtime payload は `{ profile: ... }` であり、さらに profile には `updated_at` が含まれうるため
 
 - [ ] **Step 2: Profile page を作成**
   - Loading state: skeleton cards
@@ -529,11 +547,13 @@
 - [ ] **Step 2: 最終検証チェックリスト**
   - [ ] `pnpm --filter @fitness/web build` — TypeScript エラー 0
   - [ ] `pnpm --filter @fitness/web dev` → localhost:3000 起動
-  - [ ] 未認証で localhost:3000 → /signin redirect (middleware)
+  - [ ] 未認証で localhost:3000 → `/signin` redirect (root auth gate)
   - [ ] Sign-up (invite code) → メール確認 → Sign-in
   - [ ] HttpOnly cookie がブラウザに設定される
   - [ ] Sign-in 後 → /home に AppShell + BottomTabBar (5 tabs)
+  - [ ] `/plan`, `/chat`, `/progress` が 404 ではなく placeholder を表示
   - [ ] Profile tab → Lambda からデータ取得
+  - [ ] Profile GET の runtime payload `{ profile: ... }` を正しく unwrap できる
   - [ ] Profile edit → Zod 検証 → PATCH → DynamoDB 永続化 → reload で値保持
   - [ ] Sign-out → cookie 削除 → /signin redirect
   - [ ] Mobile viewport (375px) → BottomTabBar がタップ可能 (44px+)

@@ -7,7 +7,7 @@ if (!tableName) {
 }
 
 /** DynamoDB テーブル名。CDK が環境変数で注入。 */
-export const TABLE_NAME: string = tableName;
+export const TABLE_NAME = tableName;
 
 const client = new DynamoDBClient({});
 /** DocumentClient (コンテナ再利用時にコネクション使い回し)。 */

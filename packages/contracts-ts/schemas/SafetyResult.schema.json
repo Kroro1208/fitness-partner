@@ -1,29 +1,69 @@
 {
-	"description": "Safety Guard の出力。",
-	"properties": {
-		"level": {
-			"enum": ["safe", "caution", "blocked"],
-			"title": "Level",
-			"type": "string"
-		},
-		"reasons": {
-			"items": {
-				"type": "string"
+	"description": "Safety Guard の出力。level ごとに必須フィールドと許容値が異なる Discriminated Union。",
+	"oneOf": [
+		{
+			"type": "object",
+			"description": "safe: 制限なくプラン生成可能。",
+			"properties": {
+				"level": { "const": "safe", "type": "string" },
+				"allowed_to_generate_plan": { "const": true, "type": "boolean" },
+				"response_mode": { "const": "normal", "type": "string" },
+				"reasons": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
 			},
-			"title": "Reasons",
-			"type": "array"
+			"required": ["level", "allowed_to_generate_plan", "response_mode"],
+			"additionalProperties": false
 		},
-		"allowed_to_generate_plan": {
-			"title": "Allowed To Generate Plan",
-			"type": "boolean"
+		{
+			"type": "object",
+			"description": "caution: 注意付きでプラン生成可能。reasons 必須。",
+			"properties": {
+				"level": { "const": "caution", "type": "string" },
+				"allowed_to_generate_plan": { "type": "boolean" },
+				"response_mode": {
+					"enum": ["normal", "limited"],
+					"type": "string"
+				},
+				"reasons": {
+					"type": "array",
+					"items": { "type": "string" },
+					"minItems": 1
+				}
+			},
+			"required": [
+				"level",
+				"allowed_to_generate_plan",
+				"response_mode",
+				"reasons"
+			],
+			"additionalProperties": false
 		},
-		"response_mode": {
-			"enum": ["normal", "limited", "medical_redirect"],
-			"title": "Response Mode",
-			"type": "string"
+		{
+			"type": "object",
+			"description": "blocked: プラン生成不可。reasons 必須、allowed=false 固定。",
+			"properties": {
+				"level": { "const": "blocked", "type": "string" },
+				"allowed_to_generate_plan": { "const": false, "type": "boolean" },
+				"response_mode": {
+					"enum": ["limited", "medical_redirect"],
+					"type": "string"
+				},
+				"reasons": {
+					"type": "array",
+					"items": { "type": "string" },
+					"minItems": 1
+				}
+			},
+			"required": [
+				"level",
+				"allowed_to_generate_plan",
+				"response_mode",
+				"reasons"
+			],
+			"additionalProperties": false
 		}
-	},
-	"required": ["level", "allowed_to_generate_plan", "response_mode"],
-	"title": "SafetyResult",
-	"type": "object"
+	],
+	"title": "SafetyResult"
 }

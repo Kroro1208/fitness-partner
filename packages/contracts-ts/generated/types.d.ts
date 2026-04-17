@@ -282,14 +282,33 @@ export interface SafetyInput {
 }
 
 /**
- * Safety Guard の出力。
+ * Safety Guard の出力。level ごとに必須フィールドと許容値が異なる Discriminated Union。
  */
-export interface SafetyResult {
-	level: "safe" | "caution" | "blocked";
-	reasons?: string[];
-	allowed_to_generate_plan: boolean;
-	response_mode: "normal" | "limited" | "medical_redirect";
-}
+export type SafetyResult =
+	| {
+			level: "safe";
+			allowed_to_generate_plan: true;
+			response_mode: "normal";
+			reasons?: string[];
+	  }
+	| {
+			level: "caution";
+			allowed_to_generate_plan: boolean;
+			response_mode: "normal" | "limited";
+			/**
+			 * @minItems 1
+			 */
+			reasons: [string, ...string[]];
+	  }
+	| {
+			level: "blocked";
+			allowed_to_generate_plan: false;
+			response_mode: "limited" | "medical_redirect";
+			/**
+			 * @minItems 1
+			 */
+			reasons: [string, ...string[]];
+	  };
 
 /**
  * Supplement Recommender への入力。
@@ -369,4 +388,28 @@ export interface UpdateUserProfileInput {
 	desired_pace?: ("steady" | "aggressive") | null;
 	sleep_hours?: number | null;
 	stress_level?: ("low" | "moderate" | "high") | null;
+}
+
+/**
+ * 永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。
+ */
+export interface UserProfile {
+	name?: string;
+	age?: number;
+	sex?: "male" | "female";
+	height_cm?: number;
+	weight_kg?: number;
+	activity_level?:
+		| "sedentary"
+		| "lightly_active"
+		| "moderately_active"
+		| "very_active"
+		| "extremely_active";
+	desired_pace?: "steady" | "aggressive";
+	sleep_hours?: number;
+	stress_level?: "low" | "moderate" | "high";
+	/**
+	 * ISO 8601 タイムスタンプ。update-user-profile が書き込む。
+	 */
+	updated_at?: string;
 }

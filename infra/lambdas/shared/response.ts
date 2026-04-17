@@ -65,7 +65,8 @@ export function parseJsonBody(
 		? Buffer.from(event.body, "base64").toString("utf-8")
 		: event.body;
 	try {
-		return { ok: true, body: JSON.parse(raw) };
+		const body: unknown = JSON.parse(raw);
+		return { ok: true, body };
 	} catch {
 		return { ok: false, reason: "invalid_json" };
 	}

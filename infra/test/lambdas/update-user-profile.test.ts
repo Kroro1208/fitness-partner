@@ -3,9 +3,10 @@
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { mockClient } from "aws-sdk-client-mock";
 import { beforeEach, describe, expect, it } from "vitest";
-import { buildUpdateExpression } from "../../lambdas/shared/dynamo-expression";
-import { PROFILE_FIELDS } from "../../lambdas/shared/types";
-import { validateUpdateProfileInput } from "../../lambdas/shared/validate-profile";
+import {
+	buildProfileUpdateExpression,
+	buildUpdateExpression,
+} from "../../lambdas/shared/dynamo-expression";
 import { handler } from "../../lambdas/update-user-profile/index";
 import { makeEvent } from "./helpers/api-event";
 
@@ -13,139 +14,6 @@ const ddbMock = mockClient(DynamoDBDocumentClient);
 
 beforeEach(() => {
 	ddbMock.reset();
-});
-
-// ── validateUpdateProfileInput ──────────────────────────────────────
-
-describe("validateUpdateProfileInput", () => {
-	it("accepts valid single field", () => {
-		const result = validateUpdateProfileInput({ name: "太郎" });
-		expect(result.valid).toBe(true);
-	});
-
-	it("accepts valid multiple fields", () => {
-		const result = validateUpdateProfileInput({
-			name: "太郎",
-			age: 30,
-			sex: "male",
-		});
-		expect(result.valid).toBe(true);
-	});
-
-	it("rejects non-object body", () => {
-		const result = validateUpdateProfileInput("string");
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects null body", () => {
-		const result = validateUpdateProfileInput(null);
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects empty object", () => {
-		const result = validateUpdateProfileInput({});
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects all-null fields", () => {
-		const result = validateUpdateProfileInput({
-			name: null,
-			age: null,
-		});
-		expect(result.valid).toBe(false);
-	});
-
-	// ── schema ↔ TS ガード一致の自動検証 ───────────────────────────
-	it("PROFILE_FIELDS matches JSON Schema properties", async () => {
-		const schema = await import(
-			"../../../packages/contracts-ts/schemas/UpdateUserProfileInput.schema.json"
-		);
-		const schemaFields = new Set(Object.keys(schema.properties ?? {}));
-		const tsFields = new Set(PROFILE_FIELDS);
-		expect(tsFields).toEqual(schemaFields);
-	});
-
-	// 境界値テスト群
-	it("rejects age below minimum (17 < 18)", () => {
-		const result = validateUpdateProfileInput({ age: 17 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("accepts age at minimum (18)", () => {
-		const result = validateUpdateProfileInput({ age: 18 });
-		expect(result.valid).toBe(true);
-	});
-
-	it("accepts age at maximum (120)", () => {
-		const result = validateUpdateProfileInput({ age: 120 });
-		expect(result.valid).toBe(true);
-	});
-
-	it("rejects age above maximum (121 > 120)", () => {
-		const result = validateUpdateProfileInput({ age: 121 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects height_cm at zero (gt=0)", () => {
-		const result = validateUpdateProfileInput({ height_cm: 0 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects height_cm at 300 (lt=300)", () => {
-		const result = validateUpdateProfileInput({ height_cm: 300 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects weight_kg at zero (gt=0)", () => {
-		const result = validateUpdateProfileInput({ weight_kg: 0 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects weight_kg at 500 (lt=500)", () => {
-		const result = validateUpdateProfileInput({ weight_kg: 500 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects sleep_hours below zero (ge=0)", () => {
-		const result = validateUpdateProfileInput({ sleep_hours: -1 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects sleep_hours above 24 (le=24)", () => {
-		const result = validateUpdateProfileInput({ sleep_hours: 25 });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects invalid sex value", () => {
-		const result = validateUpdateProfileInput({ sex: "other" });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects invalid activity_level", () => {
-		const result = validateUpdateProfileInput({ activity_level: "invalid" });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects invalid desired_pace", () => {
-		const result = validateUpdateProfileInput({ desired_pace: "slow" });
-		expect(result.valid).toBe(false);
-	});
-
-	it("rejects invalid stress_level", () => {
-		const result = validateUpdateProfileInput({ stress_level: "extreme" });
-		expect(result.valid).toBe(false);
-	});
-
-	it("ignores unknown fields", () => {
-		const result = validateUpdateProfileInput({
-			name: "太郎",
-			unknown: "value",
-		});
-		expect(result.valid).toBe(true);
-		if (result.valid) {
-			expect(result.data).not.toHaveProperty("unknown");
-		}
-	});
 });
 
 // ── buildUpdateExpression ───────────────────────────────────────────
@@ -156,6 +24,7 @@ describe("buildUpdateExpression", () => {
 		expect(expr.UpdateExpression).toBe("SET #name = :name");
 		expect(expr.ExpressionAttributeNames).toEqual({ "#name": "name" });
 		expect(expr.ExpressionAttributeValues).toEqual({ ":name": "太郎" });
+		expect(expr.removeFields).toEqual([]);
 	});
 
 	it("builds SET expression for multiple fields", () => {
@@ -170,6 +39,7 @@ describe("buildUpdateExpression", () => {
 			":name": "太郎",
 			":age": 30,
 		});
+		expect(expr.removeFields).toEqual([]);
 	});
 
 	it("assumes caller already filtered null/undefined values", () => {
@@ -179,6 +49,31 @@ describe("buildUpdateExpression", () => {
 		});
 		expect(expr.UpdateExpression).toContain("#name = :name");
 		expect(expr.UpdateExpression).toContain("#updated_at = :updated_at");
+		expect(expr.removeFields).toEqual([]);
+	});
+
+	it("builds SET + REMOVE expression for profile clear", () => {
+		const expr = buildProfileUpdateExpression({
+			setFields: {
+				name: "太郎",
+				updated_at: "2026-04-13T00:00:00Z",
+			},
+			removeFields: ["weight_kg", "sleep_hours"],
+		});
+
+		expect(expr.UpdateExpression).toBe(
+			"SET #name = :name, #updated_at = :updated_at REMOVE #weight_kg, #sleep_hours",
+		);
+		expect(expr.ExpressionAttributeNames).toEqual({
+			"#name": "name",
+			"#updated_at": "updated_at",
+			"#weight_kg": "weight_kg",
+			"#sleep_hours": "sleep_hours",
+		});
+		expect(expr.ExpressionAttributeValues).toEqual({
+			":name": "太郎",
+			":updated_at": "2026-04-13T00:00:00Z",
+		});
 	});
 });
 
@@ -235,7 +130,27 @@ describe("updateUserProfile handler", () => {
 		expect(result.statusCode).toBe(400);
 	});
 
-	it("excludes null fields from update", async () => {
+	it("returns 400 for age above max", async () => {
+		const event = makeEvent({
+			method: "PATCH",
+			path: "/users/me/profile",
+			body: JSON.stringify({ age: 121 }),
+		});
+		const result = await handler(event);
+		expect(result.statusCode).toBe(400);
+	});
+
+	it("returns 400 for invalid sex enum", async () => {
+		const event = makeEvent({
+			method: "PATCH",
+			path: "/users/me/profile",
+			body: JSON.stringify({ sex: "other" }),
+		});
+		const result = await handler(event);
+		expect(result.statusCode).toBe(400);
+	});
+
+	it("removes null fields from persisted profile", async () => {
 		ddbMock.on(UpdateCommand).resolves({
 			Attributes: { pk: "user#u1", sk: "profile", name: "花子" },
 		});
@@ -251,6 +166,23 @@ describe("updateUserProfile handler", () => {
 		expect(result.statusCode).toBe(200);
 		const body = JSON.parse(String(result.body));
 		expect(body.profile).toEqual({ name: "花子" });
+
+		const command = ddbMock.commandCalls(UpdateCommand)[0];
+		expect(command.args[0].input.UpdateExpression).toContain("REMOVE #age");
+		expect(command.args[0].input.ExpressionAttributeNames).toMatchObject({
+			"#age": "age",
+		});
+	});
+
+	it("returns 400 when all provided fields are null", async () => {
+		const event = makeEvent({
+			method: "PATCH",
+			path: "/users/me/profile",
+			body: JSON.stringify({ name: null, age: null }),
+		});
+		const result = await handler(event);
+
+		expect(result.statusCode).toBe(400);
 	});
 
 	it("returns 401 when sub is missing", async () => {

@@ -9,9 +9,12 @@
 	"scripts": {
 		"contracts:generate": "pnpm --filter @fitness/contracts-ts generate",
 		"contracts:test": "pnpm --filter @fitness/contracts-ts test",
+		"dev:web": "pnpm --filter @fitness/web dev",
+		"build:web": "pnpm --filter @fitness/web build",
 		"test": "pnpm -r test"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "2.4.12",
 		"vitest": "^2.1.9"
 	}
 }
