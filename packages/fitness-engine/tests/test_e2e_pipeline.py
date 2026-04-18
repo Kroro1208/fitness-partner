@@ -1,9 +1,11 @@
 """4 つのエンジンを組み合わせた end-to-end パイプラインのスモークテスト。"""
 
-from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
-from fitness_contracts.models.hydration import HydrationInput
-from fitness_contracts.models.safety import SafetyInput
-from fitness_contracts.models.supplement import SupplementInput
+from fitness_contracts.models.fitness_engine.calorie_macro_input import (
+    CalorieMacroInput,
+)
+from fitness_contracts.models.fitness_engine.hydration import HydrationInput
+from fitness_contracts.models.fitness_engine.safety import SafetyInput
+from fitness_contracts.models.fitness_engine.supplement import SupplementInput
 
 from fitness_engine.calorie_macro import calculate_calories_and_macros
 from fitness_engine.hydration import calculate_hydration_target

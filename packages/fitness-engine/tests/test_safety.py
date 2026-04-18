@@ -2,7 +2,7 @@
 
 import pytest
 
-from fitness_contracts.models.safety import SafetyInput, SafetyResult
+from fitness_contracts.models.fitness_engine.safety import SafetyInput, SafetyResult
 
 from fitness_engine.safety import evaluate_safety
 

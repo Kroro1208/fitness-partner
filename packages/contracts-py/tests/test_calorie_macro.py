@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from fitness_contracts.models.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.fitness_engine.calorie_macro import CalorieMacroResult
 
 
 def _valid_payload(**overrides: object) -> dict[str, object]:

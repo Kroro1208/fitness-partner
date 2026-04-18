@@ -2,7 +2,10 @@
 
 import pytest
 
-from fitness_contracts.models.hydration import HydrationInput, HydrationResult
+from fitness_contracts.models.fitness_engine.hydration import (
+    HydrationInput,
+    HydrationResult,
+)
 
 from fitness_engine.hydration import calculate_hydration_target
 

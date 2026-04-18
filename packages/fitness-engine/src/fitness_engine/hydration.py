@@ -1,6 +1,9 @@
 """Hydration Engine: 水分目標の決定論的計算。"""
 
-from fitness_contracts.models.hydration import HydrationInput, HydrationResult
+from fitness_contracts.models.fitness_engine.hydration import (
+    HydrationInput,
+    HydrationResult,
+)
 
 _BASE_ML_PER_KG = 35
 _WORKOUT_BONUS_ML_PER_HOUR = 500

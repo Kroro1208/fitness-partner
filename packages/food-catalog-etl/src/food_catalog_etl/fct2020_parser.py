@@ -5,8 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fitness_contracts.models.food_item import FoodItem
-from fitness_contracts.models.nutrient import NutrientQuality, NutrientValue
+from fitness_contracts.models.food_catalog.food_item import FoodItem
+from fitness_contracts.models.food_catalog.nutrient import (
+    NutrientQuality,
+    NutrientValue,
+)
 
 logger = logging.getLogger(__name__)
 

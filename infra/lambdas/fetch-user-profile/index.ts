@@ -6,7 +6,7 @@ import type {
 import { requireUserId } from "../shared/auth";
 import { ProfileRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
-import { profileKey } from "../shared/keys";
+import { profileKey } from "../shared/keys/profile";
 import { notFound, ok, serverError, withServerError } from "../shared/response";
 
 export async function handler(

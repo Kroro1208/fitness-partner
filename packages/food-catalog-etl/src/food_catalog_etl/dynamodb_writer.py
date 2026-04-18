@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from fitness_contracts.models.food_item import FoodItem
+from fitness_contracts.models.food_catalog.food_item import FoodItem
 
 logger = logging.getLogger(__name__)
 

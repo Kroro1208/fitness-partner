@@ -6,8 +6,10 @@
 
 from typing import Literal
 
-from fitness_contracts.models.calorie_macro import CalorieMacroResult
-from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+from fitness_contracts.models.fitness_engine.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.fitness_engine.calorie_macro_input import (
+    CalorieMacroInput,
+)
 
 Sex = Literal["male", "female"]
 

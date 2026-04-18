@@ -2,8 +2,11 @@
 
 from unittest.mock import MagicMock
 
-from fitness_contracts.models.food_item import FoodItem
-from fitness_contracts.models.nutrient import NutrientQuality, NutrientValue
+from fitness_contracts.models.food_catalog.food_item import FoodItem
+from fitness_contracts.models.food_catalog.nutrient import (
+    NutrientQuality,
+    NutrientValue,
+)
 
 from food_catalog_etl.dynamodb_writer import write_food_items, write_import_manifest
 

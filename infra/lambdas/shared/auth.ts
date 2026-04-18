@@ -2,8 +2,8 @@ import type {
 	APIGatewayProxyEventV2WithJWTAuthorizer,
 	APIGatewayProxyStructuredResultV2,
 } from "aws-lambda";
+import { toUserId, type UserId } from "./brand";
 import { unauthorized } from "./response";
-import { toUserId, type UserId } from "./types";
 
 type AuthResult = { ok: true; userId: UserId } | { ok: false };
 type RequireUserResult =

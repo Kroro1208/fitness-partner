@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from fitness_contracts.models.nutrient import NutrientValue
+from fitness_contracts.models.food_catalog.nutrient import NutrientValue
 
 
 class FoodItem(BaseModel):

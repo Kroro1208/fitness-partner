@@ -3,10 +3,7 @@
 import { DynamoDBDocumentClient, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { mockClient } from "aws-sdk-client-mock";
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-	buildProfileUpdateExpression,
-	buildUpdateExpression,
-} from "../../lambdas/shared/dynamo-expression";
+import { buildProfileUpdateExpression } from "../../lambdas/shared/dynamo-expression";
 import { handler } from "../../lambdas/update-user-profile/index";
 import { makeEvent } from "./helpers/api-event";
 
@@ -16,19 +13,24 @@ beforeEach(() => {
 	ddbMock.reset();
 });
 
-// ── buildUpdateExpression ───────────────────────────────────────────
+// ── buildProfileUpdateExpression ────────────────────────────────────
 
-describe("buildUpdateExpression", () => {
+describe("buildProfileUpdateExpression", () => {
 	it("builds SET expression for single field", () => {
-		const expr = buildUpdateExpression({ name: "太郎" });
+		const expr = buildProfileUpdateExpression({
+			setFields: { name: "太郎" },
+			removeFields: [],
+		});
 		expect(expr.UpdateExpression).toBe("SET #name = :name");
 		expect(expr.ExpressionAttributeNames).toEqual({ "#name": "name" });
 		expect(expr.ExpressionAttributeValues).toEqual({ ":name": "太郎" });
-		expect(expr.removeFields).toEqual([]);
 	});
 
 	it("builds SET expression for multiple fields", () => {
-		const expr = buildUpdateExpression({ name: "太郎", age: 30 });
+		const expr = buildProfileUpdateExpression({
+			setFields: { name: "太郎", age: 30 },
+			removeFields: [],
+		});
 		expect(expr.UpdateExpression).toContain("#name = :name");
 		expect(expr.UpdateExpression).toContain("#age = :age");
 		expect(expr.ExpressionAttributeNames).toEqual({
@@ -39,17 +41,18 @@ describe("buildUpdateExpression", () => {
 			":name": "太郎",
 			":age": 30,
 		});
-		expect(expr.removeFields).toEqual([]);
 	});
 
-	it("assumes caller already filtered null/undefined values", () => {
-		const expr = buildUpdateExpression({
-			name: "太郎",
-			updated_at: "2026-04-13T00:00:00Z",
+	it("includes updated_at in SET when provided", () => {
+		const expr = buildProfileUpdateExpression({
+			setFields: {
+				name: "太郎",
+				updated_at: "2026-04-13T00:00:00Z",
+			},
+			removeFields: [],
 		});
 		expect(expr.UpdateExpression).toContain("#name = :name");
 		expect(expr.UpdateExpression).toContain("#updated_at = :updated_at");
-		expect(expr.removeFields).toEqual([]);
 	});
 
 	it("builds SET + REMOVE expression for profile clear", () => {

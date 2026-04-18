@@ -5,13 +5,13 @@ import type {
 	APIGatewayProxyStructuredResultV2,
 } from "aws-lambda";
 import { requireUserId } from "../shared/auth";
+import { unsafeBrand } from "../shared/brand";
 import { type Clock, systemClock } from "../shared/clock";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { type IdGenerator, systemIdGenerator } from "../shared/ids";
-import { mealKey } from "../shared/keys";
+import { mealKey } from "../shared/keys/meal";
 import { parseRequest } from "../shared/parse";
 import { ok, requireJsonBody, withServerError } from "../shared/response";
-import { unsafeBrand } from "../shared/types";
 
 const brandFoodId = unsafeBrand<"FoodId">();
 const brandIsoDate = unsafeBrand<"IsoDateString">();

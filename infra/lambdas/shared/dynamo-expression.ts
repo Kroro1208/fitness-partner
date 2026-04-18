@@ -1,28 +1,6 @@
-import type { ProfilePatch } from "./types";
+import type { ProfilePatch } from "./profile-types";
 
 type ExpressionFields = ProfilePatch & { updated_at?: string };
-
-export function buildUpdateExpression(fields: ExpressionFields): {
-	UpdateExpression: string;
-	ExpressionAttributeNames: Record<string, string>;
-	ExpressionAttributeValues: Record<string, unknown>;
-	removeFields: string[];
-} {
-	const entries = Object.entries(fields).filter(
-		([, value]) => value !== undefined && value !== null,
-	);
-
-	return {
-		UpdateExpression: `SET ${entries.map(([key]) => `#${key} = :${key}`).join(", ")}`,
-		ExpressionAttributeNames: Object.fromEntries(
-			entries.map(([key]) => [`#${key}`, key]),
-		),
-		ExpressionAttributeValues: Object.fromEntries(
-			entries.map(([key, value]) => [`:${key}`, value]),
-		),
-		removeFields: [],
-	};
-}
 
 export function buildProfileUpdateExpression(params: {
 	setFields: ExpressionFields;

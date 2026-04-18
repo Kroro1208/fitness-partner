@@ -17,26 +17,31 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from fitness_contracts.models.calorie_macro import CalorieMacroResult
-from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
-from fitness_contracts.models.hydration import HydrationInput, HydrationResult
-from fitness_contracts.models.safety import SafetyInput, SafetyResult
-from fitness_contracts.models.food_item import FoodItem
-from fitness_contracts.models.nutrient import NutrientValue
-from fitness_contracts.models.recipe_template import (
-    Ingredient,
-    RecipeTemplate,
+from fitness_contracts.models.fitness_engine.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.fitness_engine.calorie_macro_input import (
+    CalorieMacroInput,
 )
-from fitness_contracts.models.supplement import (
+from fitness_contracts.models.fitness_engine.hydration import (
+    HydrationInput,
+    HydrationResult,
+)
+from fitness_contracts.models.fitness_engine.safety import SafetyInput, SafetyResult
+from fitness_contracts.models.fitness_engine.supplement import (
     SupplementInput,
     SupplementRecommendation,
     SupplementRecommendationList,
 )
-from fitness_contracts.models.update_user_profile_input import (
+from fitness_contracts.models.food_catalog.food_item import FoodItem
+from fitness_contracts.models.food_catalog.nutrient import NutrientValue
+from fitness_contracts.models.food_catalog.recipe_template import (
+    Ingredient,
+    RecipeTemplate,
+)
+from fitness_contracts.models.logging.log_meal_input import LogMealInput
+from fitness_contracts.models.logging.log_weight_input import LogWeightInput
+from fitness_contracts.models.profile.update_user_profile_input import (
     UpdateUserProfileInput,
 )
-from fitness_contracts.models.log_meal_input import LogMealInput
-from fitness_contracts.models.log_weight_input import LogWeightInput
 
 MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("CalorieMacroInput", CalorieMacroInput),

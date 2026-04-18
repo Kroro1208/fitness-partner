@@ -2,8 +2,10 @@
 
 import pytest
 
-from fitness_contracts.models.calorie_macro import CalorieMacroResult
-from fitness_contracts.models.calorie_macro_input import CalorieMacroInput
+from fitness_contracts.models.fitness_engine.calorie_macro import CalorieMacroResult
+from fitness_contracts.models.fitness_engine.calorie_macro_input import (
+    CalorieMacroInput,
+)
 
 from fitness_engine.calorie_macro import (
     calculate_bmr,

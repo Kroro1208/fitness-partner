@@ -3,11 +3,11 @@
 import pytest
 from pydantic import ValidationError
 
-from fitness_contracts.models.update_user_profile_input import (
+from fitness_contracts.models.logging.log_meal_input import LogMealInput
+from fitness_contracts.models.logging.log_weight_input import LogWeightInput
+from fitness_contracts.models.profile.update_user_profile_input import (
     UpdateUserProfileInput,
 )
-from fitness_contracts.models.log_meal_input import LogMealInput
-from fitness_contracts.models.log_weight_input import LogWeightInput
 
 
 # ── UpdateUserProfileInput ───────────────────────────────────────────

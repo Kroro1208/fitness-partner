@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from fitness_contracts.models.nutrient import NutrientQuality
+from fitness_contracts.models.food_catalog.nutrient import NutrientQuality
 
 from food_catalog_etl.fct2020_parser import parse_nutrient, parse_row, parse_workbook
 

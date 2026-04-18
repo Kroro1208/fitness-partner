@@ -4,9 +4,10 @@ import type {
 	APIGatewayProxyStructuredResultV2,
 } from "aws-lambda";
 import { requireUserId } from "../shared/auth";
+import { toIsoDateString } from "../shared/brand";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
-import { planKey } from "../shared/keys";
+import { planKey } from "../shared/keys/plan";
 import {
 	badRequest,
 	notFound,
@@ -14,7 +15,6 @@ import {
 	serverError,
 	withServerError,
 } from "../shared/response";
-import { toIsoDateString } from "../shared/types";
 
 export async function handler(
 	event: APIGatewayProxyEventV2WithJWTAuthorizer,

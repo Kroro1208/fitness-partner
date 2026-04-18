@@ -1,20 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-	mealKey,
-	planKey,
-	profileKey,
-	weightKey,
-} from "../../../lambdas/shared/keys";
-import type {
-	IsoDateString,
-	MealId,
-	UserId,
-} from "../../../lambdas/shared/types";
-import {
+	type IsoDateString,
+	type MealId,
 	toIsoDateString,
 	toMealId,
 	toUserId,
-} from "../../../lambdas/shared/types";
+	type UserId,
+} from "../../../lambdas/shared/brand";
+import { mealKey } from "../../../lambdas/shared/keys/meal";
+import { planKey } from "../../../lambdas/shared/keys/plan";
+import { profileKey } from "../../../lambdas/shared/keys/profile";
+import { weightKey } from "../../../lambdas/shared/keys/weight";
 
 function requireUser(value: string): UserId {
 	const v = toUserId(value);

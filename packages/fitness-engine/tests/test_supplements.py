@@ -2,7 +2,7 @@
 
 import pytest
 
-from fitness_contracts.models.supplement import (
+from fitness_contracts.models.fitness_engine.supplement import (
     SupplementInput,
     SupplementRecommendationList,
 )
