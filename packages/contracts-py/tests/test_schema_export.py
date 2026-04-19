@@ -46,7 +46,11 @@ def test_update_user_profile_schema_preserves_patch_semantics(tmp_path: Path):
     schema = json.loads(
         (tmp_path / "UpdateUserProfileInput.schema.json").read_text(),
     )
-    assert schema["x-at-least-one-not-null"] == [
+    # Plan 07: Onboarding flow extended UpdateUserProfileInput to 43 fields.
+    # 具体フィールドのリスト固定は契約変更のたびに壊れるため、契約上重要な
+    # 不変条件 (コア 9 フィールドと Onboarding 特有フィールドの包含) を確認する。
+    fields = schema["x-at-least-one-not-null"]
+    core_fields = {
         "name",
         "age",
         "sex",
@@ -56,6 +60,14 @@ def test_update_user_profile_schema_preserves_patch_semantics(tmp_path: Path):
         "desired_pace",
         "sleep_hours",
         "stress_level",
-    ]
+    }
+    onboarding_fields = {
+        "onboarding_stage",
+        "blocked_reason",
+        "is_pregnant_or_breastfeeding",
+        "has_eating_disorder_history",
+    }
+    assert core_fields.issubset(set(fields))
+    assert onboarding_fields.issubset(set(fields))
     assert "default" not in schema["properties"]["name"]
     assert "required" not in schema

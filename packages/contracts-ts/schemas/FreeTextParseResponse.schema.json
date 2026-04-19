@@ -1,0 +1,24 @@
+{
+	"description": "Onboarding の free-text parse 出力。構造化フィールドは上書きしない。",
+	"properties": {
+		"note_field": {
+			"enum": ["lifestyle_note", "preferences_note", "snacks_note"],
+			"title": "Note Field",
+			"type": "string"
+		},
+		"extracted_note": {
+			"title": "Extracted Note",
+			"type": "string"
+		},
+		"suggested_tags": {
+			"items": {
+				"type": "string"
+			},
+			"title": "Suggested Tags",
+			"type": "array"
+		}
+	},
+	"required": ["note_field", "extracted_note", "suggested_tags"],
+	"title": "FreeTextParseResponse",
+	"type": "object"
+}

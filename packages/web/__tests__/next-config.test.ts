@@ -5,7 +5,9 @@ process.env.__VARLOCK_ENV ??= JSON.stringify({ config: {} });
 const { default: nextConfig, buildSecurityHeaders } = await import(
 	"../next.config"
 );
-const resolvedNextConfig = await nextConfig("phase-test", {});
+const resolvedNextConfig = await nextConfig("phase-test", {
+	defaultConfig: {},
+});
 
 describe("next config security hardening", () => {
 	it("disables x-powered-by", () => {

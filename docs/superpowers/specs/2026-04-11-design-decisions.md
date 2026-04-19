@@ -479,6 +479,13 @@ components/
 - PostHog ドキュメント URL を追加
 - Vercel AI SDK / shadcn ドキュメント URL を追加
 
+### 反映ステータス (2026-04-19 Plan 07 時点)
+
+- ✅ `docs/ui-architecture.md` §5 に `/onboarding/blocked` を追加
+- ✅ `docs/ui-architecture.md` §7.1 に Coach prompt 先読み / Free-text parse / Safety 決定的ルールを追記
+- ✅ `docs/architecture.md` §15.4 に blocked 画面遷移フロー (二重防御) を追記
+- §0 / §8 / §9 / §16 / §17 / §18 / §21 (docs/architecture.md) および §8 / §11 / §13 / §17 / §24 / §25 (docs/ui-architecture.md) の反映は Plan 08 以降で対応する
+
 ---
 
 ## 7. 次のアクション

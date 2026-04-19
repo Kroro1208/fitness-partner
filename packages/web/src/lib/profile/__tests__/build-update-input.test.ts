@@ -14,42 +14,54 @@ describe("buildUpdateInput", () => {
 
 	it("数値フィールドは Number に変換して格納する", () => {
 		const result = buildUpdateInput(
-			["age", "weight_kg"],
-			{ age: "30", weight_kg: "65.5" },
-			{ age: 29, weight_kg: 70 },
+			["age", "weightKg"],
+			{ age: "30", weightKg: "65.5" },
+			{ age: 29, weightKg: 70 },
 		);
 		expect(result).toEqual({
 			ok: true,
-			value: { age: 30, weight_kg: 65.5 },
+			value: { age: 30, weightKg: 65.5 },
 		});
 	});
 
 	it("複数フィールド同時変更でも全て反映される", () => {
 		const result = buildUpdateInput(
-			["age", "sex", "height_cm"],
-			{ age: "25", sex: "male", height_cm: "170" },
-			{ age: 20, sex: "female", height_cm: 160 },
+			["age", "sex", "heightCm"],
+			{ age: "25", sex: "male", heightCm: "170" },
+			{ age: 20, sex: "female", heightCm: 160 },
 		);
 		expect(result).toEqual({
 			ok: true,
-			value: { age: 25, sex: "male", height_cm: 170 },
+			value: { age: 25, sex: "male", heightCm: 170 },
+		});
+	});
+
+	it("列挙フィールドは許可された値だけを受け入れる", () => {
+		const result = buildUpdateInput(
+			["desiredPace", "stressLevel"],
+			{ desiredPace: "steady", stressLevel: "moderate" },
+			{ desiredPace: "aggressive", stressLevel: "high" },
+		);
+		expect(result).toEqual({
+			ok: true,
+			value: { desiredPace: "steady", stressLevel: "moderate" },
 		});
 	});
 
 	it("入力が空文字で元値が非 null の場合は null を送る", () => {
 		const result = buildUpdateInput(
-			["weight_kg"],
-			{ weight_kg: "" },
-			{ weight_kg: 70 },
+			["weightKg"],
+			{ weightKg: "" },
+			{ weightKg: 70 },
 		);
-		expect(result).toEqual({ ok: true, value: { weight_kg: null } });
+		expect(result).toEqual({ ok: true, value: { weightKg: null } });
 	});
 
 	it("入力が空文字で元値も null の場合はフィールドを送らない", () => {
 		const result = buildUpdateInput(
-			["weight_kg"],
-			{ weight_kg: "" },
-			{ weight_kg: null },
+			["weightKg"],
+			{ weightKg: "" },
+			{ weightKg: null },
 		);
 		expect(result).toEqual({ ok: true, value: {} });
 	});
@@ -62,12 +74,24 @@ describe("buildUpdateInput", () => {
 		});
 	});
 
+	it("列挙フィールドに不正な文字列が入ったらエラーを返す", () => {
+		const result = buildUpdateInput(
+			["sex"],
+			{ sex: "unknown" },
+			{ sex: "female" },
+		);
+		expect(result).toEqual({
+			ok: false,
+			error: { field: "sex", message: "sex の値が不正です" },
+		});
+	});
+
 	it("前後の空白はトリムした上で空判定する", () => {
 		const result = buildUpdateInput(
-			["weight_kg"],
-			{ weight_kg: "   " },
-			{ weight_kg: 70 },
+			["weightKg"],
+			{ weightKg: "   " },
+			{ weightKg: 70 },
 		);
-		expect(result).toEqual({ ok: true, value: { weight_kg: null } });
+		expect(result).toEqual({ ok: true, value: { weightKg: null } });
 	});
 });

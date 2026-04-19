@@ -32,7 +32,7 @@ describe("fetchUserProfile", () => {
 
 		expect(result.statusCode).toBe(200);
 		const body = JSON.parse(String(result.body));
-		expect(body.profile).toEqual({ name: "太郎", age: 30 });
+		expect(body.profile).toMatchObject({ name: "太郎", age: 30 });
 		expect(body.profile.pk).toBeUndefined();
 		expect(body.profile.sk).toBeUndefined();
 	});

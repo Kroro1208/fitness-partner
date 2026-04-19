@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import type { CognitoTokens } from "./cognito";
+import { type CognitoTokens, cognitoRefreshTokens } from "./cognito";
 import { decodeSessionFromIdToken } from "./jwt";
 
 export const COOKIE_ID = "__fitness_id";
@@ -76,4 +76,19 @@ export async function clearSession(): Promise<void> {
 	store.delete(COOKIE_ID);
 	store.delete(COOKIE_ACCESS);
 	store.delete(COOKIE_REFRESH);
+}
+
+export async function getValidAccessTokenServer(): Promise<string | null> {
+	const accessToken = await getAccessToken();
+	if (accessToken) return accessToken;
+	const refreshToken = await getRefreshToken();
+	if (!refreshToken) return null;
+	try {
+		const refreshed = await cognitoRefreshTokens(refreshToken);
+		await setRefreshedTokens(refreshed.idToken, refreshed.accessToken);
+		return refreshed.accessToken;
+	} catch {
+		await clearSession();
+		return null;
+	}
 }

@@ -1,0 +1,28 @@
+{
+	"description": "Onboarding Coach prompt 生成の入力。",
+	"properties": {
+		"target_stage": {
+			"enum": [
+				"safety",
+				"stats",
+				"lifestyle",
+				"preferences",
+				"snacks",
+				"feasibility",
+				"review",
+				"complete",
+				"blocked"
+			],
+			"title": "Target Stage",
+			"type": "string"
+		},
+		"profile_snapshot": {
+			"additionalProperties": true,
+			"title": "Profile Snapshot",
+			"type": "object"
+		}
+	},
+	"required": ["target_stage", "profile_snapshot"],
+	"title": "CoachPromptRequest",
+	"type": "object"
+}

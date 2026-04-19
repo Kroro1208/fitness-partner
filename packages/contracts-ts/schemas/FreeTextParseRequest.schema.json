@@ -1,0 +1,22 @@
+{
+	"description": "Onboarding の free-text parse 入力。",
+	"properties": {
+		"stage": {
+			"enum": ["lifestyle", "preferences", "snacks"],
+			"title": "Stage",
+			"type": "string"
+		},
+		"free_text": {
+			"title": "Free Text",
+			"type": "string"
+		},
+		"structured_snapshot": {
+			"additionalProperties": true,
+			"title": "Structured Snapshot",
+			"type": "object"
+		}
+	},
+	"required": ["stage", "free_text", "structured_snapshot"],
+	"title": "FreeTextParseRequest",
+	"type": "object"
+}

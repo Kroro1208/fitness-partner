@@ -66,6 +66,27 @@ export const CalorieMacroResultSchema = z
 		"Calorie Macro Engine の deterministic 出力。整数値は kcal またはグラム単位 (注記がない限り)。",
 	);
 
+export const CoachPromptRequestSchema = z
+	.object({
+		target_stage: z.enum([
+			"safety",
+			"stats",
+			"lifestyle",
+			"preferences",
+			"snacks",
+			"feasibility",
+			"review",
+			"complete",
+			"blocked",
+		]),
+		profile_snapshot: z.record(z.string(), z.any()),
+	})
+	.describe("Onboarding Coach prompt 生成の入力。");
+
+export const CoachPromptResponseSchema = z
+	.object({ prompt: z.string(), cached: z.boolean() })
+	.describe("Onboarding Coach prompt 生成の出力。");
+
 export const FoodItemSchema = z
 	.object({
 		food_id: z.string().describe("FCT2020 食品番号 (例: 01001)"),
@@ -127,6 +148,24 @@ export const FoodItemSchema = z
 		source_row_number: z.number().int().describe("Excel の行番号"),
 	})
 	.describe("FCT2020 ベースの食品データ。全栄養値は 100g あたり。");
+
+export const FreeTextParseRequestSchema = z
+	.object({
+		stage: z.enum(["lifestyle", "preferences", "snacks"]),
+		free_text: z.string(),
+		structured_snapshot: z.record(z.string(), z.any()),
+	})
+	.describe("Onboarding の free-text parse 入力。");
+
+export const FreeTextParseResponseSchema = z
+	.object({
+		note_field: z.enum(["lifestyle_note", "preferences_note", "snacks_note"]),
+		extracted_note: z.string(),
+		suggested_tags: z.array(z.string()),
+	})
+	.describe(
+		"Onboarding の free-text parse 出力。構造化フィールドは上書きしない。",
+	);
 
 export const HydrationInputSchema = z
 	.object({
@@ -343,6 +382,11 @@ export const UpdateUserProfileInputSchema = z
 		sex: z.union([z.enum(["male", "female"]), z.null()]).optional(),
 		height_cm: z.union([z.number().gt(0).lt(300), z.null()]).optional(),
 		weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).optional(),
+		goal_weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).optional(),
+		goal_description: z.union([z.string(), z.null()]).optional(),
+		desired_pace: z
+			.union([z.enum(["steady", "aggressive"]), z.null()])
+			.optional(),
 		activity_level: z
 			.union([
 				z.enum([
@@ -355,13 +399,86 @@ export const UpdateUserProfileInputSchema = z
 				z.null(),
 			])
 			.optional(),
-		desired_pace: z
-			.union([z.enum(["steady", "aggressive"]), z.null()])
+		job_type: z
+			.union([
+				z.enum([
+					"desk",
+					"standing",
+					"light_physical",
+					"manual_labour",
+					"outdoor",
+				]),
+				z.null(),
+			])
 			.optional(),
+		workouts_per_week: z
+			.union([z.number().int().gte(0).lte(14), z.null()])
+			.optional(),
+		workout_types: z.union([z.array(z.string()), z.null()]).optional(),
 		sleep_hours: z.union([z.number().gte(0).lte(24), z.null()]).optional(),
 		stress_level: z
 			.union([z.enum(["low", "moderate", "high"]), z.null()])
 			.optional(),
+		alcohol_per_week: z.union([z.string(), z.null()]).optional(),
+		favorite_meals: z.union([z.array(z.string()).max(5), z.null()]).optional(),
+		hated_foods: z.union([z.array(z.string()), z.null()]).optional(),
+		restrictions: z.union([z.array(z.string()), z.null()]).optional(),
+		cooking_preference: z
+			.union([z.enum(["scratch", "quick", "batch", "mixed"]), z.null()])
+			.optional(),
+		food_adventurousness: z
+			.union([z.number().int().gte(1).lte(10), z.null()])
+			.optional(),
+		current_snacks: z.union([z.array(z.string()), z.null()]).optional(),
+		snacking_reason: z
+			.union([z.enum(["hunger", "boredom", "habit", "mixed"]), z.null()])
+			.optional(),
+		snack_taste_preference: z
+			.union([z.enum(["sweet", "savory", "both"]), z.null()])
+			.optional(),
+		late_night_snacking: z.union([z.boolean(), z.null()]).optional(),
+		eating_out_style: z
+			.union([z.enum(["mostly_home", "mostly_eating_out", "mixed"]), z.null()])
+			.optional(),
+		budget_level: z
+			.union([z.enum(["low", "medium", "high"]), z.null()])
+			.optional(),
+		meal_frequency_preference: z
+			.union([z.number().int().gte(1).lte(6), z.null()])
+			.optional(),
+		location_region: z.union([z.string(), z.null()]).optional(),
+		kitchen_access: z.union([z.string(), z.null()]).optional(),
+		convenience_store_usage: z
+			.union([z.enum(["low", "medium", "high"]), z.null()])
+			.optional(),
+		has_medical_condition: z.union([z.boolean(), z.null()]).optional(),
+		is_under_treatment: z.union([z.boolean(), z.null()]).optional(),
+		on_medication: z.union([z.boolean(), z.null()]).optional(),
+		is_pregnant_or_breastfeeding: z.union([z.boolean(), z.null()]).optional(),
+		has_doctor_diet_restriction: z.union([z.boolean(), z.null()]).optional(),
+		has_eating_disorder_history: z.union([z.boolean(), z.null()]).optional(),
+		medical_condition_note: z.union([z.string(), z.null()]).optional(),
+		medication_note: z.union([z.string(), z.null()]).optional(),
+		onboarding_stage: z
+			.union([
+				z.enum([
+					"safety",
+					"stats",
+					"lifestyle",
+					"preferences",
+					"snacks",
+					"feasibility",
+					"review",
+					"complete",
+					"blocked",
+				]),
+				z.null(),
+			])
+			.optional(),
+		blocked_reason: z.union([z.string(), z.null()]).optional(),
+		preferences_note: z.union([z.string(), z.null()]).optional(),
+		snacks_note: z.union([z.string(), z.null()]).optional(),
+		lifestyle_note: z.union([z.string(), z.null()]).optional(),
 	})
 	.describe("プロフィール部分更新の入力。")
 	.refine(
@@ -371,37 +488,173 @@ export const UpdateUserProfileInputSchema = z
 			(value.sex !== undefined && value.sex !== null) ||
 			(value.height_cm !== undefined && value.height_cm !== null) ||
 			(value.weight_kg !== undefined && value.weight_kg !== null) ||
-			(value.activity_level !== undefined && value.activity_level !== null) ||
+			(value.goal_weight_kg !== undefined && value.goal_weight_kg !== null) ||
+			(value.goal_description !== undefined &&
+				value.goal_description !== null) ||
 			(value.desired_pace !== undefined && value.desired_pace !== null) ||
+			(value.activity_level !== undefined && value.activity_level !== null) ||
+			(value.job_type !== undefined && value.job_type !== null) ||
+			(value.workouts_per_week !== undefined &&
+				value.workouts_per_week !== null) ||
+			(value.workout_types !== undefined && value.workout_types !== null) ||
 			(value.sleep_hours !== undefined && value.sleep_hours !== null) ||
-			(value.stress_level !== undefined && value.stress_level !== null),
+			(value.stress_level !== undefined && value.stress_level !== null) ||
+			(value.alcohol_per_week !== undefined &&
+				value.alcohol_per_week !== null) ||
+			(value.favorite_meals !== undefined && value.favorite_meals !== null) ||
+			(value.hated_foods !== undefined && value.hated_foods !== null) ||
+			(value.restrictions !== undefined && value.restrictions !== null) ||
+			(value.cooking_preference !== undefined &&
+				value.cooking_preference !== null) ||
+			(value.food_adventurousness !== undefined &&
+				value.food_adventurousness !== null) ||
+			(value.current_snacks !== undefined && value.current_snacks !== null) ||
+			(value.snacking_reason !== undefined && value.snacking_reason !== null) ||
+			(value.snack_taste_preference !== undefined &&
+				value.snack_taste_preference !== null) ||
+			(value.late_night_snacking !== undefined &&
+				value.late_night_snacking !== null) ||
+			(value.eating_out_style !== undefined &&
+				value.eating_out_style !== null) ||
+			(value.budget_level !== undefined && value.budget_level !== null) ||
+			(value.meal_frequency_preference !== undefined &&
+				value.meal_frequency_preference !== null) ||
+			(value.location_region !== undefined && value.location_region !== null) ||
+			(value.kitchen_access !== undefined && value.kitchen_access !== null) ||
+			(value.convenience_store_usage !== undefined &&
+				value.convenience_store_usage !== null) ||
+			(value.has_medical_condition !== undefined &&
+				value.has_medical_condition !== null) ||
+			(value.is_under_treatment !== undefined &&
+				value.is_under_treatment !== null) ||
+			(value.on_medication !== undefined && value.on_medication !== null) ||
+			(value.is_pregnant_or_breastfeeding !== undefined &&
+				value.is_pregnant_or_breastfeeding !== null) ||
+			(value.has_doctor_diet_restriction !== undefined &&
+				value.has_doctor_diet_restriction !== null) ||
+			(value.has_eating_disorder_history !== undefined &&
+				value.has_eating_disorder_history !== null) ||
+			(value.medical_condition_note !== undefined &&
+				value.medical_condition_note !== null) ||
+			(value.medication_note !== undefined && value.medication_note !== null) ||
+			(value.onboarding_stage !== undefined &&
+				value.onboarding_stage !== null) ||
+			(value.blocked_reason !== undefined && value.blocked_reason !== null) ||
+			(value.preferences_note !== undefined &&
+				value.preferences_note !== null) ||
+			(value.snacks_note !== undefined && value.snacks_note !== null) ||
+			(value.lifestyle_note !== undefined && value.lifestyle_note !== null),
 		{ message: "At least one field must be provided" },
 	);
 
 export const UserProfileSchema = z
 	.object({
-		name: z.string().optional(),
-		age: z.number().int().gte(18).lte(120).optional(),
-		sex: z.enum(["male", "female"]).optional(),
-		height_cm: z.number().gt(0).lt(300).optional(),
-		weight_kg: z.number().gt(0).lt(500).optional(),
+		name: z.union([z.string(), z.null()]).default(null),
+		age: z.union([z.number().int().gte(18).lte(120), z.null()]).default(null),
+		sex: z.union([z.enum(["male", "female"]), z.null()]).default(null),
+		height_cm: z.union([z.number().gt(0).lt(300), z.null()]).default(null),
+		weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).default(null),
+		goal_weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).default(null),
+		goal_description: z.union([z.string(), z.null()]).default(null),
+		desired_pace: z
+			.union([z.enum(["steady", "aggressive"]), z.null()])
+			.default(null),
 		activity_level: z
-			.enum([
-				"sedentary",
-				"lightly_active",
-				"moderately_active",
-				"very_active",
-				"extremely_active",
+			.union([
+				z.enum([
+					"sedentary",
+					"lightly_active",
+					"moderately_active",
+					"very_active",
+					"extremely_active",
+				]),
+				z.null(),
 			])
-			.optional(),
-		desired_pace: z.enum(["steady", "aggressive"]).optional(),
-		sleep_hours: z.number().gte(0).lte(24).optional(),
-		stress_level: z.enum(["low", "moderate", "high"]).optional(),
-		updated_at: z
-			.string()
-			.describe("ISO 8601 タイムスタンプ。update-user-profile が書き込む。")
-			.optional(),
+			.default(null),
+		job_type: z
+			.union([
+				z.enum([
+					"desk",
+					"standing",
+					"light_physical",
+					"manual_labour",
+					"outdoor",
+				]),
+				z.null(),
+			])
+			.default(null),
+		workouts_per_week: z
+			.union([z.number().int().gte(0).lte(14), z.null()])
+			.default(null),
+		workout_types: z.union([z.array(z.string()), z.null()]).default(null),
+		sleep_hours: z.union([z.number().gte(0).lte(24), z.null()]).default(null),
+		stress_level: z
+			.union([z.enum(["low", "moderate", "high"]), z.null()])
+			.default(null),
+		alcohol_per_week: z.union([z.string(), z.null()]).default(null),
+		favorite_meals: z
+			.union([z.array(z.string()).max(5), z.null()])
+			.default(null),
+		hated_foods: z.union([z.array(z.string()), z.null()]).default(null),
+		restrictions: z.union([z.array(z.string()), z.null()]).default(null),
+		cooking_preference: z
+			.union([z.enum(["scratch", "quick", "batch", "mixed"]), z.null()])
+			.default(null),
+		food_adventurousness: z
+			.union([z.number().int().gte(1).lte(10), z.null()])
+			.default(null),
+		current_snacks: z.union([z.array(z.string()), z.null()]).default(null),
+		snacking_reason: z
+			.union([z.enum(["hunger", "boredom", "habit", "mixed"]), z.null()])
+			.default(null),
+		snack_taste_preference: z
+			.union([z.enum(["sweet", "savory", "both"]), z.null()])
+			.default(null),
+		late_night_snacking: z.union([z.boolean(), z.null()]).default(null),
+		eating_out_style: z
+			.union([z.enum(["mostly_home", "mostly_eating_out", "mixed"]), z.null()])
+			.default(null),
+		budget_level: z
+			.union([z.enum(["low", "medium", "high"]), z.null()])
+			.default(null),
+		meal_frequency_preference: z
+			.union([z.number().int().gte(1).lte(6), z.null()])
+			.default(null),
+		location_region: z.union([z.string(), z.null()]).default(null),
+		kitchen_access: z.union([z.string(), z.null()]).default(null),
+		convenience_store_usage: z
+			.union([z.enum(["low", "medium", "high"]), z.null()])
+			.default(null),
+		has_medical_condition: z.union([z.boolean(), z.null()]).default(null),
+		is_under_treatment: z.union([z.boolean(), z.null()]).default(null),
+		on_medication: z.union([z.boolean(), z.null()]).default(null),
+		is_pregnant_or_breastfeeding: z
+			.union([z.boolean(), z.null()])
+			.default(null),
+		has_doctor_diet_restriction: z.union([z.boolean(), z.null()]).default(null),
+		has_eating_disorder_history: z.union([z.boolean(), z.null()]).default(null),
+		medical_condition_note: z.union([z.string(), z.null()]).default(null),
+		medication_note: z.union([z.string(), z.null()]).default(null),
+		onboarding_stage: z
+			.union([
+				z.enum([
+					"safety",
+					"stats",
+					"lifestyle",
+					"preferences",
+					"snacks",
+					"feasibility",
+					"review",
+					"complete",
+					"blocked",
+				]),
+				z.null(),
+			])
+			.default(null),
+		blocked_reason: z.union([z.string(), z.null()]).default(null),
+		preferences_note: z.union([z.string(), z.null()]).default(null),
+		snacks_note: z.union([z.string(), z.null()]).default(null),
+		lifestyle_note: z.union([z.string(), z.null()]).default(null),
+		updated_at: z.union([z.string(), z.null()]).default(null),
 	})
-	.describe(
-		"永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。",
-	);
+	.describe("永続化されたユーザープロフィール。全フィールド optional。");

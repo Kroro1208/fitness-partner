@@ -39,9 +39,18 @@ from fitness_contracts.models.food_catalog.recipe_template import (
 )
 from fitness_contracts.models.logging.log_meal_input import LogMealInput
 from fitness_contracts.models.logging.log_weight_input import LogWeightInput
+from fitness_contracts.models.onboarding.coach_prompt import (
+    CoachPromptRequest,
+    CoachPromptResponse,
+)
+from fitness_contracts.models.onboarding.free_text_parse import (
+    FreeTextParseRequest,
+    FreeTextParseResponse,
+)
 from fitness_contracts.models.profile.update_user_profile_input import (
     UpdateUserProfileInput,
 )
+from fitness_contracts.models.profile.user_profile import UserProfile
 
 MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("CalorieMacroInput", CalorieMacroInput),
@@ -59,6 +68,11 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("Ingredient", Ingredient),
     ("RecipeTemplate", RecipeTemplate),
     ("UpdateUserProfileInput", UpdateUserProfileInput),
+    ("UserProfile", UserProfile),
+    ("CoachPromptRequest", CoachPromptRequest),
+    ("CoachPromptResponse", CoachPromptResponse),
+    ("FreeTextParseRequest", FreeTextParseRequest),
+    ("FreeTextParseResponse", FreeTextParseResponse),
     ("LogMealInput", LogMealInput),
     ("LogWeightInput", LogWeightInput),
 ]

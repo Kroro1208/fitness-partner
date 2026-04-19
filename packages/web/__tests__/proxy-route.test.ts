@@ -51,10 +51,13 @@ function invokeProxy(url: string = PROXY_URL) {
 	});
 }
 
-function authHeader(init: unknown): string | null {
-	const headers = (init as RequestInit).headers;
+function authHeader(init: RequestInit | undefined): string | null {
+	const headers = init?.headers;
 	expect(headers).toBeInstanceOf(Headers);
-	return (headers as Headers).get("Authorization");
+	if (!(headers instanceof Headers)) {
+		throw new Error("Expected fetch init headers to be a Headers instance");
+	}
+	return headers.get("Authorization");
 }
 
 describe("proxy route", () => {
@@ -186,7 +189,7 @@ describe("proxy route", () => {
 
 	describe("設定エラー", () => {
 		it("API_GATEWAY_URL が未設定の場合は 500 を返す", async () => {
-			delete process.env.API_GATEWAY_URL;
+			Reflect.deleteProperty(process.env, "API_GATEWAY_URL");
 			getAccessTokenMock.mockResolvedValueOnce("access-token");
 			const fetchSpy = vi.spyOn(globalThis, "fetch");
 

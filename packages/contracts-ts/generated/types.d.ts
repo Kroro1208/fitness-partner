@@ -81,6 +81,33 @@ export interface CalorieMacroResult {
 }
 
 /**
+ * Onboarding Coach prompt 生成の入力。
+ */
+export interface CoachPromptRequest {
+	target_stage:
+		| "safety"
+		| "stats"
+		| "lifestyle"
+		| "preferences"
+		| "snacks"
+		| "feasibility"
+		| "review"
+		| "complete"
+		| "blocked";
+	profile_snapshot: {
+		[k: string]: unknown;
+	};
+}
+
+/**
+ * Onboarding Coach prompt 生成の出力。
+ */
+export interface CoachPromptResponse {
+	prompt: string;
+	cached: boolean;
+}
+
+/**
  * FCT2020 の栄養値の品質区分。
  */
 export type NutrientQuality = "exact" | "trace" | "missing";
@@ -126,6 +153,26 @@ export interface FoodItem {
 export interface NutrientValue {
 	value: number;
 	quality: NutrientQuality;
+}
+
+/**
+ * Onboarding の free-text parse 入力。
+ */
+export interface FreeTextParseRequest {
+	stage: "lifestyle" | "preferences" | "snacks";
+	free_text: string;
+	structured_snapshot: {
+		[k: string]: unknown;
+	};
+}
+
+/**
+ * Onboarding の free-text parse 出力。構造化フィールドは上書きしない。
+ */
+export interface FreeTextParseResponse {
+	note_field: "lifestyle_note" | "preferences_note" | "snacks_note";
+	extracted_note: string;
+	suggested_tags: string[];
 }
 
 /**
@@ -357,6 +404,9 @@ export interface UpdateUserProfileInput {
 	sex?: ("male" | "female") | null;
 	height_cm?: number | null;
 	weight_kg?: number | null;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
 	activity_level?:
 		| (
 				| "sedentary"
@@ -366,31 +416,138 @@ export interface UpdateUserProfileInput {
 				| "extremely_active"
 		  )
 		| null;
-	desired_pace?: ("steady" | "aggressive") | null;
+	job_type?:
+		| ("desk" | "standing" | "light_physical" | "manual_labour" | "outdoor")
+		| null;
+	workouts_per_week?: number | null;
+	workout_types?: string[] | null;
 	sleep_hours?: number | null;
 	stress_level?: ("low" | "moderate" | "high") | null;
+	alcohol_per_week?: string | null;
+	favorite_meals?:
+		| []
+		| [string]
+		| [string, string]
+		| [string, string, string]
+		| [string, string, string, string]
+		| [string, string, string, string, string]
+		| null;
+	hated_foods?: string[] | null;
+	restrictions?: string[] | null;
+	cooking_preference?: ("scratch" | "quick" | "batch" | "mixed") | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[] | null;
+	snacking_reason?: ("hunger" | "boredom" | "habit" | "mixed") | null;
+	snack_taste_preference?: ("sweet" | "savory" | "both") | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: ("mostly_home" | "mostly_eating_out" | "mixed") | null;
+	budget_level?: ("low" | "medium" | "high") | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: ("low" | "medium" | "high") | null;
+	has_medical_condition?: boolean | null;
+	is_under_treatment?: boolean | null;
+	on_medication?: boolean | null;
+	is_pregnant_or_breastfeeding?: boolean | null;
+	has_doctor_diet_restriction?: boolean | null;
+	has_eating_disorder_history?: boolean | null;
+	medical_condition_note?: string | null;
+	medication_note?: string | null;
+	onboarding_stage?:
+		| (
+				| "safety"
+				| "stats"
+				| "lifestyle"
+				| "preferences"
+				| "snacks"
+				| "feasibility"
+				| "review"
+				| "complete"
+				| "blocked"
+		  )
+		| null;
+	blocked_reason?: string | null;
+	preferences_note?: string | null;
+	snacks_note?: string | null;
+	lifestyle_note?: string | null;
 }
 
 /**
- * 永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。
+ * 永続化されたユーザープロフィール。全フィールド optional。
  */
 export interface UserProfile {
-	name?: string;
-	age?: number;
-	sex?: "male" | "female";
-	height_cm?: number;
-	weight_kg?: number;
+	name?: string | null;
+	age?: number | null;
+	sex?: ("male" | "female") | null;
+	height_cm?: number | null;
+	weight_kg?: number | null;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
 	activity_level?:
-		| "sedentary"
-		| "lightly_active"
-		| "moderately_active"
-		| "very_active"
-		| "extremely_active";
-	desired_pace?: "steady" | "aggressive";
-	sleep_hours?: number;
-	stress_level?: "low" | "moderate" | "high";
-	/**
-	 * ISO 8601 タイムスタンプ。update-user-profile が書き込む。
-	 */
-	updated_at?: string;
+		| (
+				| "sedentary"
+				| "lightly_active"
+				| "moderately_active"
+				| "very_active"
+				| "extremely_active"
+		  )
+		| null;
+	job_type?:
+		| ("desk" | "standing" | "light_physical" | "manual_labour" | "outdoor")
+		| null;
+	workouts_per_week?: number | null;
+	workout_types?: string[] | null;
+	sleep_hours?: number | null;
+	stress_level?: ("low" | "moderate" | "high") | null;
+	alcohol_per_week?: string | null;
+	favorite_meals?:
+		| []
+		| [string]
+		| [string, string]
+		| [string, string, string]
+		| [string, string, string, string]
+		| [string, string, string, string, string]
+		| null;
+	hated_foods?: string[] | null;
+	restrictions?: string[] | null;
+	cooking_preference?: ("scratch" | "quick" | "batch" | "mixed") | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[] | null;
+	snacking_reason?: ("hunger" | "boredom" | "habit" | "mixed") | null;
+	snack_taste_preference?: ("sweet" | "savory" | "both") | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: ("mostly_home" | "mostly_eating_out" | "mixed") | null;
+	budget_level?: ("low" | "medium" | "high") | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: ("low" | "medium" | "high") | null;
+	has_medical_condition?: boolean | null;
+	is_under_treatment?: boolean | null;
+	on_medication?: boolean | null;
+	is_pregnant_or_breastfeeding?: boolean | null;
+	has_doctor_diet_restriction?: boolean | null;
+	has_eating_disorder_history?: boolean | null;
+	medical_condition_note?: string | null;
+	medication_note?: string | null;
+	onboarding_stage?:
+		| (
+				| "safety"
+				| "stats"
+				| "lifestyle"
+				| "preferences"
+				| "snacks"
+				| "feasibility"
+				| "review"
+				| "complete"
+				| "blocked"
+		  )
+		| null;
+	blocked_reason?: string | null;
+	preferences_note?: string | null;
+	snacks_note?: string | null;
+	lifestyle_note?: string | null;
+	updated_at?: string | null;
 }

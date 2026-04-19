@@ -103,7 +103,7 @@ describe("updateUserProfile handler", () => {
 
 		expect(result.statusCode).toBe(200);
 		const body = JSON.parse(String(result.body));
-		expect(body.profile).toEqual({ name: "太郎", age: 30 });
+		expect(body.profile).toMatchObject({ name: "太郎", age: 30 });
 		expect(body.profile.pk).toBeUndefined();
 	});
 
@@ -168,7 +168,8 @@ describe("updateUserProfile handler", () => {
 
 		expect(result.statusCode).toBe(200);
 		const body = JSON.parse(String(result.body));
-		expect(body.profile).toEqual({ name: "花子" });
+		expect(body.profile).toMatchObject({ name: "花子" });
+		expect(body.profile.age).toBeNull();
 
 		const command = ddbMock.commandCalls(UpdateCommand)[0];
 		expect(command.args[0].input.UpdateExpression).toContain("REMOVE #age");

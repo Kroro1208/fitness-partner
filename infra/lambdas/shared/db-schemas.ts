@@ -2,21 +2,13 @@ import { UserProfileSchema } from "@fitness/contracts-ts";
 import { z } from "zod";
 
 /**
- * DynamoDB row → Domain Mapper のための Zod schema。
- *
- * Parse 境界: handler が GetCommand で取得した Item は untrusted。
- * ここで parse することで、レスポンス組み立てコードが `unknown` を
- * 介さず型付きデータで進めるようにする。
- *
- * 注意: DynamoDB 由来の pk/sk は本スキーマでは保持しない
- * (handler が stripKeys で除去する前提)。
+ * DynamoDB profile アイテムの形状。
+ * contracts-ts の UserProfile Zod に updated_at (DB 専用メタ) のみを追加する。
+ * 想定外フィールドが混入したら fail-fast (strict parse) で 500 を返す既存方針を維持。
  */
-
-/**
- * profile row (pk=user#<id>, sk=profile) の parse 用。
- * UserProfileSchema は全 field optional なのでそのまま利用する。
- */
-export const ProfileRowSchema = UserProfileSchema;
+export const ProfileRowSchema = UserProfileSchema.extend({
+	updated_at: z.string().optional(),
+}).strict();
 
 export type ProfileRow = z.infer<typeof ProfileRowSchema>;
 
