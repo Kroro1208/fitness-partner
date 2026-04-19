@@ -53,6 +53,19 @@ describe("FitnessStack", () => {
 		});
 	});
 
+	it("does not model inviteCodesParameterName as a CloudFormation SSM value parameter", () => {
+		const parameters = template.toJSON().Parameters ?? {};
+		const inviteParameters = Object.values(parameters).filter(
+			(parameter) =>
+				typeof parameter === "object" &&
+				parameter !== null &&
+				"Default" in parameter &&
+				parameter.Default === "/fitness/test/invite-codes",
+		);
+
+		expect(inviteParameters).toEqual([]);
+	});
+
 	it("grants pre-signup Lambda SSM read and DynamoDB PutItem", () => {
 		const policies = template.findResources("AWS::IAM::Policy");
 		const statements = Object.values(policies).flatMap((policy) => {

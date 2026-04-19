@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import nextConfig, { buildSecurityHeaders } from "../next.config";
+process.env.__VARLOCK_ENV ??= JSON.stringify({ config: {} });
+
+const { default: nextConfig, buildSecurityHeaders } = await import(
+	"../next.config"
+);
+const resolvedNextConfig = await nextConfig("phase-test", {});
 
 describe("next config security hardening", () => {
 	it("disables x-powered-by", () => {
-		expect(nextConfig.poweredByHeader).toBe(false);
+		expect(resolvedNextConfig.poweredByHeader).toBe(false);
 	});
 
 	it("adds baseline security headers", () => {

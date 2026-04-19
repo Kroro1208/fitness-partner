@@ -1,3 +1,4 @@
+import { varlockNextConfigPlugin } from "@varlock/nextjs-integration/plugin";
 import type { NextConfig } from "next";
 
 const BASE_SECURITY_HEADERS = [
@@ -57,4 +58,4 @@ const nextConfig: NextConfig = {
 	},
 };
 
-export default nextConfig;
+export default varlockNextConfigPlugin()(nextConfig);

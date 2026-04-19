@@ -7,6 +7,7 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
+		"env:check": "varlock load",
 		"lint": "pnpm exec biome check .",
 		"test": "vitest run"
 	},
@@ -22,11 +23,13 @@
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.460.0",
 		"next": "^16.0.0",
+		"@varlock/nextjs-integration": "^0.3.3",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"server-only": "^0.0.1",
 		"tailwind-merge": "^2.6.1",
 		"tailwindcss": "^4.2.2",
+		"varlock": "^0.7.2",
 		"zod": "^3.25.76"
 	},
 	"devDependencies": {
