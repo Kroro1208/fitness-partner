@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 
 import { CoachPromptCard } from "@/components/domain/coach-prompt-card";
 import { MultiTagInput } from "@/components/domain/multi-tag-input";
@@ -34,6 +34,38 @@ function snacksReducer(state: SnacksState, action: SnacksAction): SnacksState {
 	}
 }
 
+function toLateNightSnackingValue(
+	value: OnboardingProfile["lateNightSnacking"],
+): YesNo | null {
+	if (value === null || value === undefined) return null;
+	return value ? "yes" : "no";
+}
+
+function buildSnacksAdvancePlan(input: {
+	profile: OnboardingProfile | null;
+	state: SnacksState;
+	returnToReview: boolean;
+}) {
+	const { profile, state, returnToReview } = input;
+	const basePatch = {
+		currentSnacks: state.currentSnacks,
+		snackingReason: state.snackingReason,
+		snackTastePreference: state.snackTastePreference,
+		lateNightSnacking:
+			state.lateNightSnacking === null
+				? null
+				: state.lateNightSnacking === "yes",
+	};
+
+	return buildAdvancePlan({
+		profile,
+		basePatch,
+		fallbackNextStage: "feasibility",
+		returnToReview,
+		freeText: { stage: "snacks", value: state.freeText },
+	});
+}
+
 export function SnacksForm({
 	initialProfile,
 }: {
@@ -49,18 +81,15 @@ export function SnacksForm({
 		patchError,
 	} = useOnboarding(initialProfile);
 	const returnToReview = profile?.onboardingStage === "review";
+	const [freeTextParseError, setFreeTextParseError] = useState<string | null>(
+		null,
+	);
 
 	const [state, dispatch] = useReducer(snacksReducer, {
 		currentSnacks: profile?.currentSnacks ?? [],
 		snackingReason: profile?.snackingReason ?? null,
 		snackTastePreference: profile?.snackTastePreference ?? null,
-		lateNightSnacking:
-			profile?.lateNightSnacking === null ||
-			profile?.lateNightSnacking === undefined
-				? null
-				: profile.lateNightSnacking
-					? "yes"
-					: "no",
+		lateNightSnacking: toLateNightSnackingValue(profile?.lateNightSnacking),
 		freeText: "",
 	});
 	const {
@@ -81,26 +110,24 @@ export function SnacksForm({
 		lateNightSnacking !== null;
 
 	const handleNext = async () => {
-		const basePatch = {
-			currentSnacks,
-			snackingReason,
-			snackTastePreference,
-			lateNightSnacking:
-				lateNightSnacking === null ? null : lateNightSnacking === "yes",
-		};
-		const plan = buildAdvancePlan({
+		setFreeTextParseError(null);
+		const plan = buildSnacksAdvancePlan({
 			profile,
-			basePatch,
-			fallbackNextStage: "feasibility",
+			state,
 			returnToReview,
-			freeText: { stage: "snacks", value: freeText },
 		});
 		if (plan.freeTextParse !== null) {
-			parseFreeText(
+			const parseResult = await parseFreeText(
 				plan.freeTextParse.stage,
 				plan.freeTextParse.freeText,
 				plan.freeTextParse.snapshot,
 			);
+			if (!parseResult.ok) {
+				setFreeTextParseError(
+					"自由記述の自動反映に失敗しました。このままでは内容を提案に反映できないため、もう一度お試しください。",
+				);
+				return;
+			}
 		}
 		prefetchCoachPrompt(
 			plan.coachPromptPrefetch.targetStage,
@@ -115,6 +142,8 @@ export function SnacksForm({
 			<CoachPromptCard
 				prompt={coach.data?.prompt ?? null}
 				isLoading={coach.isLoading}
+				isFallback={coach.data?.cached ?? false}
+				isUnavailable={coach.isError}
 			/>
 
 			<div className="space-y-2">
@@ -182,6 +211,11 @@ export function SnacksForm({
 			{patchError && (
 				<Alert className="border-danger-500 bg-danger-100">
 					<AlertDescription>保存に失敗しました。</AlertDescription>
+				</Alert>
+			)}
+			{freeTextParseError && (
+				<Alert className="border-danger-500 bg-danger-100">
+					<AlertDescription>{freeTextParseError}</AlertDescription>
 				</Alert>
 			)}
 

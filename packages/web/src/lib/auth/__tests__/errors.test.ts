@@ -88,6 +88,63 @@ describe("handleAuthError", () => {
 		expect(body).toEqual({ error: "auth_failed" });
 	});
 
+	it("UserLambdaValidationException は PreSignUp 失敗として invite_validation_failed を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new CognitoLikeError("UserLambdaValidationException")),
+		);
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "invite_validation_failed" });
+	});
+
+	it("TooManyRequestsException は 429 rate_limited を返す", async () => {
+		const res = handleAuthError(
+			new CognitoLikeError("TooManyRequestsException"),
+		);
+		expect(res.status).toBe(429);
+		expect(await res.json()).toEqual({ error: "rate_limited" });
+		expect(res.headers.get("Retry-After")).toBeTruthy();
+	});
+
+	it("UnexpectedLambdaException は 503 invite_verification_unavailable を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new CognitoLikeError("UnexpectedLambdaException")),
+		);
+		expect(status).toBe(503);
+		expect(body).toEqual({ error: "invite_verification_unavailable" });
+	});
+
+	it("InvalidParameterException は 400 auth_failed を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new CognitoLikeError("InvalidParameterException")),
+		);
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "auth_failed" });
+	});
+
+	it("ResourceNotFoundException は 500 auth_configuration_error を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new CognitoLikeError("ResourceNotFoundException")),
+		);
+		expect(status).toBe(500);
+		expect(body).toEqual({ error: "auth_configuration_error" });
+	});
+
+	it("CredentialsProviderError は 500 auth_configuration_error を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new CognitoLikeError("CredentialsProviderError")),
+		);
+		expect(status).toBe(500);
+		expect(body).toEqual({ error: "auth_configuration_error" });
+	});
+
+	it("SyntaxError は 400 invalid_input を返す", async () => {
+		const { status, body } = await asJson(
+			handleAuthError(new SyntaxError("JSON")),
+		);
+		expect(status).toBe(400);
+		expect(body).toEqual({ error: "invalid_input" });
+	});
+
 	it("未知の Error は 500 internal_error を返す", async () => {
 		const { status, body } = await asJson(
 			handleAuthError(new Error("something bad")),

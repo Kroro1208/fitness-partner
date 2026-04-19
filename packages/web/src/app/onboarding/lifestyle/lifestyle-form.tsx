@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useReducer } from "react";
+import { useReducer, useState } from "react";
 
 import { ChoiceChips } from "@/components/domain/choice-chips";
 import { CoachPromptCard } from "@/components/domain/coach-prompt-card";
@@ -47,6 +47,30 @@ function lifestyleReducer(
 	}
 }
 
+function buildLifestyleAdvancePlan(input: {
+	profile: OnboardingProfile | null;
+	state: LifestyleState;
+	returnToReview: boolean;
+}) {
+	const { profile, state, returnToReview } = input;
+	const basePatch = {
+		jobType: state.jobType,
+		workoutsPerWeek: state.workoutsPerWeek,
+		workoutTypes: state.workoutTypes,
+		sleepHours: state.sleepHours,
+		stressLevel: state.stressLevel,
+		alcoholPerWeek: trimmedOrNull(state.alcoholPerWeek),
+	};
+
+	return buildAdvancePlan({
+		profile,
+		basePatch,
+		fallbackNextStage: "preferences",
+		returnToReview,
+		freeText: { stage: "lifestyle", value: state.freeText },
+	});
+}
+
 export function LifestyleForm({
 	initialProfile,
 }: {
@@ -62,6 +86,9 @@ export function LifestyleForm({
 		patchError,
 	} = useOnboarding(initialProfile);
 	const returnToReview = profile?.onboardingStage === "review";
+	const [freeTextParseError, setFreeTextParseError] = useState<string | null>(
+		null,
+	);
 
 	const [state, dispatch] = useReducer(lifestyleReducer, {
 		jobType: profile?.jobType ?? null,
@@ -90,27 +117,24 @@ export function LifestyleForm({
 		jobType !== null && sleepHours !== null && stressLevel !== null;
 
 	const handleNext = async () => {
-		const basePatch = {
-			jobType,
-			workoutsPerWeek,
-			workoutTypes,
-			sleepHours,
-			stressLevel,
-			alcoholPerWeek: trimmedOrNull(alcoholPerWeek),
-		};
-		const plan = buildAdvancePlan({
+		setFreeTextParseError(null);
+		const plan = buildLifestyleAdvancePlan({
 			profile,
-			basePatch,
-			fallbackNextStage: "preferences",
+			state,
 			returnToReview,
-			freeText: { stage: "lifestyle", value: freeText },
 		});
 		if (plan.freeTextParse !== null) {
-			parseFreeText(
+			const parseResult = await parseFreeText(
 				plan.freeTextParse.stage,
 				plan.freeTextParse.freeText,
 				plan.freeTextParse.snapshot,
 			);
+			if (!parseResult.ok) {
+				setFreeTextParseError(
+					"自由記述の自動反映に失敗しました。このままでは内容を提案に反映できないため、もう一度お試しください。",
+				);
+				return;
+			}
 		}
 		prefetchCoachPrompt(
 			plan.coachPromptPrefetch.targetStage,
@@ -125,6 +149,8 @@ export function LifestyleForm({
 			<CoachPromptCard
 				prompt={coach.data?.prompt ?? null}
 				isLoading={coach.isLoading}
+				isFallback={coach.data?.cached ?? false}
+				isUnavailable={coach.isError}
 			/>
 
 			<div className="space-y-2">
@@ -212,6 +238,11 @@ export function LifestyleForm({
 			{patchError && (
 				<Alert className="border-danger-500 bg-danger-100">
 					<AlertDescription>保存に失敗しました。</AlertDescription>
+				</Alert>
+			)}
+			{freeTextParseError && (
+				<Alert className="border-danger-500 bg-danger-100">
+					<AlertDescription>{freeTextParseError}</AlertDescription>
 				</Alert>
 			)}
 

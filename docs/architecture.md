@@ -895,6 +895,22 @@ type FinalPlan = {
 - 「医師不要」は禁止
 - 「サプリで十分」は禁止
 
+## 15.4 Onboarding blocked 画面遷移 (Plan 07)
+
+Onboarding の Safety 質問で以下のいずれかが `true` になった時点で `/onboarding/blocked` へ遷移する:
+
+- `is_pregnant_or_breastfeeding` (妊娠または授乳中)
+- `has_eating_disorder_history` (摂食障害の既往)
+- `has_doctor_diet_restriction` (医師からの食事制限)
+
+遷移フロー:
+
+1. クライアント `SafetyForm` の「次へ」押下時に `@/lib/onboarding/safety.evaluateSafetyRisk` で判定
+2. `level === "blocked"` なら `useOnboarding.patch({ ...flags, blocked_reason }, "blocked")` で stage=blocked を永続化
+3. `router.push("/onboarding/blocked")` で `BlockedNoticeCard` 画面へ遷移
+4. `onboarding/layout.tsx` が stage=blocked のユーザーを blocked 以外の URL からリダイレクトで引き戻す
+5. サーバー側 `update-user-profile` Lambda も `infra/lambdas/shared/onboarding-safety.ts` で同じ判定を行い、UI を bypass した攻撃者による blocked stage の不正解除を 400 で拒否する (二重防御)
+
 ---
 
 # 16. メモリ設計

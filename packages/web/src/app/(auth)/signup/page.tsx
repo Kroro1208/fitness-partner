@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useReducer } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,25 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	resolveConfirmErrorMessage,
+	resolveSignupErrorMessage,
+} from "@/lib/auth/signup-error-messages";
+import {
+	readJsonResponseBody,
+	readResponseErrorCode,
+} from "@/lib/http/read-json-response";
+
+const passwordRequirementsPattern = [
+	"(?=.*[a-z])",
+	"(?=.*[A-Z])",
+	"(?=.*\\d)",
+	"(?=.*[^A-Za-z0-9]).{8,}",
+].join("");
+const PASSWORD_TITLE =
+	"8 文字以上で、大文字・小文字・数字・記号 (!@#$%^&* など) を含めてください";
+const INVALID_RESPONSE_MESSAGE =
+	"サーバー応答の形式が不正です。時間をおいて再度お試しください。";
 
 type Step = "signup" | "confirm" | "done";
 
@@ -41,6 +59,10 @@ const initialState: State = {
 	isSubmitting: false,
 };
 
+function unreachableAction(action: never): never {
+	throw new Error(`Unexpected action: ${JSON.stringify(action)}`);
+}
+
 function reducer(state: State, action: Action): State {
 	switch (action.type) {
 		case "set_field":
@@ -56,11 +78,44 @@ function reducer(state: State, action: Action): State {
 			return { ...state, isSubmitting: false, step: "confirm" };
 		case "confirm_success":
 			return { ...state, isSubmitting: false, step: "done" };
+		default:
+			return unreachableAction(action);
 	}
 }
 
+type SubmitFailureInput = {
+	status: number;
+	retryAfter: string | null;
+	errorCode: unknown;
+};
+
+function buildSignUpPayload(form: State["form"]) {
+	return {
+		email: form.email,
+		password: form.password,
+		inviteCode: form.inviteCode,
+	};
+}
+
+function resolveSignUpFailureMessage(input: {
+	payloadOk: boolean;
+	failure: SubmitFailureInput;
+}): string {
+	if (!input.payloadOk) return INVALID_RESPONSE_MESSAGE;
+
+	return resolveSignupErrorMessage(input.failure);
+}
+
+function resolveConfirmFailureMessage(input: {
+	payloadOk: boolean;
+	failure: SubmitFailureInput;
+}): string {
+	if (!input.payloadOk) return INVALID_RESPONSE_MESSAGE;
+
+	return resolveConfirmErrorMessage(input.failure);
+}
+
 export default function SignUpPage() {
-	const router = useRouter();
 	const [state, dispatch] = useReducer(reducer, initialState);
 	const { step, form, error, isSubmitting } = state;
 
@@ -71,19 +126,21 @@ export default function SignUpPage() {
 			const res = await fetch("/api/auth/signup", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					email: form.email,
-					password: form.password,
-					inviteCode: form.inviteCode,
-				}),
+				body: JSON.stringify(buildSignUpPayload(form)),
 			});
-			const body = await res.json().catch(() => ({}));
+			const payload = await readJsonResponseBody(res);
 			if (!res.ok) {
-				const message =
-					body.error === "invalid_input"
-						? "入力内容を確認してください"
-						: "登録に失敗しました";
-				dispatch({ type: "submit_error", error: message });
+				dispatch({
+					type: "submit_error",
+					error: resolveSignUpFailureMessage({
+						payloadOk: payload.ok,
+						failure: {
+							status: res.status,
+							retryAfter: res.headers.get("Retry-After"),
+							errorCode: readResponseErrorCode(payload),
+						},
+					}),
+				});
 				return;
 			}
 			dispatch({ type: "signup_success" });
@@ -102,16 +159,21 @@ export default function SignUpPage() {
 				body: JSON.stringify({ email: form.email, code: form.code }),
 			});
 			if (!res.ok) {
-				const body = await res.json().catch(() => ({}));
-				const message =
-					body.error === "invalid_input"
-						? "入力内容を確認してください"
-						: "確認に失敗しました";
-				dispatch({ type: "submit_error", error: message });
+				const payload = await readJsonResponseBody(res);
+				dispatch({
+					type: "submit_error",
+					error: resolveConfirmFailureMessage({
+						payloadOk: payload.ok,
+						failure: {
+							status: res.status,
+							retryAfter: res.headers.get("Retry-After"),
+							errorCode: readResponseErrorCode(payload),
+						},
+					}),
+				});
 				return;
 			}
 			dispatch({ type: "confirm_success" });
-			setTimeout(() => router.push("/signin"), 1500);
 		} catch {
 			dispatch({ type: "submit_error", error: "通信エラーが発生しました" });
 		}
@@ -122,8 +184,15 @@ export default function SignUpPage() {
 			<Card>
 				<CardHeader>
 					<CardTitle>登録完了</CardTitle>
-					<CardDescription>ログインページに移動します...</CardDescription>
+					<CardDescription>
+						メール確認が完了しました。ログインページへ進んでください。
+					</CardDescription>
 				</CardHeader>
+				<CardFooter>
+					<Button asChild className="w-full">
+						<Link href="/signin">ログインページへ</Link>
+					</Button>
+				</CardFooter>
 			</Card>
 		);
 	}
@@ -197,13 +266,16 @@ export default function SignUpPage() {
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="password">パスワード（8文字以上）</Label>
+						<Label htmlFor="password">パスワード</Label>
 						<Input
 							id="password"
 							type="password"
 							autoComplete="new-password"
 							minLength={8}
+							pattern={passwordRequirementsPattern}
+							title={PASSWORD_TITLE}
 							required
+							aria-describedby="password-hint"
 							value={form.password}
 							onChange={(e) =>
 								dispatch({
@@ -213,6 +285,15 @@ export default function SignUpPage() {
 								})
 							}
 						/>
+						<ul
+							id="password-hint"
+							className="text-xs text-neutral-500 list-disc pl-5 space-y-0.5"
+						>
+							<li>8 文字以上</li>
+							<li>大文字・小文字を両方含む</li>
+							<li>数字を含む</li>
+							<li>記号を含む (例: !@#$%^&amp;*)</li>
+						</ul>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="inviteCode">招待コード</Label>

@@ -12,7 +12,8 @@ import {
 const bodySchema = z.object({
 	email: z.string().email(),
 	password: z.string().min(8),
-	inviteCode: z.string().min(1),
+	// PreSignUp Lambda は trim しないため、コピペの前後空白で弾かれないようにする
+	inviteCode: z.string().trim().min(1),
 });
 
 const SIGNUP_IP_LIMIT = {

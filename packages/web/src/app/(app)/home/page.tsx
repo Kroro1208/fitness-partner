@@ -29,12 +29,13 @@ export default function HomePage() {
 				<CardHeader>
 					<CardTitle>今日のプラン</CardTitle>
 					<CardDescription>
-						オンボーディングを完了して食事プランを作成しましょう
+						セットアップは完了しました。プラン生成機能はまだ接続されていません。
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<p className="text-sm text-neutral-500">
-						Plan 07 で食事・運動プランの本実装を行います
+						Plan 07
+						のスコープはオンボーディング完了までで、食事・運動プラン生成は後続フェーズです。
 					</p>
 				</CardContent>
 			</Card>

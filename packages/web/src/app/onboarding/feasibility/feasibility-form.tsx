@@ -103,6 +103,8 @@ export function FeasibilityForm({
 			<CoachPromptCard
 				prompt={coach.data?.prompt ?? null}
 				isLoading={coach.isLoading}
+				isFallback={coach.data?.cached ?? false}
+				isUnavailable={coach.isError}
 			/>
 
 			<div className="space-y-2">

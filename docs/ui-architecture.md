@@ -121,6 +121,7 @@ Home | Plan | Chat | Progress | Profile
 /onboarding/snacks
 /onboarding/feasibility
 /onboarding/review
+/onboarding/blocked        -> Safety で妊娠中 / 摂食障害既往 / 医師からの食事制限 のいずれかを検知した場合のみ遷移する受け皿画面
 
 /home
 /plan
@@ -242,6 +243,12 @@ Home | Plan | Chat | Progress | Profile
 - Input region
 - Next button
 - Back link
+
+### Plan 07 実装ノート
+
+- **Coach prompt 先読み (経路 C)**: 各 page の `useOnboarding.prefetchCoachPrompt(nextStage, snapshot)` を「次へ」押下時に呼ぶことで、次画面が render される前に `/api/onboarding/coach-prompt` (Route Handler → `@ai-sdk/anthropic` 経路) を TanStack Query cache に流し込む。次画面の `useQuery(["coach-prompt", stage])` は cache hit で即時描画される
+- **Free-text parse (fire-and-forget)**: Lifestyle / Preferences / Snacks の Textarea 入力は「次へ」押下時に `/api/onboarding/free-text-parse` へ POST するが、ユーザー遷移をブロックしない。成功時は `<stage>_note` フィールドへ `useUpdateProfile` 経由で書き戻される
+- **Safety 決定的ルール (非 LLM)**: 妊娠 / 摂食障害既往 / 医師からの食事制限 のいずれか true なら `/onboarding/blocked` へ遷移。判定はクライアント `@/lib/onboarding/safety` と Lambda `infra/lambdas/shared/onboarding-safety.ts` の 2 箇所で実施し、`packages/contracts-ts/schemas/fixtures/safety-matrix.json` の共有 fixture で TypeScript / Python 両実装の等価性をテスト担保
 
 ### 構造
 

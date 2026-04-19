@@ -20,7 +20,7 @@ export function Stepper({
 	ariaLabel,
 }: StepperProps) {
 	return (
-		<div className="inline-flex items-center gap-3">
+		<div className="flex w-fit items-center gap-3">
 			<Button
 				type="button"
 				size="icon"

@@ -87,6 +87,8 @@ export function SafetyForm({
 			<CoachPromptCard
 				prompt={coach.data?.prompt ?? null}
 				isLoading={coach.isLoading}
+				isFallback={coach.data?.cached ?? false}
+				isUnavailable={coach.isError}
 			/>
 
 			<section className="space-y-1 divide-y divide-neutral-100 bg-surface rounded-lg px-4">

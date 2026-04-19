@@ -29,10 +29,32 @@ type StatsState = {
 type StatsAction = { type: "patch"; patch: Partial<StatsState> };
 
 function statsReducer(state: StatsState, action: StatsAction): StatsState {
-	switch (action.type) {
-		case "patch":
-			return { ...state, ...action.patch };
-	}
+	return { ...state, ...action.patch };
+}
+
+function buildStatsAdvancePlan(input: {
+	profile: OnboardingProfile | null;
+	state: StatsState;
+	returnToReview: boolean;
+}) {
+	const { profile, state, returnToReview } = input;
+	const basePatch = {
+		age: state.age,
+		sex: state.sex,
+		heightCm: state.heightCm,
+		weightKg: state.weightKg,
+		desiredPace: state.pace,
+		goalWeightKg: state.goalMode === "weight" ? state.goalWeightKg : null,
+		goalDescription:
+			state.goalMode === "description" ? state.goalDescription : null,
+	};
+
+	return buildAdvancePlan({
+		profile,
+		basePatch,
+		fallbackNextStage: "lifestyle",
+		returnToReview,
+	});
 }
 
 export function StatsForm({
@@ -81,19 +103,9 @@ export function StatsForm({
 			: goalDescription.trim().length > 0);
 
 	const handleNext = async () => {
-		const basePatch = {
-			age,
-			sex,
-			heightCm,
-			weightKg,
-			desiredPace: pace,
-			goalWeightKg: goalMode === "weight" ? goalWeightKg : null,
-			goalDescription: goalMode === "description" ? goalDescription : null,
-		};
-		const plan = buildAdvancePlan({
+		const plan = buildStatsAdvancePlan({
 			profile,
-			basePatch,
-			fallbackNextStage: "lifestyle",
+			state,
 			returnToReview,
 		});
 		prefetchCoachPrompt(
@@ -109,6 +121,8 @@ export function StatsForm({
 			<CoachPromptCard
 				prompt={coach.data?.prompt ?? null}
 				isLoading={coach.isLoading}
+				isFallback={coach.data?.cached ?? false}
+				isUnavailable={coach.isError}
 			/>
 
 			<NumberField
@@ -156,16 +170,20 @@ export function StatsForm({
 			/>
 
 			<div className="space-y-3">
-				<Label>目標</Label>
+				<Label>目標の決め方</Label>
 				<SegmentedControl
 					value={goalMode}
 					onChange={(value) => updateState({ goalMode: value })}
 					options={[
 						{ value: "weight", label: "目標体重" },
-						{ value: "description", label: "見た目・感覚" },
+						{ value: "description", label: "見た目・体感" },
 					]}
 					ariaLabel="目標の種類"
 				/>
+				<p className="text-sm text-neutral-500">
+					目標はどちらか 1 つ選びます。体重で決めたい場合は「目標体重」、
+					数字以外の変化を目指す場合は「見た目・体感」を選んでください。
+				</p>
 				{goalMode === "weight" ? (
 					<NumberField
 						id="goal-weight"
@@ -179,7 +197,7 @@ export function StatsForm({
 					/>
 				) : (
 					<Textarea
-						placeholder="理想の見た目・体感を教えてください"
+						placeholder="例: お腹まわりをすっきりさせたい、階段で息切れしにくくなりたい"
 						value={goalDescription}
 						onChange={(e) => updateState({ goalDescription: e.target.value })}
 					/>
