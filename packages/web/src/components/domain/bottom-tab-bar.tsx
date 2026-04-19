@@ -26,25 +26,38 @@ export function BottomTabBar() {
 	return (
 		<nav
 			aria-label="Primary"
-			className="sticky bottom-0 bg-bg-surface border-t border-neutral-200 pb-safe z-10"
+			className="sticky bottom-0 z-10 w-full border-t border-neutral-200 bg-bg-surface pb-safe"
 		>
-			<ul className="flex items-stretch justify-around">
+			<ul className="flex w-full items-stretch">
 				{TABS.map(({ href, label, Icon }) => {
 					const isActive = pathname === href || pathname.startsWith(`${href}/`);
 					return (
 						<li key={href} className="flex-1">
 							<Link
 								href={href}
+								aria-current={isActive ? "page" : undefined}
 								className={cn(
-									"flex min-h-[44px] flex-col items-center justify-center gap-0.5 py-2 text-xs",
+									"flex min-h-[56px] flex-col items-center justify-center gap-0.5 py-2 text-xs transition-colors",
 									isActive
-										? "text-primary-500"
+										? "text-primary-600"
 										: "text-neutral-500 hover:text-neutral-700",
 								)}
-								aria-current={isActive ? "page" : undefined}
 							>
-								<Icon className="h-5 w-5" aria-hidden />
-								<span>{label}</span>
+								<Icon
+									className={cn(
+										"h-5 w-5",
+										isActive ? "stroke-[2.25]" : "stroke-[1.75]",
+									)}
+									aria-hidden
+								/>
+								<span
+									className={cn(
+										isActive ? "font-semibold" : "font-medium",
+										"leading-none",
+									)}
+								>
+									{label}
+								</span>
 							</Link>
 						</li>
 					);

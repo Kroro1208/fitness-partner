@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -11,7 +10,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 
 export default function HomePage() {
-	const { user, isLoading, signOut, isSigningOut } = useAuth();
+	const { user, isLoading } = useAuth();
 
 	return (
 		<div className="space-y-4">
@@ -48,16 +47,6 @@ export default function HomePage() {
 					</CardDescription>
 				</CardHeader>
 			</Card>
-
-			<div>
-				<Button
-					variant="outline"
-					onClick={() => signOut()}
-					disabled={isSigningOut}
-				>
-					{isSigningOut ? "ログアウト中..." : "ログアウト"}
-				</Button>
-			</div>
 		</div>
 	);
 }
