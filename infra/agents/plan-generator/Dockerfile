@@ -8,13 +8,17 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY packages/fitness-engine /opt/fitness-engine
 COPY packages/contracts-py /opt/fitness-contracts
+COPY packages/fitness-engine /opt/fitness-engine
 COPY infra/agents/plan-generator/pyproject.toml /app/pyproject.toml
 COPY infra/agents/plan-generator/src /app/src
 
-RUN uv pip install --system --no-cache /opt/fitness-engine /opt/fitness-contracts \
-    && uv pip install --system --no-cache .
+# 依存順: contracts → engine → plan-generator 本体。
+# `--no-sources` は `[tool.uv.sources]` の workspace 指示を無視させる
+# (container 内は monorepo workspace ではなく、ローカルコピーを直接 install する)。
+RUN uv pip install --system --no-cache --no-sources /opt/fitness-contracts \
+    && uv pip install --system --no-cache --no-sources /opt/fitness-engine \
+    && uv pip install --system --no-cache --no-sources .
 
 ENV PYTHONPATH=/app/src
 
