@@ -1,0 +1,211 @@
+{
+	"$defs": {
+		"Meal": {
+			"properties": {
+				"slot": {
+					"enum": ["breakfast", "lunch", "dinner", "dessert"],
+					"title": "Slot",
+					"type": "string"
+				},
+				"title": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Title",
+					"type": "string"
+				},
+				"items": {
+					"items": {
+						"$ref": "#/$defs/MealItem"
+					},
+					"maxItems": 10,
+					"minItems": 1,
+					"title": "Items",
+					"type": "array"
+				},
+				"total_calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Total Calories Kcal",
+					"type": "integer"
+				},
+				"total_protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Protein G",
+					"type": "number"
+				},
+				"total_fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Fat G",
+					"type": "number"
+				},
+				"total_carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Total Carbs G",
+					"type": "number"
+				},
+				"prep_tag": {
+					"anyOf": [
+						{
+							"enum": ["batch", "quick", "treat", "none"],
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Prep Tag"
+				},
+				"notes": {
+					"anyOf": [
+						{
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Notes"
+				}
+			},
+			"required": [
+				"slot",
+				"title",
+				"items",
+				"total_calories_kcal",
+				"total_protein_g",
+				"total_fat_g",
+				"total_carbs_g"
+			],
+			"title": "Meal",
+			"type": "object"
+		},
+		"MealItem": {
+			"properties": {
+				"food_id": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"description": "FoodCatalog の food_id。LLM 創作は null。",
+					"title": "Food Id"
+				},
+				"name": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Name",
+					"type": "string"
+				},
+				"grams": {
+					"exclusiveMinimum": 0,
+					"maximum": 2000,
+					"title": "Grams",
+					"type": "number"
+				},
+				"calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Calories Kcal",
+					"type": "integer"
+				},
+				"protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Protein G",
+					"type": "number"
+				},
+				"fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Fat G",
+					"type": "number"
+				},
+				"carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Carbs G",
+					"type": "number"
+				}
+			},
+			"required": [
+				"name",
+				"grams",
+				"calories_kcal",
+				"protein_g",
+				"fat_g",
+				"carbs_g"
+			],
+			"title": "MealItem",
+			"type": "object"
+		}
+	},
+	"properties": {
+		"date": {
+			"description": "ISO YYYY-MM-DD。",
+			"title": "Date",
+			"type": "string"
+		},
+		"theme": {
+			"maxLength": 80,
+			"minLength": 1,
+			"title": "Theme",
+			"type": "string"
+		},
+		"meals": {
+			"items": {
+				"$ref": "#/$defs/Meal"
+			},
+			"maxItems": 4,
+			"minItems": 3,
+			"title": "Meals",
+			"type": "array"
+		},
+		"daily_total_calories_kcal": {
+			"maximum": 10000,
+			"minimum": 0,
+			"title": "Daily Total Calories Kcal",
+			"type": "integer"
+		},
+		"daily_total_protein_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Daily Total Protein G",
+			"type": "number"
+		},
+		"daily_total_fat_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Daily Total Fat G",
+			"type": "number"
+		},
+		"daily_total_carbs_g": {
+			"maximum": 1200,
+			"minimum": 0,
+			"title": "Daily Total Carbs G",
+			"type": "number"
+		}
+	},
+	"required": [
+		"date",
+		"theme",
+		"meals",
+		"daily_total_calories_kcal",
+		"daily_total_protein_g",
+		"daily_total_fat_g",
+		"daily_total_carbs_g"
+	],
+	"title": "DayPlan",
+	"type": "object"
+}

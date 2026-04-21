@@ -1,0 +1,132 @@
+{
+	"cases": [
+		{
+			"name": "all_false_is_safe",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": false,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": false
+			},
+			"expected": { "level": "safe", "reasons": [], "warnings": [] }
+		},
+		{
+			"name": "pregnancy_blocks",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": true,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": false
+			},
+			"expected": {
+				"level": "blocked",
+				"reasons": ["pregnancy_or_breastfeeding"],
+				"warnings": []
+			}
+		},
+		{
+			"name": "eating_disorder_blocks",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": false,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": true
+			},
+			"expected": {
+				"level": "blocked",
+				"reasons": ["eating_disorder_history"],
+				"warnings": []
+			}
+		},
+		{
+			"name": "doctor_restriction_blocks",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": false,
+				"has_doctor_diet_restriction": true,
+				"has_eating_disorder_history": false
+			},
+			"expected": {
+				"level": "blocked",
+				"reasons": ["doctor_diet_restriction"],
+				"warnings": []
+			}
+		},
+		{
+			"name": "medical_condition_cautions",
+			"input": {
+				"has_medical_condition": true,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": false,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": false
+			},
+			"expected": {
+				"level": "caution",
+				"reasons": [],
+				"warnings": ["medical_condition"]
+			}
+		},
+		{
+			"name": "medication_cautions",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": true,
+				"is_pregnant_or_breastfeeding": false,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": false
+			},
+			"expected": {
+				"level": "caution",
+				"reasons": [],
+				"warnings": ["on_medication"]
+			}
+		},
+		{
+			"name": "blocked_takes_priority_over_caution",
+			"input": {
+				"has_medical_condition": true,
+				"is_under_treatment": false,
+				"on_medication": true,
+				"is_pregnant_or_breastfeeding": true,
+				"has_doctor_diet_restriction": false,
+				"has_eating_disorder_history": false
+			},
+			"expected": {
+				"level": "blocked",
+				"reasons": ["pregnancy_or_breastfeeding"],
+				"warnings": []
+			}
+		},
+		{
+			"name": "multiple_blocks_all_listed",
+			"input": {
+				"has_medical_condition": false,
+				"is_under_treatment": false,
+				"on_medication": false,
+				"is_pregnant_or_breastfeeding": true,
+				"has_doctor_diet_restriction": true,
+				"has_eating_disorder_history": true
+			},
+			"expected": {
+				"level": "blocked",
+				"reasons": [
+					"pregnancy_or_breastfeeding",
+					"eating_disorder_history",
+					"doctor_diet_restriction"
+				],
+				"warnings": []
+			}
+		}
+	]
+}

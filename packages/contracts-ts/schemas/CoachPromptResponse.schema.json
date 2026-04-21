@@ -1,0 +1,16 @@
+{
+	"description": "Onboarding Coach prompt 生成の出力。",
+	"properties": {
+		"prompt": {
+			"title": "Prompt",
+			"type": "string"
+		},
+		"cached": {
+			"title": "Cached",
+			"type": "boolean"
+		}
+	},
+	"required": ["prompt", "cached"],
+	"title": "CoachPromptResponse",
+	"type": "object"
+}

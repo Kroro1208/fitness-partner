@@ -81,6 +81,87 @@ export interface CalorieMacroResult {
 }
 
 /**
+ * Onboarding Coach prompt 生成の入力。
+ */
+export interface CoachPromptRequest {
+	target_stage:
+		| "safety"
+		| "stats"
+		| "lifestyle"
+		| "preferences"
+		| "snacks"
+		| "feasibility"
+		| "review"
+		| "complete"
+		| "blocked";
+	profile_snapshot: {
+		[k: string]: unknown;
+	};
+}
+
+/**
+ * Onboarding Coach prompt 生成の出力。
+ */
+export interface CoachPromptResponse {
+	prompt: string;
+	cached: boolean;
+}
+
+export interface CompleteProfileForPlan {
+	onboarding_stage: "complete";
+	age: number;
+	sex: "male" | "female";
+	height_cm: number;
+	weight_kg: number;
+	sleep_hours: number;
+	stress_level: "low" | "moderate" | "high";
+	job_type:
+		| "desk"
+		| "standing"
+		| "light_physical"
+		| "manual_labour"
+		| "outdoor";
+	workouts_per_week: number;
+	[k: string]: unknown;
+}
+
+export interface DayPlan {
+	/**
+	 * ISO YYYY-MM-DD。
+	 */
+	date: string;
+	theme: string;
+	meals: Meal[];
+	daily_total_calories_kcal: number;
+	daily_total_protein_g: number;
+	daily_total_fat_g: number;
+	daily_total_carbs_g: number;
+}
+export interface Meal {
+	slot: "breakfast" | "lunch" | "dinner" | "dessert";
+	title: string;
+	items: MealItem[];
+	total_calories_kcal: number;
+	total_protein_g: number;
+	total_fat_g: number;
+	total_carbs_g: number;
+	prep_tag?: ("batch" | "quick" | "treat" | "none") | null;
+	notes?: string[] | null;
+}
+export interface MealItem {
+	/**
+	 * FoodCatalog の food_id。LLM 創作は null。
+	 */
+	food_id?: string | null;
+	name: string;
+	grams: number;
+	calories_kcal: number;
+	protein_g: number;
+	fat_g: number;
+	carbs_g: number;
+}
+
+/**
  * FCT2020 の栄養値の品質区分。
  */
 export type NutrientQuality = "exact" | "trace" | "missing";
@@ -126,6 +207,116 @@ export interface FoodItem {
 export interface NutrientValue {
 	value: number;
 	quality: NutrientQuality;
+}
+
+/**
+ * Onboarding の free-text parse 入力。
+ */
+export interface FreeTextParseRequest {
+	stage: "lifestyle" | "preferences" | "snacks";
+	free_text: string;
+	structured_snapshot: {
+		[k: string]: unknown;
+	};
+}
+
+/**
+ * Onboarding の free-text parse 出力。構造化フィールドは上書きしない。
+ */
+export interface FreeTextParseResponse {
+	note_field: "lifestyle_note" | "preferences_note" | "snacks_note";
+	extracted_note: string;
+	suggested_tags: string[];
+}
+
+export interface GeneratePlanRequest {
+	/**
+	 * ISO 月曜。
+	 */
+	week_start: string;
+	force_regenerate?: boolean;
+}
+
+export interface GeneratePlanResponse {
+	plan_id: string;
+	week_start: string;
+	generated_at: string;
+	weekly_plan: WeeklyPlan;
+}
+export interface WeeklyPlan {
+	target_calories_kcal: number;
+	target_protein_g: number;
+	target_fat_g: number;
+	target_carbs_g: number;
+	days: DayPlan[];
+	weekly_notes?: string[];
+	snack_swaps?: SnackSwap[];
+	hydration_target_liters: number;
+	hydration_breakdown?: string[];
+	supplement_recommendations?: SupplementRecommendation[];
+	personal_rules: string[];
+	timeline_notes?: string[];
+	/**
+	 * uuid v4。adapter が生成。
+	 */
+	plan_id: string;
+	/**
+	 * ISO 月曜。
+	 */
+	week_start: string;
+	/**
+	 * ISO 8601 timestamp (UTC)。
+	 */
+	generated_at: string;
+}
+export interface SnackSwap {
+	current_snack: string;
+	replacement: string;
+	calories_kcal: number;
+	why_it_works: string;
+}
+/**
+ * 1 件のサプリ推奨。
+ */
+export interface SupplementRecommendation {
+	/**
+	 * サプリ名 (whey / creatine / magnesium / omega3 等)。
+	 */
+	name: string;
+	/**
+	 * 推奨用量 (人間が読める形式)。
+	 */
+	dose: string;
+	/**
+	 * 摂取タイミング。
+	 */
+	timing: string;
+	/**
+	 * なぜこのユーザーに関係があるか。
+	 */
+	why_relevant: string;
+	/**
+	 * 注意事項 (ある場合)。
+	 */
+	caution?: string | null;
+}
+
+/**
+ * agent の責務領域。plan_id / generated_at は adapter が付与。
+ */
+export interface GeneratedWeeklyPlan {
+	target_calories_kcal: number;
+	target_protein_g: number;
+	target_fat_g: number;
+	target_carbs_g: number;
+	days: DayPlan[];
+	weekly_notes?: string[];
+	snack_swaps?: SnackSwap[];
+	hydration_target_liters: number;
+	hydration_breakdown?: string[];
+	supplement_recommendations?: SupplementRecommendation[];
+	personal_rules: string[];
+	timeline_notes?: string[];
 }
 
 /**
@@ -250,6 +441,66 @@ export interface RecipeTemplate {
 	tags?: string[];
 }
 
+export interface SafeAgentInput {
+	calorie_macro_input: CalorieMacroInput;
+	hydration_input: HydrationInput;
+	supplement_input: SupplementInput;
+}
+/**
+ * Supplement Recommender への入力。
+ */
+export interface SupplementInput {
+	/**
+	 * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
+	 */
+	protein_gap_g: number;
+	workouts_per_week: number;
+	sleep_hours: number;
+	/**
+	 * 週の魚摂取回数 (オメガ3 推奨トリガー)。
+	 */
+	fish_per_week: number;
+	/**
+	 * 早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。
+	 */
+	early_morning_training?: boolean;
+	/**
+	 * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
+	 */
+	low_sunlight_exposure?: boolean;
+}
+
+/**
+ * LLM prompt 露出対象。medical_*_note は含めない。
+ */
+export interface SafePromptProfile {
+	name?: string | null;
+	age: number;
+	sex: "male" | "female";
+	height_cm: number;
+	weight_kg: number;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
+	favorite_meals?: string[];
+	hated_foods?: string[];
+	restrictions?: string[];
+	cooking_preference?: string | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[];
+	snacking_reason?: string | null;
+	snack_taste_preference?: string | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: string | null;
+	budget_level?: string | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: string | null;
+	avoid_alcohol?: boolean;
+	avoid_supplements_without_consultation?: boolean;
+}
+
 /**
  * Safety Guard への入力 (UserProfile の安全関連サブセット)。
  *
@@ -292,56 +543,6 @@ export interface SafetyResult {
 }
 
 /**
- * Supplement Recommender への入力。
- */
-export interface SupplementInput {
-	/**
-	 * タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。
-	 */
-	protein_gap_g: number;
-	workouts_per_week: number;
-	sleep_hours: number;
-	/**
-	 * 週の魚摂取回数 (オメガ3 推奨トリガー)。
-	 */
-	fish_per_week: number;
-	/**
-	 * 早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。
-	 */
-	early_morning_training?: boolean;
-	/**
-	 * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
-	 */
-	low_sunlight_exposure?: boolean;
-}
-
-/**
- * 1 件のサプリ推奨。
- */
-export interface SupplementRecommendation {
-	/**
-	 * サプリ名 (whey / creatine / magnesium / omega3 等)。
-	 */
-	name: string;
-	/**
-	 * 推奨用量 (人間が読める形式)。
-	 */
-	dose: string;
-	/**
-	 * 摂取タイミング。
-	 */
-	timing: string;
-	/**
-	 * なぜこのユーザーに関係があるか。
-	 */
-	why_relevant: string;
-	/**
-	 * 注意事項 (ある場合)。
-	 */
-	caution?: string | null;
-}
-
-/**
  * Supplement Recommender の出力 (0 件以上の推奨)。
  */
 export interface SupplementRecommendationList {
@@ -357,6 +558,9 @@ export interface UpdateUserProfileInput {
 	sex?: ("male" | "female") | null;
 	height_cm?: number | null;
 	weight_kg?: number | null;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
 	activity_level?:
 		| (
 				| "sedentary"
@@ -366,31 +570,124 @@ export interface UpdateUserProfileInput {
 				| "extremely_active"
 		  )
 		| null;
-	desired_pace?: ("steady" | "aggressive") | null;
+	job_type?:
+		| ("desk" | "standing" | "light_physical" | "manual_labour" | "outdoor")
+		| null;
+	workouts_per_week?: number | null;
+	workout_types?: string[] | null;
 	sleep_hours?: number | null;
 	stress_level?: ("low" | "moderate" | "high") | null;
+	alcohol_per_week?: string | null;
+	favorite_meals?: string[] | null;
+	hated_foods?: string[] | null;
+	restrictions?: string[] | null;
+	cooking_preference?: ("scratch" | "quick" | "batch" | "mixed") | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[] | null;
+	snacking_reason?: ("hunger" | "boredom" | "habit" | "mixed") | null;
+	snack_taste_preference?: ("sweet" | "savory" | "both") | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: ("mostly_home" | "mostly_eating_out" | "mixed") | null;
+	budget_level?: ("low" | "medium" | "high") | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: ("low" | "medium" | "high") | null;
+	has_medical_condition?: boolean | null;
+	is_under_treatment?: boolean | null;
+	on_medication?: boolean | null;
+	is_pregnant_or_breastfeeding?: boolean | null;
+	has_doctor_diet_restriction?: boolean | null;
+	has_eating_disorder_history?: boolean | null;
+	medical_condition_note?: string | null;
+	medication_note?: string | null;
+	onboarding_stage?:
+		| (
+				| "safety"
+				| "stats"
+				| "lifestyle"
+				| "preferences"
+				| "snacks"
+				| "feasibility"
+				| "review"
+				| "complete"
+				| "blocked"
+		  )
+		| null;
+	blocked_reason?: string | null;
+	preferences_note?: string | null;
+	snacks_note?: string | null;
+	lifestyle_note?: string | null;
 }
 
 /**
- * 永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。
+ * 永続化されたユーザープロフィール。全フィールド optional。
  */
 export interface UserProfile {
-	name?: string;
-	age?: number;
-	sex?: "male" | "female";
-	height_cm?: number;
-	weight_kg?: number;
+	name?: string | null;
+	age?: number | null;
+	sex?: ("male" | "female") | null;
+	height_cm?: number | null;
+	weight_kg?: number | null;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
 	activity_level?:
-		| "sedentary"
-		| "lightly_active"
-		| "moderately_active"
-		| "very_active"
-		| "extremely_active";
-	desired_pace?: "steady" | "aggressive";
-	sleep_hours?: number;
-	stress_level?: "low" | "moderate" | "high";
-	/**
-	 * ISO 8601 タイムスタンプ。update-user-profile が書き込む。
-	 */
-	updated_at?: string;
+		| (
+				| "sedentary"
+				| "lightly_active"
+				| "moderately_active"
+				| "very_active"
+				| "extremely_active"
+		  )
+		| null;
+	job_type?:
+		| ("desk" | "standing" | "light_physical" | "manual_labour" | "outdoor")
+		| null;
+	workouts_per_week?: number | null;
+	workout_types?: string[] | null;
+	sleep_hours?: number | null;
+	stress_level?: ("low" | "moderate" | "high") | null;
+	alcohol_per_week?: string | null;
+	favorite_meals?: string[] | null;
+	hated_foods?: string[] | null;
+	restrictions?: string[] | null;
+	cooking_preference?: ("scratch" | "quick" | "batch" | "mixed") | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[] | null;
+	snacking_reason?: ("hunger" | "boredom" | "habit" | "mixed") | null;
+	snack_taste_preference?: ("sweet" | "savory" | "both") | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: ("mostly_home" | "mostly_eating_out" | "mixed") | null;
+	budget_level?: ("low" | "medium" | "high") | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: ("low" | "medium" | "high") | null;
+	has_medical_condition?: boolean | null;
+	is_under_treatment?: boolean | null;
+	on_medication?: boolean | null;
+	is_pregnant_or_breastfeeding?: boolean | null;
+	has_doctor_diet_restriction?: boolean | null;
+	has_eating_disorder_history?: boolean | null;
+	medical_condition_note?: string | null;
+	medication_note?: string | null;
+	onboarding_stage?:
+		| (
+				| "safety"
+				| "stats"
+				| "lifestyle"
+				| "preferences"
+				| "snacks"
+				| "feasibility"
+				| "review"
+				| "complete"
+				| "blocked"
+		  )
+		| null;
+	blocked_reason?: string | null;
+	preferences_note?: string | null;
+	snacks_note?: string | null;
+	lifestyle_note?: string | null;
+	updated_at?: string | null;
 }

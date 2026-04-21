@@ -63,6 +63,42 @@
 			],
 			"title": "Weight Kg"
 		},
+		"goal_weight_kg": {
+			"anyOf": [
+				{
+					"exclusiveMaximum": 500,
+					"exclusiveMinimum": 0,
+					"type": "number"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Goal Weight Kg"
+		},
+		"goal_description": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Goal Description"
+		},
+		"desired_pace": {
+			"anyOf": [
+				{
+					"enum": ["steady", "aggressive"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Desired Pace"
+		},
 		"activity_level": {
 			"anyOf": [
 				{
@@ -81,17 +117,50 @@
 			],
 			"title": "Activity Level"
 		},
-		"desired_pace": {
+		"job_type": {
 			"anyOf": [
 				{
-					"enum": ["steady", "aggressive"],
+					"enum": [
+						"desk",
+						"standing",
+						"light_physical",
+						"manual_labour",
+						"outdoor"
+					],
 					"type": "string"
 				},
 				{
 					"type": "null"
 				}
 			],
-			"title": "Desired Pace"
+			"title": "Job Type"
+		},
+		"workouts_per_week": {
+			"anyOf": [
+				{
+					"maximum": 14,
+					"minimum": 0,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Workouts Per Week"
+		},
+		"workout_types": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Workout Types"
 		},
 		"sleep_hours": {
 			"anyOf": [
@@ -117,6 +186,359 @@
 				}
 			],
 			"title": "Stress Level"
+		},
+		"alcohol_per_week": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Alcohol Per Week"
+		},
+		"favorite_meals": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"maxItems": 5,
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Favorite Meals"
+		},
+		"hated_foods": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Hated Foods"
+		},
+		"restrictions": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Restrictions"
+		},
+		"cooking_preference": {
+			"anyOf": [
+				{
+					"enum": ["scratch", "quick", "batch", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Cooking Preference"
+		},
+		"food_adventurousness": {
+			"anyOf": [
+				{
+					"maximum": 10,
+					"minimum": 1,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Food Adventurousness"
+		},
+		"current_snacks": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Current Snacks"
+		},
+		"snacking_reason": {
+			"anyOf": [
+				{
+					"enum": ["hunger", "boredom", "habit", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Snacking Reason"
+		},
+		"snack_taste_preference": {
+			"anyOf": [
+				{
+					"enum": ["sweet", "savory", "both"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Snack Taste Preference"
+		},
+		"late_night_snacking": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Late Night Snacking"
+		},
+		"eating_out_style": {
+			"anyOf": [
+				{
+					"enum": ["mostly_home", "mostly_eating_out", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Eating Out Style"
+		},
+		"budget_level": {
+			"anyOf": [
+				{
+					"enum": ["low", "medium", "high"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Budget Level"
+		},
+		"meal_frequency_preference": {
+			"anyOf": [
+				{
+					"maximum": 6,
+					"minimum": 1,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Meal Frequency Preference"
+		},
+		"location_region": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Location Region"
+		},
+		"kitchen_access": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Kitchen Access"
+		},
+		"convenience_store_usage": {
+			"anyOf": [
+				{
+					"enum": ["low", "medium", "high"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Convenience Store Usage"
+		},
+		"has_medical_condition": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Has Medical Condition"
+		},
+		"is_under_treatment": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Is Under Treatment"
+		},
+		"on_medication": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "On Medication"
+		},
+		"is_pregnant_or_breastfeeding": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Is Pregnant Or Breastfeeding"
+		},
+		"has_doctor_diet_restriction": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Has Doctor Diet Restriction"
+		},
+		"has_eating_disorder_history": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Has Eating Disorder History"
+		},
+		"medical_condition_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Medical Condition Note"
+		},
+		"medication_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Medication Note"
+		},
+		"onboarding_stage": {
+			"anyOf": [
+				{
+					"enum": [
+						"safety",
+						"stats",
+						"lifestyle",
+						"preferences",
+						"snacks",
+						"feasibility",
+						"review",
+						"complete",
+						"blocked"
+					],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Onboarding Stage"
+		},
+		"blocked_reason": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Blocked Reason"
+		},
+		"preferences_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Preferences Note"
+		},
+		"snacks_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Snacks Note"
+		},
+		"lifestyle_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"title": "Lifestyle Note"
 		}
 	},
 	"title": "UpdateUserProfileInput",
@@ -127,9 +549,43 @@
 		"sex",
 		"height_cm",
 		"weight_kg",
-		"activity_level",
+		"goal_weight_kg",
+		"goal_description",
 		"desired_pace",
+		"activity_level",
+		"job_type",
+		"workouts_per_week",
+		"workout_types",
 		"sleep_hours",
-		"stress_level"
+		"stress_level",
+		"alcohol_per_week",
+		"favorite_meals",
+		"hated_foods",
+		"restrictions",
+		"cooking_preference",
+		"food_adventurousness",
+		"current_snacks",
+		"snacking_reason",
+		"snack_taste_preference",
+		"late_night_snacking",
+		"eating_out_style",
+		"budget_level",
+		"meal_frequency_preference",
+		"location_region",
+		"kitchen_access",
+		"convenience_store_usage",
+		"has_medical_condition",
+		"is_under_treatment",
+		"on_medication",
+		"is_pregnant_or_breastfeeding",
+		"has_doctor_diet_restriction",
+		"has_eating_disorder_history",
+		"medical_condition_note",
+		"medication_note",
+		"onboarding_stage",
+		"blocked_reason",
+		"preferences_note",
+		"snacks_note",
+		"lifestyle_note"
 	]
 }

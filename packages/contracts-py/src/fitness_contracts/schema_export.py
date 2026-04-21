@@ -39,9 +39,30 @@ from fitness_contracts.models.food_catalog.recipe_template import (
 )
 from fitness_contracts.models.logging.log_meal_input import LogMealInput
 from fitness_contracts.models.logging.log_weight_input import LogWeightInput
+from fitness_contracts.models.onboarding.coach_prompt import (
+    CoachPromptRequest,
+    CoachPromptResponse,
+)
+from fitness_contracts.models.onboarding.free_text_parse import (
+    FreeTextParseRequest,
+    FreeTextParseResponse,
+)
+from fitness_contracts.models.plan.agent_io import SafeAgentInput, SafePromptProfile
+from fitness_contracts.models.plan.complete_profile import CompleteProfileForPlan
+from fitness_contracts.models.plan.day_plan import DayPlan
+from fitness_contracts.models.plan.generate_plan import (
+    GeneratePlanRequest,
+    GeneratePlanResponse,
+)
+from fitness_contracts.models.plan.generated_weekly_plan import GeneratedWeeklyPlan
+from fitness_contracts.models.plan.meal import Meal
+from fitness_contracts.models.plan.meal_item import MealItem
+from fitness_contracts.models.plan.snack_swap import SnackSwap
+from fitness_contracts.models.plan.weekly_plan import WeeklyPlan
 from fitness_contracts.models.profile.update_user_profile_input import (
     UpdateUserProfileInput,
 )
+from fitness_contracts.models.profile.user_profile import UserProfile
 
 MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("CalorieMacroInput", CalorieMacroInput),
@@ -59,8 +80,25 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("Ingredient", Ingredient),
     ("RecipeTemplate", RecipeTemplate),
     ("UpdateUserProfileInput", UpdateUserProfileInput),
+    ("UserProfile", UserProfile),
+    ("CoachPromptRequest", CoachPromptRequest),
+    ("CoachPromptResponse", CoachPromptResponse),
+    ("FreeTextParseRequest", FreeTextParseRequest),
+    ("FreeTextParseResponse", FreeTextParseResponse),
     ("LogMealInput", LogMealInput),
     ("LogWeightInput", LogWeightInput),
+    # Plan 08
+    ("MealItem", MealItem),
+    ("Meal", Meal),
+    ("DayPlan", DayPlan),
+    ("SnackSwap", SnackSwap),
+    ("GeneratedWeeklyPlan", GeneratedWeeklyPlan),
+    ("WeeklyPlan", WeeklyPlan),
+    ("SafePromptProfile", SafePromptProfile),
+    ("SafeAgentInput", SafeAgentInput),
+    ("CompleteProfileForPlan", CompleteProfileForPlan),
+    ("GeneratePlanRequest", GeneratePlanRequest),
+    ("GeneratePlanResponse", GeneratePlanResponse),
 ]
 
 

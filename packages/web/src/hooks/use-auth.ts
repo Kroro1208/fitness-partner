@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { ApiError } from "@/lib/api-client";
+import {
+	readJsonResponseBody,
+	toResponseErrorBody,
+} from "@/lib/http/read-json-response";
 
 const MeResponseSchema = z.object({
 	user: z.object({
@@ -19,11 +23,8 @@ async function fetchMe(): Promise<AuthUser | null> {
 	const res = await fetch("/api/auth/me", { cache: "no-store" });
 	if (res.status === 401) return null;
 	if (!res.ok) {
-		throw new ApiError(
-			res.status,
-			await res.json().catch(() => null),
-			"me failed",
-		);
+		const errorBody = await readJsonResponseBody(res);
+		throw new ApiError(res.status, toResponseErrorBody(errorBody), "me failed");
 	}
 	const data = MeResponseSchema.parse(await res.json());
 	return data.user;
@@ -46,8 +47,7 @@ export function useAuth() {
 		},
 		onSuccess: () => {
 			queryClient.clear();
-			router.push("/signin");
-			router.refresh();
+			router.replace("/signin");
 		},
 	});
 

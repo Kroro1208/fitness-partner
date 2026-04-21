@@ -4,6 +4,7 @@ import { FitnessApi } from "./constructs/api";
 import { FitnessAuth } from "./constructs/auth";
 import { CrudLambdas } from "./constructs/crud-lambdas";
 import { FitnessDatabase } from "./constructs/database";
+import { GeneratePlanLambda } from "./constructs/generate-plan-lambda";
 import { HelloLambda } from "./constructs/hello-lambda";
 
 export class FitnessStack extends cdk.Stack {
@@ -45,6 +46,29 @@ export class FitnessStack extends cdk.Stack {
 			table: database.table,
 		});
 
+		// Plan 08 Phase E: 2段階デプロイ対応。初回は agentcoreRuntimeArn context が
+		// 未設定のため GeneratePlanLambda を skip する。PlanGeneratorStack を先に
+		// デプロイして RuntimeArn を取得したのち、`-c agentcoreRuntimeArn=<arn>` で
+		// 再デプロイすると Lambda + ルートが追加される。
+		const rawAgentcoreArn = this.node.tryGetContext("agentcoreRuntimeArn");
+		const agentcoreRuntimeArn =
+			typeof rawAgentcoreArn === "string" && rawAgentcoreArn.length > 0
+				? rawAgentcoreArn
+				: null;
+
+		if (agentcoreRuntimeArn !== null) {
+			new GeneratePlanLambda(this, "GeneratePlanLambda", {
+				httpApi: api.httpApi,
+				table: database.table,
+				agentcoreRuntimeArn,
+			});
+		} else {
+			cdk.Annotations.of(this).addInfo(
+				"agentcoreRuntimeArn context not set — skipping GeneratePlanLambda. " +
+					"Re-deploy with `-c agentcoreRuntimeArn=<arn>` after PlanGeneratorStack.",
+			);
+		}
+
 		new cdk.CfnOutput(this, "ApiUrl", {
 			value: api.httpApi.apiEndpoint,
 			description: "API Gateway endpoint URL",
@@ -63,6 +87,11 @@ export class FitnessStack extends cdk.Stack {
 		new cdk.CfnOutput(this, "TableName", {
 			value: database.table.tableName,
 			description: "DynamoDB table name",
+		});
+
+		new cdk.CfnOutput(this, "TableArnOutput", {
+			value: database.table.tableArn,
+			description: "FitnessTable ARN",
 		});
 	}
 }

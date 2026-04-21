@@ -1,5 +1,10 @@
 import type { z } from "zod";
 
+import {
+	readJsonResponseBody,
+	toResponseErrorBody,
+} from "@/lib/http/read-json-response";
+
 export class ApiError extends Error {
 	constructor(
 		public readonly status: number,
@@ -37,7 +42,7 @@ export async function apiClientRaw(
 
 	const contentType = res.headers.get("content-type") ?? "";
 	const parsed: unknown = contentType.includes("application/json")
-		? await res.json().catch(() => null)
+		? await readJsonBodyOrThrow(res)
 		: await res.text().catch(() => "");
 
 	if (!res.ok) {
@@ -49,6 +54,22 @@ export async function apiClientRaw(
 	}
 
 	return parsed;
+}
+
+async function readJsonBodyOrThrow(res: Response): Promise<unknown> {
+	const parsed = await readJsonResponseBody(res);
+	if (parsed.ok) return parsed.payload;
+
+	const errorBody = toResponseErrorBody(parsed);
+	if (!res.ok) {
+		throw new ApiError(
+			res.status,
+			errorBody,
+			extractErrorMessage(errorBody, res.status),
+		);
+	}
+
+	throw new Error("Response body was not valid JSON");
 }
 
 function normalizeHeaders(

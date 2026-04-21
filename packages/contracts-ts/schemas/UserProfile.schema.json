@@ -1,63 +1,598 @@
 {
-	"description": "永続化されたユーザープロフィール。DynamoDB の profile アイテム形状に対応する。オンボーディング途中はフィールドが欠落しうるため、全フィールド optional。",
+	"description": "永続化されたユーザープロフィール。全フィールド optional。",
 	"properties": {
 		"name": {
-			"type": "string",
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Name"
 		},
 		"age": {
-			"type": "integer",
-			"minimum": 18,
-			"maximum": 120,
+			"anyOf": [
+				{
+					"maximum": 120,
+					"minimum": 18,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Age"
 		},
 		"sex": {
-			"enum": ["male", "female"],
-			"type": "string",
+			"anyOf": [
+				{
+					"enum": ["male", "female"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Sex"
 		},
 		"height_cm": {
-			"type": "number",
-			"exclusiveMinimum": 0,
-			"exclusiveMaximum": 300,
+			"anyOf": [
+				{
+					"exclusiveMaximum": 300,
+					"exclusiveMinimum": 0,
+					"type": "number"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Height Cm"
 		},
 		"weight_kg": {
-			"type": "number",
-			"exclusiveMinimum": 0,
-			"exclusiveMaximum": 500,
+			"anyOf": [
+				{
+					"exclusiveMaximum": 500,
+					"exclusiveMinimum": 0,
+					"type": "number"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Weight Kg"
 		},
-		"activity_level": {
-			"enum": [
-				"sedentary",
-				"lightly_active",
-				"moderately_active",
-				"very_active",
-				"extremely_active"
+		"goal_weight_kg": {
+			"anyOf": [
+				{
+					"exclusiveMaximum": 500,
+					"exclusiveMinimum": 0,
+					"type": "number"
+				},
+				{
+					"type": "null"
+				}
 			],
-			"type": "string",
-			"title": "Activity Level"
+			"default": null,
+			"title": "Goal Weight Kg"
+		},
+		"goal_description": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Goal Description"
 		},
 		"desired_pace": {
-			"enum": ["steady", "aggressive"],
-			"type": "string",
+			"anyOf": [
+				{
+					"enum": ["steady", "aggressive"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Desired Pace"
 		},
+		"activity_level": {
+			"anyOf": [
+				{
+					"enum": [
+						"sedentary",
+						"lightly_active",
+						"moderately_active",
+						"very_active",
+						"extremely_active"
+					],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Activity Level"
+		},
+		"job_type": {
+			"anyOf": [
+				{
+					"enum": [
+						"desk",
+						"standing",
+						"light_physical",
+						"manual_labour",
+						"outdoor"
+					],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Job Type"
+		},
+		"workouts_per_week": {
+			"anyOf": [
+				{
+					"maximum": 14,
+					"minimum": 0,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Workouts Per Week"
+		},
+		"workout_types": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Workout Types"
+		},
 		"sleep_hours": {
-			"type": "number",
-			"minimum": 0,
-			"maximum": 24,
+			"anyOf": [
+				{
+					"maximum": 24,
+					"minimum": 0,
+					"type": "number"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Sleep Hours"
 		},
 		"stress_level": {
-			"enum": ["low", "moderate", "high"],
-			"type": "string",
+			"anyOf": [
+				{
+					"enum": ["low", "moderate", "high"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Stress Level"
 		},
+		"alcohol_per_week": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Alcohol Per Week"
+		},
+		"favorite_meals": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"maxItems": 5,
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Favorite Meals"
+		},
+		"hated_foods": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Hated Foods"
+		},
+		"restrictions": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Restrictions"
+		},
+		"cooking_preference": {
+			"anyOf": [
+				{
+					"enum": ["scratch", "quick", "batch", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Cooking Preference"
+		},
+		"food_adventurousness": {
+			"anyOf": [
+				{
+					"maximum": 10,
+					"minimum": 1,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Food Adventurousness"
+		},
+		"current_snacks": {
+			"anyOf": [
+				{
+					"items": {
+						"type": "string"
+					},
+					"type": "array"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Current Snacks"
+		},
+		"snacking_reason": {
+			"anyOf": [
+				{
+					"enum": ["hunger", "boredom", "habit", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Snacking Reason"
+		},
+		"snack_taste_preference": {
+			"anyOf": [
+				{
+					"enum": ["sweet", "savory", "both"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Snack Taste Preference"
+		},
+		"late_night_snacking": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Late Night Snacking"
+		},
+		"eating_out_style": {
+			"anyOf": [
+				{
+					"enum": ["mostly_home", "mostly_eating_out", "mixed"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Eating Out Style"
+		},
+		"budget_level": {
+			"anyOf": [
+				{
+					"enum": ["low", "medium", "high"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Budget Level"
+		},
+		"meal_frequency_preference": {
+			"anyOf": [
+				{
+					"maximum": 6,
+					"minimum": 1,
+					"type": "integer"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Meal Frequency Preference"
+		},
+		"location_region": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Location Region"
+		},
+		"kitchen_access": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Kitchen Access"
+		},
+		"convenience_store_usage": {
+			"anyOf": [
+				{
+					"enum": ["low", "medium", "high"],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Convenience Store Usage"
+		},
+		"has_medical_condition": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Has Medical Condition"
+		},
+		"is_under_treatment": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Is Under Treatment"
+		},
+		"on_medication": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "On Medication"
+		},
+		"is_pregnant_or_breastfeeding": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Is Pregnant Or Breastfeeding"
+		},
+		"has_doctor_diet_restriction": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Has Doctor Diet Restriction"
+		},
+		"has_eating_disorder_history": {
+			"anyOf": [
+				{
+					"type": "boolean"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Has Eating Disorder History"
+		},
+		"medical_condition_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Medical Condition Note"
+		},
+		"medication_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Medication Note"
+		},
+		"onboarding_stage": {
+			"anyOf": [
+				{
+					"enum": [
+						"safety",
+						"stats",
+						"lifestyle",
+						"preferences",
+						"snacks",
+						"feasibility",
+						"review",
+						"complete",
+						"blocked"
+					],
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Onboarding Stage"
+		},
+		"blocked_reason": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Blocked Reason"
+		},
+		"preferences_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Preferences Note"
+		},
+		"snacks_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Snacks Note"
+		},
+		"lifestyle_note": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"title": "Lifestyle Note"
+		},
 		"updated_at": {
-			"type": "string",
-			"description": "ISO 8601 タイムスタンプ。update-user-profile が書き込む。",
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
 			"title": "Updated At"
 		}
 	},

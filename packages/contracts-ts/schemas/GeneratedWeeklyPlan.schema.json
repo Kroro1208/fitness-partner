@@ -1,0 +1,387 @@
+{
+	"$defs": {
+		"DayPlan": {
+			"properties": {
+				"date": {
+					"description": "ISO YYYY-MM-DD。",
+					"title": "Date",
+					"type": "string"
+				},
+				"theme": {
+					"maxLength": 80,
+					"minLength": 1,
+					"title": "Theme",
+					"type": "string"
+				},
+				"meals": {
+					"items": {
+						"$ref": "#/$defs/Meal"
+					},
+					"maxItems": 4,
+					"minItems": 3,
+					"title": "Meals",
+					"type": "array"
+				},
+				"daily_total_calories_kcal": {
+					"maximum": 10000,
+					"minimum": 0,
+					"title": "Daily Total Calories Kcal",
+					"type": "integer"
+				},
+				"daily_total_protein_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Daily Total Protein G",
+					"type": "number"
+				},
+				"daily_total_fat_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Daily Total Fat G",
+					"type": "number"
+				},
+				"daily_total_carbs_g": {
+					"maximum": 1200,
+					"minimum": 0,
+					"title": "Daily Total Carbs G",
+					"type": "number"
+				}
+			},
+			"required": [
+				"date",
+				"theme",
+				"meals",
+				"daily_total_calories_kcal",
+				"daily_total_protein_g",
+				"daily_total_fat_g",
+				"daily_total_carbs_g"
+			],
+			"title": "DayPlan",
+			"type": "object"
+		},
+		"Meal": {
+			"properties": {
+				"slot": {
+					"enum": ["breakfast", "lunch", "dinner", "dessert"],
+					"title": "Slot",
+					"type": "string"
+				},
+				"title": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Title",
+					"type": "string"
+				},
+				"items": {
+					"items": {
+						"$ref": "#/$defs/MealItem"
+					},
+					"maxItems": 10,
+					"minItems": 1,
+					"title": "Items",
+					"type": "array"
+				},
+				"total_calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Total Calories Kcal",
+					"type": "integer"
+				},
+				"total_protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Protein G",
+					"type": "number"
+				},
+				"total_fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Fat G",
+					"type": "number"
+				},
+				"total_carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Total Carbs G",
+					"type": "number"
+				},
+				"prep_tag": {
+					"anyOf": [
+						{
+							"enum": ["batch", "quick", "treat", "none"],
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Prep Tag"
+				},
+				"notes": {
+					"anyOf": [
+						{
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Notes"
+				}
+			},
+			"required": [
+				"slot",
+				"title",
+				"items",
+				"total_calories_kcal",
+				"total_protein_g",
+				"total_fat_g",
+				"total_carbs_g"
+			],
+			"title": "Meal",
+			"type": "object"
+		},
+		"MealItem": {
+			"properties": {
+				"food_id": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"description": "FoodCatalog の food_id。LLM 創作は null。",
+					"title": "Food Id"
+				},
+				"name": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Name",
+					"type": "string"
+				},
+				"grams": {
+					"exclusiveMinimum": 0,
+					"maximum": 2000,
+					"title": "Grams",
+					"type": "number"
+				},
+				"calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Calories Kcal",
+					"type": "integer"
+				},
+				"protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Protein G",
+					"type": "number"
+				},
+				"fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Fat G",
+					"type": "number"
+				},
+				"carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Carbs G",
+					"type": "number"
+				}
+			},
+			"required": [
+				"name",
+				"grams",
+				"calories_kcal",
+				"protein_g",
+				"fat_g",
+				"carbs_g"
+			],
+			"title": "MealItem",
+			"type": "object"
+		},
+		"SnackSwap": {
+			"properties": {
+				"current_snack": {
+					"maxLength": 80,
+					"minLength": 1,
+					"title": "Current Snack",
+					"type": "string"
+				},
+				"replacement": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Replacement",
+					"type": "string"
+				},
+				"calories_kcal": {
+					"maximum": 2000,
+					"minimum": 0,
+					"title": "Calories Kcal",
+					"type": "integer"
+				},
+				"why_it_works": {
+					"maxLength": 240,
+					"minLength": 1,
+					"title": "Why It Works",
+					"type": "string"
+				}
+			},
+			"required": [
+				"current_snack",
+				"replacement",
+				"calories_kcal",
+				"why_it_works"
+			],
+			"title": "SnackSwap",
+			"type": "object"
+		},
+		"SupplementRecommendation": {
+			"description": "1 件のサプリ推奨。",
+			"properties": {
+				"name": {
+					"description": "サプリ名 (whey / creatine / magnesium / omega3 等)。",
+					"title": "Name",
+					"type": "string"
+				},
+				"dose": {
+					"description": "推奨用量 (人間が読める形式)。",
+					"title": "Dose",
+					"type": "string"
+				},
+				"timing": {
+					"description": "摂取タイミング。",
+					"title": "Timing",
+					"type": "string"
+				},
+				"why_relevant": {
+					"description": "なぜこのユーザーに関係があるか。",
+					"title": "Why Relevant",
+					"type": "string"
+				},
+				"caution": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"description": "注意事項 (ある場合)。",
+					"title": "Caution"
+				}
+			},
+			"required": ["name", "dose", "timing", "why_relevant"],
+			"title": "SupplementRecommendation",
+			"type": "object"
+		}
+	},
+	"description": "agent の責務領域。plan_id / generated_at は adapter が付与。",
+	"properties": {
+		"target_calories_kcal": {
+			"maximum": 5000,
+			"minimum": 800,
+			"title": "Target Calories Kcal",
+			"type": "integer"
+		},
+		"target_protein_g": {
+			"maximum": 400,
+			"minimum": 20,
+			"title": "Target Protein G",
+			"type": "number"
+		},
+		"target_fat_g": {
+			"maximum": 300,
+			"minimum": 20,
+			"title": "Target Fat G",
+			"type": "number"
+		},
+		"target_carbs_g": {
+			"maximum": 800,
+			"minimum": 20,
+			"title": "Target Carbs G",
+			"type": "number"
+		},
+		"days": {
+			"items": {
+				"$ref": "#/$defs/DayPlan"
+			},
+			"maxItems": 7,
+			"minItems": 7,
+			"title": "Days",
+			"type": "array"
+		},
+		"weekly_notes": {
+			"items": {
+				"type": "string"
+			},
+			"title": "Weekly Notes",
+			"type": "array"
+		},
+		"snack_swaps": {
+			"items": {
+				"$ref": "#/$defs/SnackSwap"
+			},
+			"title": "Snack Swaps",
+			"type": "array"
+		},
+		"hydration_target_liters": {
+			"maximum": 10,
+			"minimum": 0,
+			"title": "Hydration Target Liters",
+			"type": "number"
+		},
+		"hydration_breakdown": {
+			"items": {
+				"type": "string"
+			},
+			"title": "Hydration Breakdown",
+			"type": "array"
+		},
+		"supplement_recommendations": {
+			"items": {
+				"$ref": "#/$defs/SupplementRecommendation"
+			},
+			"title": "Supplement Recommendations",
+			"type": "array"
+		},
+		"personal_rules": {
+			"items": {
+				"type": "string"
+			},
+			"maxItems": 7,
+			"minItems": 3,
+			"title": "Personal Rules",
+			"type": "array"
+		},
+		"timeline_notes": {
+			"items": {
+				"type": "string"
+			},
+			"title": "Timeline Notes",
+			"type": "array"
+		}
+	},
+	"required": [
+		"target_calories_kcal",
+		"target_protein_g",
+		"target_fat_g",
+		"target_carbs_g",
+		"days",
+		"hydration_target_liters",
+		"personal_rules"
+	],
+	"title": "GeneratedWeeklyPlan",
+	"type": "object"
+}

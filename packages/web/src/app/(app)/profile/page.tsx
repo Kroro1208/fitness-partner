@@ -1,6 +1,6 @@
 "use client";
 
-import { UpdateUserProfileInputSchema } from "@fitness/contracts-ts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import {
+	profileQueryOptions,
+	updateProfileMutationOptions,
+} from "@/hooks/use-profile";
 import {
 	buildUpdateInput,
 	type ProfileData,
@@ -27,17 +30,17 @@ const SECTIONS = {
 	body: {
 		title: "身体情報",
 		description: "年齢・性別・身長・体重",
-		fields: ["age", "sex", "height_cm", "weight_kg"],
+		fields: ["age", "sex", "heightCm", "weightKg"],
 	},
 	activity: {
 		title: "活動レベル",
 		description: "活動レベルと目標ペース",
-		fields: ["activity_level", "desired_pace"],
+		fields: ["activityLevel", "desiredPace"],
 	},
 	wellness: {
 		title: "ウェルネス",
 		description: "睡眠時間とストレスレベル",
-		fields: ["sleep_hours", "stress_level"],
+		fields: ["sleepHours", "stressLevel"],
 	},
 } as const satisfies Record<
 	Section,
@@ -50,7 +53,7 @@ function formatValue(value: unknown): string {
 }
 
 export default function ProfilePage() {
-	const { data, isLoading, isError, refetch } = useProfile();
+	const { data, isLoading, isError, refetch } = useQuery(profileQueryOptions());
 	const [editing, setEditing] = useState<Section | null>(null);
 
 	if (isLoading) {
@@ -184,7 +187,8 @@ function ProfileEditForm({
 	onCancel,
 	onSaved,
 }: ProfileEditFormProps) {
-	const update = useUpdateProfile();
+	const queryClient = useQueryClient();
+	const update = useMutation(updateProfileMutationOptions(queryClient));
 	const [values, setValues] = useState<Partial<Record<ProfileField, string>>>(
 		() =>
 			Object.fromEntries(
@@ -202,8 +206,7 @@ function ProfileEditForm({
 			return;
 		}
 		try {
-			const parsed = UpdateUserProfileInputSchema.parse(built.value);
-			await update.mutateAsync(parsed);
+			await update.mutateAsync(built.value);
 			onSaved();
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "更新に失敗しました");

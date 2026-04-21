@@ -1,0 +1,74 @@
+{
+	"additionalProperties": true,
+	"properties": {
+		"onboarding_stage": {
+			"const": "complete",
+			"title": "Onboarding Stage",
+			"type": "string"
+		},
+		"age": {
+			"maximum": 120,
+			"minimum": 18,
+			"title": "Age",
+			"type": "integer"
+		},
+		"sex": {
+			"enum": ["male", "female"],
+			"title": "Sex",
+			"type": "string"
+		},
+		"height_cm": {
+			"exclusiveMaximum": 300,
+			"exclusiveMinimum": 0,
+			"title": "Height Cm",
+			"type": "number"
+		},
+		"weight_kg": {
+			"exclusiveMaximum": 500,
+			"exclusiveMinimum": 0,
+			"title": "Weight Kg",
+			"type": "number"
+		},
+		"sleep_hours": {
+			"maximum": 24,
+			"minimum": 0,
+			"title": "Sleep Hours",
+			"type": "number"
+		},
+		"stress_level": {
+			"enum": ["low", "moderate", "high"],
+			"title": "Stress Level",
+			"type": "string"
+		},
+		"job_type": {
+			"enum": [
+				"desk",
+				"standing",
+				"light_physical",
+				"manual_labour",
+				"outdoor"
+			],
+			"title": "Job Type",
+			"type": "string"
+		},
+		"workouts_per_week": {
+			"maximum": 14,
+			"minimum": 0,
+			"title": "Workouts Per Week",
+			"type": "integer"
+		}
+	},
+	"required": [
+		"onboarding_stage",
+		"age",
+		"sex",
+		"height_cm",
+		"weight_kg",
+		"sleep_hours",
+		"stress_level",
+		"job_type",
+		"workouts_per_week"
+	],
+	"title": "CompleteProfileForPlan",
+	"type": "object"
+}

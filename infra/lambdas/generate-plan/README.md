@@ -1,0 +1,3 @@
+# generate-plan
+
+`POST /plans` のアダプタ Lambda。Cognito JWT で認証された利用者の完成プロファイルを DynamoDB から `ConsistentRead` で取得し、`CompleteProfileForPlanSchema` で fail-fast 検証する。`week_start` に対する既存プラン (`plan#<week_start>`) を確認し、無ければ `safe_prompt_profile` と FitnessEngine 入力 (`safe_agent_input`) を組み立てて Bedrock AgentCore Runtime を呼び出す。受け取った `generated_weekly_plan` を `GeneratedWeeklyPlanSchema.strict()` で検証し、`plan_id` / `week_start` / `generated_at` を付与して `WeeklyPlanSchema.strict()` に通した上で `attribute_not_exists(pk)` 条件付き Put で保存する。`ConditionalCheckFailedException` 発生時は競合勝者の既存 plan を再読して返却し、AgentCore の `AbortError` / `TimeoutError` は 504、その他 Put 失敗は 502 に写像する。

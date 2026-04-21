@@ -3,9 +3,13 @@ import { TopBar } from "./top-bar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="min-h-dvh flex flex-col bg-bg-canvas max-w-lg mx-auto">
+		<div className="flex min-h-dvh flex-col bg-bg-canvas">
 			<TopBar />
-			<main className="flex-1 overflow-y-auto px-4 pb-20 pt-4">{children}</main>
+			<main className="flex-1 overflow-y-auto">
+				<div className="mx-auto w-full max-w-lg px-4 pt-4 pb-24">
+					{children}
+				</div>
+			</main>
 			<BottomTabBar />
 		</div>
 	);

@@ -1,0 +1,63 @@
+{
+	"properties": {
+		"food_id": {
+			"anyOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "null"
+				}
+			],
+			"default": null,
+			"description": "FoodCatalog の food_id。LLM 創作は null。",
+			"title": "Food Id"
+		},
+		"name": {
+			"maxLength": 120,
+			"minLength": 1,
+			"title": "Name",
+			"type": "string"
+		},
+		"grams": {
+			"exclusiveMinimum": 0,
+			"maximum": 2000,
+			"title": "Grams",
+			"type": "number"
+		},
+		"calories_kcal": {
+			"maximum": 5000,
+			"minimum": 0,
+			"title": "Calories Kcal",
+			"type": "integer"
+		},
+		"protein_g": {
+			"maximum": 300,
+			"minimum": 0,
+			"title": "Protein G",
+			"type": "number"
+		},
+		"fat_g": {
+			"maximum": 300,
+			"minimum": 0,
+			"title": "Fat G",
+			"type": "number"
+		},
+		"carbs_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Carbs G",
+			"type": "number"
+		}
+	},
+	"required": [
+		"name",
+		"grams",
+		"calories_kcal",
+		"protein_g",
+		"fat_g",
+		"carbs_g"
+	],
+	"title": "MealItem",
+	"type": "object"
+}

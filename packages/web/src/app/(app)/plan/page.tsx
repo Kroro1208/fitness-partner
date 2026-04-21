@@ -11,11 +11,12 @@ export default function PlanPage() {
 		<Card>
 			<CardHeader>
 				<CardTitle>7日プラン</CardTitle>
-				<CardDescription>準備中です</CardDescription>
+				<CardDescription>まだ未実装です</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<p className="text-sm text-neutral-500">
-					Plan 07 で食事と運動の 7 日プランが表示されます
+					Plan 07
+					ではオンボーディング完了までを実装しています。7日プラン生成は後続フェーズで接続します。
 				</p>
 			</CardContent>
 		</Card>

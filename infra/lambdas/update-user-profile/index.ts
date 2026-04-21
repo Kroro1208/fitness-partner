@@ -13,6 +13,7 @@ import { ProfileRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { buildProfileUpdateExpression } from "../shared/dynamo-expression";
 import { profileKey } from "../shared/keys/profile";
+import { evaluateSafetyGuard } from "../shared/onboarding-safety";
 import { parseRequest } from "../shared/parse";
 import {
 	PROFILE_FIELDS,
@@ -74,10 +75,45 @@ export function createHandler(deps: { clock: Clock }) {
 		const parsed = parseRequest(UpdateUserProfileInputSchema, body.body);
 		if (!parsed.ok) return parsed.response;
 
+		const patch = parsed.data;
+
+		// ── Safety 二重防御 ────────────────────────────────
+		const anySafetyFlagProvided =
+			patch.has_medical_condition !== undefined ||
+			patch.is_under_treatment !== undefined ||
+			patch.on_medication !== undefined ||
+			patch.is_pregnant_or_breastfeeding !== undefined ||
+			patch.has_doctor_diet_restriction !== undefined ||
+			patch.has_eating_disorder_history !== undefined;
+
+		if (anySafetyFlagProvided) {
+			const guard = evaluateSafetyGuard({
+				has_medical_condition: patch.has_medical_condition ?? false,
+				is_under_treatment: patch.is_under_treatment ?? false,
+				on_medication: patch.on_medication ?? false,
+				is_pregnant_or_breastfeeding:
+					patch.is_pregnant_or_breastfeeding ?? false,
+				has_doctor_diet_restriction: patch.has_doctor_diet_restriction ?? false,
+				has_eating_disorder_history: patch.has_eating_disorder_history ?? false,
+			});
+
+			if (guard.level === "blocked" && patch.onboarding_stage !== "blocked") {
+				return badRequest(
+					"Safety flags imply blocked stage but onboarding_stage is not 'blocked'",
+				);
+			}
+		}
+
+		if (patch.onboarding_stage === "blocked" && !patch.blocked_reason) {
+			return badRequest(
+				"blocked_reason is required when onboarding_stage is 'blocked'",
+			);
+		}
+
 		const now = deps.clock.now().toISOString();
 
 		// ── Process ────────────────────────────────────────────
-		const mutation = toProfileMutation(parsed.data);
+		const mutation = toProfileMutation(patch);
 		if (
 			Object.keys(mutation.setFields).length === 0 &&
 			mutation.removeFields.length === 0

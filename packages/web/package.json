@@ -12,18 +12,22 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@ai-sdk/anthropic": "^2.0.74",
 		"@aws-sdk/client-cognito-identity-provider": "^3.1030.0",
 		"@fitness/contracts-ts": "workspace:*",
 		"@radix-ui/react-label": "^2.1.8",
 		"@radix-ui/react-slot": "^1.2.4",
 		"@tailwindcss/postcss": "^4.2.2",
+		"@tanstack/react-form": "^1.29.0",
 		"@tanstack/react-query": "^5.99.0",
+		"@varlock/nextjs-integration": "^0.3.3",
+		"ai": "^6.0.162",
 		"aws-jwt-verify": "^5.1.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-react": "^0.460.0",
 		"next": "^16.0.0",
-		"@varlock/nextjs-integration": "^0.3.3",
+		"radix-ui": "^1.4.3",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"server-only": "^0.0.1",
@@ -33,10 +37,13 @@
 		"zod": "^3.25.76"
 	},
 	"devDependencies": {
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
 		"@types/node": "^22.10.0",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"@vitest/coverage-v8": "^2.1.9",
+		"happy-dom": "^15.11.7",
 		"typescript": "^5.6.0",
 		"vitest": "^2.1.9"
 	}
