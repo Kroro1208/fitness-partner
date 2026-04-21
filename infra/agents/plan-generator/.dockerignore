@@ -1,0 +1,14 @@
+node_modules
+cdk.out
+.next
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+packages/web
+packages/food-catalog-etl/data
+tasks
+docs
+.git
+.github

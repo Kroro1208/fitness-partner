@@ -87,6 +87,69 @@ export const CoachPromptResponseSchema = z
 	.object({ prompt: z.string(), cached: z.boolean() })
 	.describe("Onboarding Coach prompt 生成の出力。");
 
+export const CompleteProfileForPlanSchema = z
+	.object({
+		onboarding_stage: z.literal("complete"),
+		age: z.number().int().gte(18).lte(120),
+		sex: z.enum(["male", "female"]),
+		height_cm: z.number().gt(0).lt(300),
+		weight_kg: z.number().gt(0).lt(500),
+		sleep_hours: z.number().gte(0).lte(24),
+		stress_level: z.enum(["low", "moderate", "high"]),
+		job_type: z.enum([
+			"desk",
+			"standing",
+			"light_physical",
+			"manual_labour",
+			"outdoor",
+		]),
+		workouts_per_week: z.number().int().gte(0).lte(14),
+	})
+	.catchall(z.any());
+
+export const DayPlanSchema = z.object({
+	date: z.string().describe("ISO YYYY-MM-DD。"),
+	theme: z.string().min(1).max(80),
+	meals: z
+		.array(
+			z.object({
+				slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+				title: z.string().min(1).max(120),
+				items: z
+					.array(
+						z.object({
+							food_id: z
+								.union([z.string(), z.null()])
+								.describe("FoodCatalog の food_id。LLM 創作は null。")
+								.default(null),
+							name: z.string().min(1).max(120),
+							grams: z.number().gt(0).lte(2000),
+							calories_kcal: z.number().int().gte(0).lte(5000),
+							protein_g: z.number().gte(0).lte(300),
+							fat_g: z.number().gte(0).lte(300),
+							carbs_g: z.number().gte(0).lte(600),
+						}),
+					)
+					.min(1)
+					.max(10),
+				total_calories_kcal: z.number().int().gte(0).lte(5000),
+				total_protein_g: z.number().gte(0).lte(300),
+				total_fat_g: z.number().gte(0).lte(300),
+				total_carbs_g: z.number().gte(0).lte(600),
+				prep_tag: z
+					.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+					.default(null),
+				notes: z.union([z.array(z.string()), z.null()]).default(null),
+			}),
+		)
+		.min(3)
+		.max(4),
+	daily_total_calories_kcal: z.number().int().gte(0).lte(10000),
+	daily_total_protein_g: z.number().gte(0).lte(600),
+	daily_total_fat_g: z.number().gte(0).lte(600),
+	daily_total_carbs_g: z.number().gte(0).lte(1200),
+});
+
 export const FoodItemSchema = z
 	.object({
 		food_id: z.string().describe("FCT2020 食品番号 (例: 01001)"),
@@ -167,6 +230,205 @@ export const FreeTextParseResponseSchema = z
 		"Onboarding の free-text parse 出力。構造化フィールドは上書きしない。",
 	);
 
+export const GeneratePlanRequestSchema = z.object({
+	week_start: z.string().describe("ISO 月曜。"),
+	force_regenerate: z.boolean().default(false),
+});
+
+export const GeneratePlanResponseSchema = z.object({
+	plan_id: z.string(),
+	week_start: z.string(),
+	generated_at: z.string(),
+	weekly_plan: z.object({
+		target_calories_kcal: z.number().int().gte(800).lte(5000),
+		target_protein_g: z.number().gte(20).lte(400),
+		target_fat_g: z.number().gte(20).lte(300),
+		target_carbs_g: z.number().gte(20).lte(800),
+		days: z
+			.array(
+				z.object({
+					date: z.string().describe("ISO YYYY-MM-DD。"),
+					theme: z.string().min(1).max(80),
+					meals: z
+						.array(
+							z.object({
+								slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+								title: z.string().min(1).max(120),
+								items: z
+									.array(
+										z.object({
+											food_id: z
+												.union([z.string(), z.null()])
+												.describe("FoodCatalog の food_id。LLM 創作は null。")
+												.default(null),
+											name: z.string().min(1).max(120),
+											grams: z.number().gt(0).lte(2000),
+											calories_kcal: z.number().int().gte(0).lte(5000),
+											protein_g: z.number().gte(0).lte(300),
+											fat_g: z.number().gte(0).lte(300),
+											carbs_g: z.number().gte(0).lte(600),
+										}),
+									)
+									.min(1)
+									.max(10),
+								total_calories_kcal: z.number().int().gte(0).lte(5000),
+								total_protein_g: z.number().gte(0).lte(300),
+								total_fat_g: z.number().gte(0).lte(300),
+								total_carbs_g: z.number().gte(0).lte(600),
+								prep_tag: z
+									.union([
+										z.enum(["batch", "quick", "treat", "none"]),
+										z.null(),
+									])
+									.default(null),
+								notes: z.union([z.array(z.string()), z.null()]).default(null),
+							}),
+						)
+						.min(3)
+						.max(4),
+					daily_total_calories_kcal: z.number().int().gte(0).lte(10000),
+					daily_total_protein_g: z.number().gte(0).lte(600),
+					daily_total_fat_g: z.number().gte(0).lte(600),
+					daily_total_carbs_g: z.number().gte(0).lte(1200),
+				}),
+			)
+			.min(7)
+			.max(7),
+		weekly_notes: z.array(z.string()).optional(),
+		snack_swaps: z
+			.array(
+				z.object({
+					current_snack: z.string().min(1).max(80),
+					replacement: z.string().min(1).max(120),
+					calories_kcal: z.number().int().gte(0).lte(2000),
+					why_it_works: z.string().min(1).max(240),
+				}),
+			)
+			.optional(),
+		hydration_target_liters: z.number().gte(0).lte(10),
+		hydration_breakdown: z.array(z.string()).optional(),
+		supplement_recommendations: z
+			.array(
+				z
+					.object({
+						name: z
+							.string()
+							.describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"),
+						dose: z.string().describe("推奨用量 (人間が読める形式)。"),
+						timing: z.string().describe("摂取タイミング。"),
+						why_relevant: z
+							.string()
+							.describe("なぜこのユーザーに関係があるか。"),
+						caution: z
+							.union([z.string(), z.null()])
+							.describe("注意事項 (ある場合)。")
+							.default(null),
+					})
+					.describe("1 件のサプリ推奨。"),
+			)
+			.optional(),
+		personal_rules: z.array(z.string()).min(3).max(7),
+		timeline_notes: z.array(z.string()).optional(),
+		plan_id: z.string().describe("uuid v4。adapter が生成。"),
+		week_start: z.string().describe("ISO 月曜。"),
+		generated_at: z.string().describe("ISO 8601 timestamp (UTC)。"),
+	}),
+});
+
+export const GeneratedWeeklyPlanSchema = z
+	.object({
+		target_calories_kcal: z.number().int().gte(800).lte(5000),
+		target_protein_g: z.number().gte(20).lte(400),
+		target_fat_g: z.number().gte(20).lte(300),
+		target_carbs_g: z.number().gte(20).lte(800),
+		days: z
+			.array(
+				z.object({
+					date: z.string().describe("ISO YYYY-MM-DD。"),
+					theme: z.string().min(1).max(80),
+					meals: z
+						.array(
+							z.object({
+								slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+								title: z.string().min(1).max(120),
+								items: z
+									.array(
+										z.object({
+											food_id: z
+												.union([z.string(), z.null()])
+												.describe("FoodCatalog の food_id。LLM 創作は null。")
+												.default(null),
+											name: z.string().min(1).max(120),
+											grams: z.number().gt(0).lte(2000),
+											calories_kcal: z.number().int().gte(0).lte(5000),
+											protein_g: z.number().gte(0).lte(300),
+											fat_g: z.number().gte(0).lte(300),
+											carbs_g: z.number().gte(0).lte(600),
+										}),
+									)
+									.min(1)
+									.max(10),
+								total_calories_kcal: z.number().int().gte(0).lte(5000),
+								total_protein_g: z.number().gte(0).lte(300),
+								total_fat_g: z.number().gte(0).lte(300),
+								total_carbs_g: z.number().gte(0).lte(600),
+								prep_tag: z
+									.union([
+										z.enum(["batch", "quick", "treat", "none"]),
+										z.null(),
+									])
+									.default(null),
+								notes: z.union([z.array(z.string()), z.null()]).default(null),
+							}),
+						)
+						.min(3)
+						.max(4),
+					daily_total_calories_kcal: z.number().int().gte(0).lte(10000),
+					daily_total_protein_g: z.number().gte(0).lte(600),
+					daily_total_fat_g: z.number().gte(0).lte(600),
+					daily_total_carbs_g: z.number().gte(0).lte(1200),
+				}),
+			)
+			.min(7)
+			.max(7),
+		weekly_notes: z.array(z.string()).optional(),
+		snack_swaps: z
+			.array(
+				z.object({
+					current_snack: z.string().min(1).max(80),
+					replacement: z.string().min(1).max(120),
+					calories_kcal: z.number().int().gte(0).lte(2000),
+					why_it_works: z.string().min(1).max(240),
+				}),
+			)
+			.optional(),
+		hydration_target_liters: z.number().gte(0).lte(10),
+		hydration_breakdown: z.array(z.string()).optional(),
+		supplement_recommendations: z
+			.array(
+				z
+					.object({
+						name: z
+							.string()
+							.describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"),
+						dose: z.string().describe("推奨用量 (人間が読める形式)。"),
+						timing: z.string().describe("摂取タイミング。"),
+						why_relevant: z
+							.string()
+							.describe("なぜこのユーザーに関係があるか。"),
+						caution: z
+							.union([z.string(), z.null()])
+							.describe("注意事項 (ある場合)。")
+							.default(null),
+					})
+					.describe("1 件のサプリ推奨。"),
+			)
+			.optional(),
+		personal_rules: z.array(z.string()).min(3).max(7),
+		timeline_notes: z.array(z.string()).optional(),
+	})
+	.describe("agent の責務領域。plan_id / generated_at は adapter が付与。");
+
 export const HydrationInputSchema = z
 	.object({
 		weight_kg: z.number().gt(0).lt(500).describe("現在体重 (kg)。"),
@@ -235,6 +497,49 @@ export const LogWeightInputSchema = z
 	})
 	.describe("体重ログの入力。");
 
+export const MealSchema = z.object({
+	slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+	title: z.string().min(1).max(120),
+	items: z
+		.array(
+			z.object({
+				food_id: z
+					.union([z.string(), z.null()])
+					.describe("FoodCatalog の food_id。LLM 創作は null。")
+					.default(null),
+				name: z.string().min(1).max(120),
+				grams: z.number().gt(0).lte(2000),
+				calories_kcal: z.number().int().gte(0).lte(5000),
+				protein_g: z.number().gte(0).lte(300),
+				fat_g: z.number().gte(0).lte(300),
+				carbs_g: z.number().gte(0).lte(600),
+			}),
+		)
+		.min(1)
+		.max(10),
+	total_calories_kcal: z.number().int().gte(0).lte(5000),
+	total_protein_g: z.number().gte(0).lte(300),
+	total_fat_g: z.number().gte(0).lte(300),
+	total_carbs_g: z.number().gte(0).lte(600),
+	prep_tag: z
+		.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+		.default(null),
+	notes: z.union([z.array(z.string()), z.null()]).default(null),
+});
+
+export const MealItemSchema = z.object({
+	food_id: z
+		.union([z.string(), z.null()])
+		.describe("FoodCatalog の food_id。LLM 創作は null。")
+		.default(null),
+	name: z.string().min(1).max(120),
+	grams: z.number().gt(0).lte(2000),
+	calories_kcal: z.number().int().gte(0).lte(5000),
+	protein_g: z.number().gte(0).lte(300),
+	fat_g: z.number().gte(0).lte(300),
+	carbs_g: z.number().gte(0).lte(600),
+});
+
 export const NutrientValueSchema = z
 	.object({
 		value: z.number(),
@@ -263,6 +568,125 @@ export const RecipeTemplateSchema = z
 		tags: z.array(z.string()).optional(),
 	})
 	.describe("手動キュレーションされたレシピテンプレート。");
+
+export const SafeAgentInputSchema = z.object({
+	calorie_macro_input: z
+		.object({
+			age: z.number().int().gte(18).lte(120).describe("年齢 (成人のみ)。"),
+			sex: z
+				.enum(["male", "female"])
+				.describe("生物学的性別 (BMR 計算に必要)。"),
+			height_cm: z.number().gt(0).lt(300).describe("身長 (cm)。"),
+			weight_kg: z.number().gt(0).lt(500).describe("現在体重 (kg)。"),
+			activity_level: z
+				.enum([
+					"sedentary",
+					"lightly_active",
+					"moderately_active",
+					"very_active",
+					"extremely_active",
+				])
+				.describe("PAL 活動係数を決める活動レベル。"),
+			sleep_hours: z
+				.number()
+				.gte(0)
+				.lte(24)
+				.describe("平均睡眠時間 (caution 条件判定に使う)。"),
+			stress_level: z
+				.enum(["low", "moderate", "high"])
+				.describe("ストレスレベル (caution 条件判定に使う)。"),
+		})
+		.describe("Calorie Macro Engine の入力。"),
+	hydration_input: z
+		.object({
+			weight_kg: z.number().gt(0).lt(500).describe("現在体重 (kg)。"),
+			workouts_per_week: z
+				.number()
+				.int()
+				.gte(0)
+				.lte(14)
+				.describe("週の運動頻度 (回)。"),
+			avg_workout_minutes: z
+				.number()
+				.int()
+				.gte(0)
+				.lte(300)
+				.describe("1 回あたりの平均運動時間 (分)。"),
+			job_type: z
+				.enum([
+					"desk",
+					"standing",
+					"light_physical",
+					"manual_labour",
+					"outdoor",
+				])
+				.describe("仕事の身体負荷タイプ。"),
+		})
+		.describe("Hydration Engine への入力。"),
+	supplement_input: z
+		.object({
+			protein_gap_g: z
+				.number()
+				.describe(
+					"タンパク質目標と食事からの推定摂取量の差 (g)。正なら不足 (ホエイ推奨トリガー)、負なら過剰。",
+				),
+			workouts_per_week: z.number().int().gte(0).lte(14),
+			sleep_hours: z.number().gte(0).lte(24),
+			fish_per_week: z
+				.number()
+				.int()
+				.gte(0)
+				.lte(21)
+				.describe("週の魚摂取回数 (オメガ3 推奨トリガー)。"),
+			early_morning_training: z
+				.boolean()
+				.describe(
+					"早朝トレーニング習慣または眠気対策のニーズ (カフェイン推奨トリガー)。",
+				)
+				.default(false),
+			low_sunlight_exposure: z
+				.boolean()
+				.describe("日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。")
+				.default(false),
+		})
+		.describe("Supplement Recommender への入力。"),
+});
+
+export const SafePromptProfileSchema = z
+	.object({
+		name: z.union([z.string(), z.null()]).default(null),
+		age: z.number().int().gte(18).lte(120),
+		sex: z.enum(["male", "female"]),
+		height_cm: z.number().gt(0).lt(300),
+		weight_kg: z.number().gt(0).lt(500),
+		goal_weight_kg: z.union([z.number().gt(0).lt(500), z.null()]).default(null),
+		goal_description: z.union([z.string(), z.null()]).default(null),
+		desired_pace: z
+			.union([z.enum(["steady", "aggressive"]), z.null()])
+			.default(null),
+		favorite_meals: z.array(z.string()).optional(),
+		hated_foods: z.array(z.string()).optional(),
+		restrictions: z.array(z.string()).optional(),
+		cooking_preference: z.union([z.string(), z.null()]).default(null),
+		food_adventurousness: z
+			.union([z.number().int().gte(1).lte(10), z.null()])
+			.default(null),
+		current_snacks: z.array(z.string()).optional(),
+		snacking_reason: z.union([z.string(), z.null()]).default(null),
+		snack_taste_preference: z.union([z.string(), z.null()]).default(null),
+		late_night_snacking: z.union([z.boolean(), z.null()]).default(null),
+		eating_out_style: z.union([z.string(), z.null()]).default(null),
+		budget_level: z.union([z.string(), z.null()]).default(null),
+		meal_frequency_preference: z
+			.union([z.number().int().gte(1).lte(8), z.null()])
+			.default(null),
+		location_region: z.union([z.string(), z.null()]).default(null),
+		kitchen_access: z.union([z.string(), z.null()]).default(null),
+		convenience_store_usage: z.union([z.string(), z.null()]).default(null),
+		avoid_alcohol: z.boolean().default(false),
+		avoid_supplements_without_consultation: z.boolean().default(false),
+	})
+	.describe("LLM prompt 露出対象。medical_*_note は含めない。");
 
 export const SafetyInputSchema = z
 	.object({
@@ -306,6 +730,13 @@ export const SafetyResultSchema = z
 		response_mode: z.enum(["normal", "limited", "medical_redirect"]),
 	})
 	.describe("Safety Guard の出力。");
+
+export const SnackSwapSchema = z.object({
+	current_snack: z.string().min(1).max(80),
+	replacement: z.string().min(1).max(120),
+	calories_kcal: z.number().int().gte(0).lte(2000),
+	why_it_works: z.string().min(1).max(240),
+});
 
 export const SupplementInputSchema = z
 	.object({
@@ -658,3 +1089,93 @@ export const UserProfileSchema = z
 		updated_at: z.union([z.string(), z.null()]).default(null),
 	})
 	.describe("永続化されたユーザープロフィール。全フィールド optional。");
+
+export const WeeklyPlanSchema = z.object({
+	target_calories_kcal: z.number().int().gte(800).lte(5000),
+	target_protein_g: z.number().gte(20).lte(400),
+	target_fat_g: z.number().gte(20).lte(300),
+	target_carbs_g: z.number().gte(20).lte(800),
+	days: z
+		.array(
+			z.object({
+				date: z.string().describe("ISO YYYY-MM-DD。"),
+				theme: z.string().min(1).max(80),
+				meals: z
+					.array(
+						z.object({
+							slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+							title: z.string().min(1).max(120),
+							items: z
+								.array(
+									z.object({
+										food_id: z
+											.union([z.string(), z.null()])
+											.describe("FoodCatalog の food_id。LLM 創作は null。")
+											.default(null),
+										name: z.string().min(1).max(120),
+										grams: z.number().gt(0).lte(2000),
+										calories_kcal: z.number().int().gte(0).lte(5000),
+										protein_g: z.number().gte(0).lte(300),
+										fat_g: z.number().gte(0).lte(300),
+										carbs_g: z.number().gte(0).lte(600),
+									}),
+								)
+								.min(1)
+								.max(10),
+							total_calories_kcal: z.number().int().gte(0).lte(5000),
+							total_protein_g: z.number().gte(0).lte(300),
+							total_fat_g: z.number().gte(0).lte(300),
+							total_carbs_g: z.number().gte(0).lte(600),
+							prep_tag: z
+								.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+								.default(null),
+							notes: z.union([z.array(z.string()), z.null()]).default(null),
+						}),
+					)
+					.min(3)
+					.max(4),
+				daily_total_calories_kcal: z.number().int().gte(0).lte(10000),
+				daily_total_protein_g: z.number().gte(0).lte(600),
+				daily_total_fat_g: z.number().gte(0).lte(600),
+				daily_total_carbs_g: z.number().gte(0).lte(1200),
+			}),
+		)
+		.min(7)
+		.max(7),
+	weekly_notes: z.array(z.string()).optional(),
+	snack_swaps: z
+		.array(
+			z.object({
+				current_snack: z.string().min(1).max(80),
+				replacement: z.string().min(1).max(120),
+				calories_kcal: z.number().int().gte(0).lte(2000),
+				why_it_works: z.string().min(1).max(240),
+			}),
+		)
+		.optional(),
+	hydration_target_liters: z.number().gte(0).lte(10),
+	hydration_breakdown: z.array(z.string()).optional(),
+	supplement_recommendations: z
+		.array(
+			z
+				.object({
+					name: z
+						.string()
+						.describe("サプリ名 (whey / creatine / magnesium / omega3 等)。"),
+					dose: z.string().describe("推奨用量 (人間が読める形式)。"),
+					timing: z.string().describe("摂取タイミング。"),
+					why_relevant: z.string().describe("なぜこのユーザーに関係があるか。"),
+					caution: z
+						.union([z.string(), z.null()])
+						.describe("注意事項 (ある場合)。")
+						.default(null),
+				})
+				.describe("1 件のサプリ推奨。"),
+		)
+		.optional(),
+	personal_rules: z.array(z.string()).min(3).max(7),
+	timeline_notes: z.array(z.string()).optional(),
+	plan_id: z.string().describe("uuid v4。adapter が生成。"),
+	week_start: z.string().describe("ISO 月曜。"),
+	generated_at: z.string().describe("ISO 8601 timestamp (UTC)。"),
+});

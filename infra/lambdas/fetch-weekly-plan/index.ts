@@ -36,6 +36,7 @@ export async function handler(
 			new GetCommand({
 				TableName: TABLE_NAME,
 				Key: planKey(auth.userId, weekStart),
+				ConsistentRead: true,
 			}),
 		);
 

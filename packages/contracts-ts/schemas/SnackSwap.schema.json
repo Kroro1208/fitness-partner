@@ -1,0 +1,31 @@
+{
+	"properties": {
+		"current_snack": {
+			"maxLength": 80,
+			"minLength": 1,
+			"title": "Current Snack",
+			"type": "string"
+		},
+		"replacement": {
+			"maxLength": 120,
+			"minLength": 1,
+			"title": "Replacement",
+			"type": "string"
+		},
+		"calories_kcal": {
+			"maximum": 2000,
+			"minimum": 0,
+			"title": "Calories Kcal",
+			"type": "integer"
+		},
+		"why_it_works": {
+			"maxLength": 240,
+			"minLength": 1,
+			"title": "Why It Works",
+			"type": "string"
+		}
+	},
+	"required": ["current_snack", "replacement", "calories_kcal", "why_it_works"],
+	"title": "SnackSwap",
+	"type": "object"
+}

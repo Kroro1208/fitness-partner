@@ -119,21 +119,38 @@ function deduplicateTypes(code) {
 	return result.join("\n");
 }
 
-function normalizeSchemaForTypes(node, isRoot = true) {
+function normalizeSchemaForTypes(node, isRoot = true, keysArePropertyNames = false) {
 	if (node === null || typeof node !== "object") {
 		return node;
 	}
 
 	if (Array.isArray(node)) {
-		return node.map((item) => normalizeSchemaForTypes(item, false));
+		return node.map((item) => normalizeSchemaForTypes(item, false, false));
 	}
 
 	const normalized = {};
 	for (const [key, value] of Object.entries(node)) {
-		if (key === "title" && !isRoot) continue;
+		// JSON Schema metadata の "title" はトップレベル以外で除去する。
+		// ただし `properties` / `$defs` 直下のキーは型名・プロパティ名なので保持する。
+		if (key === "title" && !isRoot && !keysArePropertyNames) continue;
 		if (key === "format" && value === "date") continue;
 		if (key === "x-at-least-one-not-null") continue;
-		normalized[key] = normalizeSchemaForTypes(value, false);
+		// `properties` / `$defs` の value は { propName: schema } なので、
+		// そのエントリのキーはプロパティ名 / 型名として扱う必要がある。
+		const childKeysArePropertyNames =
+			!keysArePropertyNames && (key === "properties" || key === "$defs");
+			normalized[key] = normalizeSchemaForTypes(
+				value,
+				false,
+				childKeysArePropertyNames,
+			);
+	}
+	// json-schema-to-typescript は min/maxItems を tuple / tuple union に変換する。
+	// この repo の契約は runtime 制約として長さを保持したいだけで、consumer 側では
+	// ergonomic な可変長配列型が必要なので、型生成時だけ配列長メタを落とす。
+	if ("items" in normalized) {
+		delete normalized.minItems;
+		delete normalized.maxItems;
 	}
 	return normalized;
 }

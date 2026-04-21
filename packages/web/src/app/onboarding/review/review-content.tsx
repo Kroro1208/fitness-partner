@@ -6,6 +6,8 @@ import { SectionSummaryCard } from "@/components/domain/section-summary-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/hooks/use-onboarding";
+import { useGeneratePlan } from "@/hooks/use-plan";
+import { weekStartOf } from "@/lib/date/week-start";
 import type { OnboardingProfile } from "@/lib/profile/profile-mappers";
 
 const PACE_LABELS: Record<"steady" | "aggressive", string> = {
@@ -97,11 +99,29 @@ export function ReviewContent({
 	const router = useRouter();
 	const { profile, patch, isPatching, patchError } =
 		useOnboarding(initialProfile);
+	const generate = useGeneratePlan();
 
 	const handleComplete = async () => {
-		await patch({}, "complete");
-		router.push("/home");
+		try {
+			await patch({}, "complete");
+		} catch {
+			// patchError state が Alert に反映されるので、ここでは静かに中断する。
+			return;
+		}
+		try {
+			await generate.mutateAsync({ weekStart: weekStartOf(new Date()) });
+			router.push("/home");
+		} catch (err) {
+			console.error("plan generation failed", err);
+			router.push("/home?planError=1");
+		}
 	};
+
+	const completeButtonLabel = isPatching
+		? "保存中..."
+		: generate.isPending
+			? "プランを作成中..."
+			: "プランを作成する";
 
 	const goal =
 		profile?.goalWeightKg != null
@@ -205,13 +225,17 @@ export function ReviewContent({
 		},
 	];
 
+	// 持病は入力値を尊重する。未入力を「無」と断定しない:
+	// isUnderTreatment が明示的に false のときだけ「無し」と表示し、それ以外 (null
+	// = 未入力 / true) は入力テキストをそのまま、無ければ null (未設定表示) にする。
+	const medicalConditionValue: string | null =
+		profile?.medicalConditionNote ??
+		(profile?.isUnderTreatment === false ? "無し" : null);
+
 	const safetyItems: Array<{ label: string; value: string | null }> = [
 		{ label: "通院中", value: yesNo(profile?.isUnderTreatment) },
 		{ label: "服薬中", value: yesNo(profile?.onMedication) },
-		{
-			label: "持病",
-			value: profile?.medicalConditionNote ?? "無",
-		},
+		{ label: "持病", value: medicalConditionValue },
 	];
 
 	return (
@@ -254,8 +278,11 @@ export function ReviewContent({
 			)}
 
 			<div className="flex justify-end pt-2">
-				<Button onClick={handleComplete} disabled={isPatching}>
-					{isPatching ? "保存中..." : "プランを作成する"}
+				<Button
+					onClick={handleComplete}
+					disabled={isPatching || generate.isPending}
+				>
+					{completeButtonLabel}
 				</Button>
 			</div>
 		</div>

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	evaluateSafetyGuard,
@@ -15,9 +16,9 @@ type Matrix = {
 
 const matrix: Matrix = JSON.parse(
 	readFileSync(
-		new URL(
+		path.resolve(
+			__dirname,
 			"../../../../packages/contracts-ts/schemas/fixtures/safety-matrix.json",
-			import.meta.url,
 		),
 		"utf8",
 	),

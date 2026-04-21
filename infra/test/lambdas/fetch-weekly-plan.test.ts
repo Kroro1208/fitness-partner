@@ -12,14 +12,69 @@ beforeEach(() => {
 	ddbMock.reset();
 });
 
+/**
+ * 生成済み WeeklyPlanSchema を満たす最小 fixture を組み立てる helper。
+ * strict parse を通すため全 required フィールドを埋める。
+ */
+function buildValidPlanItem() {
+	const meal = {
+		slot: "breakfast" as const,
+		title: "卵とご飯",
+		items: [
+			{
+				food_id: null,
+				name: "卵",
+				grams: 100,
+				calories_kcal: 150,
+				protein_g: 12,
+				fat_g: 10,
+				carbs_g: 1,
+			},
+		],
+		total_calories_kcal: 150,
+		total_protein_g: 12,
+		total_fat_g: 10,
+		total_carbs_g: 1,
+		prep_tag: null,
+		notes: null,
+	};
+	const day = (date: string) => ({
+		date,
+		theme: "高タンパク",
+		meals: [meal, meal, meal],
+		daily_total_calories_kcal: 450,
+		daily_total_protein_g: 36,
+		daily_total_fat_g: 30,
+		daily_total_carbs_g: 3,
+	});
+	return {
+		pk: "user#user-123",
+		sk: "plan#2026-04-13",
+		plan_id: "p1",
+		week_start: "2026-04-13",
+		generated_at: "2026-04-13T00:00:00Z",
+		target_calories_kcal: 2000,
+		target_protein_g: 150,
+		target_fat_g: 70,
+		target_carbs_g: 200,
+		days: [
+			day("2026-04-13"),
+			day("2026-04-14"),
+			day("2026-04-15"),
+			day("2026-04-16"),
+			day("2026-04-17"),
+			day("2026-04-18"),
+			day("2026-04-19"),
+		],
+		hydration_target_liters: 2.5,
+		personal_rules: ["rule1", "rule2", "rule3"],
+	};
+}
+
 describe("fetchWeeklyPlan", () => {
 	it("returns plan when found", async () => {
 		ddbMock.on(GetCommand).resolves({
-			Item: {
-				pk: "user#user-123",
-				sk: "plan#2026-04-13",
-				meals: [{ day: "mon", recipe: "chicken_salad" }],
-			},
+			Item: buildValidPlanItem(),
 		});
 
 		const event = makeEvent({
@@ -32,9 +87,27 @@ describe("fetchWeeklyPlan", () => {
 
 		expect(result.statusCode).toBe(200);
 		const body = JSON.parse(String(result.body));
-		expect(body.plan.meals).toEqual([{ day: "mon", recipe: "chicken_salad" }]);
+		expect(body.plan.plan_id).toBe("p1");
+		expect(body.plan.days).toHaveLength(7);
 		expect(body.plan.pk).toBeUndefined();
 		expect(body.plan.sk).toBeUndefined();
+	});
+
+	it("ConsistentRead: true を GetCommand に渡す", async () => {
+		ddbMock.on(GetCommand).resolves({ Item: buildValidPlanItem() });
+
+		const event = makeEvent({
+			method: "GET",
+			path: "/users/me/plans/2026-04-13",
+			pathParameters: { weekStart: "2026-04-13" },
+			sub: "user-123",
+		});
+		const result = await handler(event);
+
+		expect(result.statusCode).toBe(200);
+		const calls = ddbMock.commandCalls(GetCommand);
+		expect(calls).toHaveLength(1);
+		expect(calls[0].args[0].input.ConsistentRead).toBe(true);
 	});
 
 	it("returns 404 when plan not found", async () => {

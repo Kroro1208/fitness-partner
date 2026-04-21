@@ -11,7 +11,8 @@
 		"contracts:test": "pnpm --filter @fitness/contracts-ts test",
 		"dev:web": "pnpm --filter @fitness/web dev",
 		"build:web": "pnpm --filter @fitness/web build",
-		"test": "pnpm -r test"
+		"test": "pnpm -r test",
+		"deploy:plan08": "pnpm --filter infra deploy:plan08"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.12",

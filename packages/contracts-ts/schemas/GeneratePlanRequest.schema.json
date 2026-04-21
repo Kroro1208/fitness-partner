@@ -1,0 +1,17 @@
+{
+	"properties": {
+		"week_start": {
+			"description": "ISO 月曜。",
+			"title": "Week Start",
+			"type": "string"
+		},
+		"force_regenerate": {
+			"default": false,
+			"title": "Force Regenerate",
+			"type": "boolean"
+		}
+	},
+	"required": ["week_start"],
+	"title": "GeneratePlanRequest",
+	"type": "object"
+}
