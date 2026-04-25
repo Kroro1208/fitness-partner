@@ -2,6 +2,7 @@
 // Array.fromAsync は ESNext.Array に定義されている。infra tsconfig の lib は
 // ES2022 だが、Node 22 runtime はネイティブ対応している。このファイル限定で
 // triple-slash reference により型だけ有効化する (他ファイルへの影響なし)。
+import { randomUUID } from "node:crypto";
 import {
 	BedrockAgentCoreClient,
 	InvokeAgentRuntimeCommand,
@@ -60,6 +61,10 @@ export async function invokeAgent(
 		const response = await client.send(
 			new InvokeAgentRuntimeCommand({
 				agentRuntimeArn: runtimeArn,
+				qualifier: "DEFAULT",
+				runtimeSessionId: randomUUID(),
+				contentType: "application/json",
+				accept: "application/json",
 				payload: new TextEncoder().encode(JSON.stringify(payload)),
 			}),
 			{ abortSignal: abort.signal },

@@ -23,6 +23,9 @@ describe("GeneratePlanLambda", () => {
 		});
 		const t = Template.fromStack(stack);
 		t.resourceCountIs("AWS::Lambda::Function", 1);
+		t.hasResourceProperties("AWS::Lambda::Function", {
+			Timeout: 120,
+		});
 		t.hasResourceProperties("AWS::IAM::Policy", {
 			PolicyDocument: Match.objectLike({
 				Statement: Match.arrayWith([

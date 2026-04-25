@@ -125,6 +125,28 @@ export interface CompleteProfileForPlan {
 	[k: string]: unknown;
 }
 
+/**
+ * 対象日の配分と他 meal の合計マクロ。
+ *
+ * ``plan.target_* /7`` の週平均は使わず、``plan.days[i].daily_total_*`` を
+ * ``original_day_total_*`` として採用する。これにより alcohol day / treat day /
+ * batch day などの日次配分の差異を swap 後も維持する。
+ */
+export interface DailyMacroContext {
+	/**
+	 * ISO YYYY-MM-DD。
+	 */
+	date: string;
+	original_day_total_calories_kcal: number;
+	original_day_total_protein_g: number;
+	original_day_total_fat_g: number;
+	original_day_total_carbs_g: number;
+	other_meals_total_calories_kcal: number;
+	other_meals_total_protein_g: number;
+	other_meals_total_fat_g: number;
+	other_meals_total_carbs_g: number;
+}
+
 export interface DayPlan {
 	/**
 	 * ISO YYYY-MM-DD。
@@ -257,7 +279,7 @@ export interface WeeklyPlan {
 	personal_rules: string[];
 	timeline_notes?: string[];
 	/**
-	 * uuid v4。adapter が生成。
+	 * uuid v4。adapter が生成。plan identity として不変。
 	 */
 	plan_id: string;
 	/**
@@ -268,6 +290,10 @@ export interface WeeklyPlan {
 	 * ISO 8601 timestamp (UTC)。
 	 */
 	generated_at: string;
+	/**
+	 * monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。
+	 */
+	revision: number;
 }
 export interface SnackSwap {
 	current_snack: string;
@@ -299,6 +325,10 @@ export interface SupplementRecommendation {
 	 * 注意事項 (ある場合)。
 	 */
 	caution?: string | null;
+}
+
+export interface GeneratedMealSwapCandidates {
+	candidates: Meal[];
 }
 
 /**
@@ -422,6 +452,92 @@ export interface LogWeightInput {
 }
 
 /**
+ * apply は meal 内容を持たず、server 側の proposal を信頼する。
+ */
+export interface MealSwapApplyRequest {
+	proposal_id: string;
+	chosen_index: number;
+}
+
+export interface MealSwapApplyResponse {
+	updated_day: DayPlan;
+	/**
+	 * plan identity として不変。
+	 */
+	plan_id: string;
+	/**
+	 * apply 成功で +1 された新 revision。次の swap 時の expected_revision として使う。
+	 */
+	revision: number;
+}
+
+export interface MealSwapCandidatesRequest {
+	/**
+	 * ISO YYYY-MM-DD。plan.days[].date のいずれか。
+	 */
+	date: string;
+	slot: "breakfast" | "lunch" | "dinner" | "dessert";
+}
+
+/**
+ * candidates 生成結果。``proposal_id`` を client が apply で返す。
+ */
+export interface MealSwapCandidatesResponse {
+	/**
+	 * uuid v4。
+	 */
+	proposal_id: string;
+	/**
+	 * ISO 8601 (生成時刻 + 10 分)。
+	 */
+	proposal_expires_at: string;
+	candidates: Meal[];
+}
+
+/**
+ * Meal swap 候補生成のため Strands Agent に渡す payload。
+ *
+ * ``medical_*_note`` は ``SafePromptProfile`` の段階で既に除去されている。
+ * ``target_meal`` は ``plan.days[date].meals`` から slot 完全一致で取り出した
+ * 1 件、``daily_context`` は ``DailyMacroContext`` で計算済み。
+ */
+export interface MealSwapContext {
+	safe_prompt_profile: SafePromptProfile;
+	target_meal: Meal;
+	daily_context: DailyMacroContext;
+}
+/**
+ * LLM prompt 露出対象。medical_*_note は含めない。
+ */
+export interface SafePromptProfile {
+	name?: string | null;
+	age: number;
+	sex: "male" | "female";
+	height_cm: number;
+	weight_kg: number;
+	goal_weight_kg?: number | null;
+	goal_description?: string | null;
+	desired_pace?: ("steady" | "aggressive") | null;
+	favorite_meals?: string[];
+	hated_foods?: string[];
+	restrictions?: string[];
+	cooking_preference?: string | null;
+	food_adventurousness?: number | null;
+	current_snacks?: string[];
+	snacking_reason?: string | null;
+	snack_taste_preference?: string | null;
+	late_night_snacking?: boolean | null;
+	eating_out_style?: string | null;
+	budget_level?: string | null;
+	meal_frequency_preference?: number | null;
+	location_region?: string | null;
+	kitchen_access?: string | null;
+	convenience_store_usage?: string | null;
+	avoid_alcohol?: boolean;
+	avoid_supplements_without_consultation?: boolean;
+}
+
+/**
  * 手動キュレーションされたレシピテンプレート。
  */
 export interface RecipeTemplate {
@@ -468,37 +584,6 @@ export interface SupplementInput {
 	 * 日照不足・冬場・屋内労働中心 (ビタミン D 推奨トリガー)。
 	 */
 	low_sunlight_exposure?: boolean;
-}
-
-/**
- * LLM prompt 露出対象。medical_*_note は含めない。
- */
-export interface SafePromptProfile {
-	name?: string | null;
-	age: number;
-	sex: "male" | "female";
-	height_cm: number;
-	weight_kg: number;
-	goal_weight_kg?: number | null;
-	goal_description?: string | null;
-	desired_pace?: ("steady" | "aggressive") | null;
-	favorite_meals?: string[];
-	hated_foods?: string[];
-	restrictions?: string[];
-	cooking_preference?: string | null;
-	food_adventurousness?: number | null;
-	current_snacks?: string[];
-	snacking_reason?: string | null;
-	snack_taste_preference?: string | null;
-	late_night_snacking?: boolean | null;
-	eating_out_style?: string | null;
-	budget_level?: string | null;
-	meal_frequency_preference?: number | null;
-	location_region?: string | null;
-	kitchen_access?: string | null;
-	convenience_store_usage?: string | null;
-	avoid_alcohol?: boolean;
-	avoid_supplements_without_consultation?: boolean;
 }
 
 /**

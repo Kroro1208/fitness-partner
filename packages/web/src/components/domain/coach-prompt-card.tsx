@@ -17,7 +17,7 @@ export function CoachPromptCard({
 	isUnavailable = false,
 }: CoachPromptCardProps) {
 	return (
-		<Card className="mb-6 bg-subtle border-primary-100">
+		<Card className="mb-6 border-primary-100 bg-bg-subtle">
 			<CardContent className="pt-6">
 				{isLoading ? (
 					<div className="space-y-2">
@@ -26,21 +26,21 @@ export function CoachPromptCard({
 					</div>
 				) : isUnavailable || prompt === null ? (
 					<div className="space-y-2">
-						<p className="text-sm leading-relaxed text-danger-600">
+						<p className="text-body leading-relaxed text-danger-700">
 							コーチメッセージを取得できませんでした。
 						</p>
-						<p className="text-xs text-neutral-600">
+						<p className="text-caption text-neutral-600">
 							再読み込みするか、このまま入力を続けてください。
 						</p>
 					</div>
 				) : (
 					<div className="space-y-2">
 						{isFallback ? (
-							<p className="text-xs text-neutral-600">
+							<p className="text-caption text-neutral-600">
 								AI 生成が利用できなかったため、固定メッセージを表示しています。
 							</p>
 						) : null}
-						<p className="text-sm leading-relaxed text-neutral-900 whitespace-pre-wrap">
+						<p className="whitespace-pre-wrap text-body leading-relaxed text-neutral-900">
 							{prompt}
 						</p>
 					</div>

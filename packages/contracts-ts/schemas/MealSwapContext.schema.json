@@ -1,0 +1,496 @@
+{
+	"$defs": {
+		"DailyMacroContext": {
+			"description": "対象日の配分と他 meal の合計マクロ。\n\n``plan.target_*/7`` の週平均は使わず、``plan.days[i].daily_total_*`` を\n``original_day_total_*`` として採用する。これにより alcohol day / treat day /\nbatch day などの日次配分の差異を swap 後も維持する。",
+			"properties": {
+				"date": {
+					"description": "ISO YYYY-MM-DD。",
+					"title": "Date",
+					"type": "string"
+				},
+				"original_day_total_calories_kcal": {
+					"maximum": 10000,
+					"minimum": 0,
+					"title": "Original Day Total Calories Kcal",
+					"type": "integer"
+				},
+				"original_day_total_protein_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Original Day Total Protein G",
+					"type": "number"
+				},
+				"original_day_total_fat_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Original Day Total Fat G",
+					"type": "number"
+				},
+				"original_day_total_carbs_g": {
+					"maximum": 1200,
+					"minimum": 0,
+					"title": "Original Day Total Carbs G",
+					"type": "number"
+				},
+				"other_meals_total_calories_kcal": {
+					"maximum": 10000,
+					"minimum": 0,
+					"title": "Other Meals Total Calories Kcal",
+					"type": "integer"
+				},
+				"other_meals_total_protein_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Other Meals Total Protein G",
+					"type": "number"
+				},
+				"other_meals_total_fat_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Other Meals Total Fat G",
+					"type": "number"
+				},
+				"other_meals_total_carbs_g": {
+					"maximum": 1200,
+					"minimum": 0,
+					"title": "Other Meals Total Carbs G",
+					"type": "number"
+				}
+			},
+			"required": [
+				"date",
+				"original_day_total_calories_kcal",
+				"original_day_total_protein_g",
+				"original_day_total_fat_g",
+				"original_day_total_carbs_g",
+				"other_meals_total_calories_kcal",
+				"other_meals_total_protein_g",
+				"other_meals_total_fat_g",
+				"other_meals_total_carbs_g"
+			],
+			"title": "DailyMacroContext",
+			"type": "object"
+		},
+		"Meal": {
+			"properties": {
+				"slot": {
+					"enum": ["breakfast", "lunch", "dinner", "dessert"],
+					"title": "Slot",
+					"type": "string"
+				},
+				"title": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Title",
+					"type": "string"
+				},
+				"items": {
+					"items": {
+						"$ref": "#/$defs/MealItem"
+					},
+					"maxItems": 10,
+					"minItems": 1,
+					"title": "Items",
+					"type": "array"
+				},
+				"total_calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Total Calories Kcal",
+					"type": "integer"
+				},
+				"total_protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Protein G",
+					"type": "number"
+				},
+				"total_fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Total Fat G",
+					"type": "number"
+				},
+				"total_carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Total Carbs G",
+					"type": "number"
+				},
+				"prep_tag": {
+					"anyOf": [
+						{
+							"enum": ["batch", "quick", "treat", "none"],
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Prep Tag"
+				},
+				"notes": {
+					"anyOf": [
+						{
+							"items": {
+								"type": "string"
+							},
+							"type": "array"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Notes"
+				}
+			},
+			"required": [
+				"slot",
+				"title",
+				"items",
+				"total_calories_kcal",
+				"total_protein_g",
+				"total_fat_g",
+				"total_carbs_g"
+			],
+			"title": "Meal",
+			"type": "object"
+		},
+		"MealItem": {
+			"properties": {
+				"food_id": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"description": "FoodCatalog の food_id。LLM 創作は null。",
+					"title": "Food Id"
+				},
+				"name": {
+					"maxLength": 120,
+					"minLength": 1,
+					"title": "Name",
+					"type": "string"
+				},
+				"grams": {
+					"exclusiveMinimum": 0,
+					"maximum": 2000,
+					"title": "Grams",
+					"type": "number"
+				},
+				"calories_kcal": {
+					"maximum": 5000,
+					"minimum": 0,
+					"title": "Calories Kcal",
+					"type": "integer"
+				},
+				"protein_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Protein G",
+					"type": "number"
+				},
+				"fat_g": {
+					"maximum": 300,
+					"minimum": 0,
+					"title": "Fat G",
+					"type": "number"
+				},
+				"carbs_g": {
+					"maximum": 600,
+					"minimum": 0,
+					"title": "Carbs G",
+					"type": "number"
+				}
+			},
+			"required": [
+				"name",
+				"grams",
+				"calories_kcal",
+				"protein_g",
+				"fat_g",
+				"carbs_g"
+			],
+			"title": "MealItem",
+			"type": "object"
+		},
+		"SafePromptProfile": {
+			"description": "LLM prompt 露出対象。medical_*_note は含めない。",
+			"properties": {
+				"name": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Name"
+				},
+				"age": {
+					"maximum": 120,
+					"minimum": 18,
+					"title": "Age",
+					"type": "integer"
+				},
+				"sex": {
+					"enum": ["male", "female"],
+					"title": "Sex",
+					"type": "string"
+				},
+				"height_cm": {
+					"exclusiveMaximum": 300,
+					"exclusiveMinimum": 0,
+					"title": "Height Cm",
+					"type": "number"
+				},
+				"weight_kg": {
+					"exclusiveMaximum": 500,
+					"exclusiveMinimum": 0,
+					"title": "Weight Kg",
+					"type": "number"
+				},
+				"goal_weight_kg": {
+					"anyOf": [
+						{
+							"exclusiveMaximum": 500,
+							"exclusiveMinimum": 0,
+							"type": "number"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Goal Weight Kg"
+				},
+				"goal_description": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Goal Description"
+				},
+				"desired_pace": {
+					"anyOf": [
+						{
+							"enum": ["steady", "aggressive"],
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Desired Pace"
+				},
+				"favorite_meals": {
+					"items": {
+						"type": "string"
+					},
+					"title": "Favorite Meals",
+					"type": "array"
+				},
+				"hated_foods": {
+					"items": {
+						"type": "string"
+					},
+					"title": "Hated Foods",
+					"type": "array"
+				},
+				"restrictions": {
+					"items": {
+						"type": "string"
+					},
+					"title": "Restrictions",
+					"type": "array"
+				},
+				"cooking_preference": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Cooking Preference"
+				},
+				"food_adventurousness": {
+					"anyOf": [
+						{
+							"maximum": 10,
+							"minimum": 1,
+							"type": "integer"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Food Adventurousness"
+				},
+				"current_snacks": {
+					"items": {
+						"type": "string"
+					},
+					"title": "Current Snacks",
+					"type": "array"
+				},
+				"snacking_reason": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Snacking Reason"
+				},
+				"snack_taste_preference": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Snack Taste Preference"
+				},
+				"late_night_snacking": {
+					"anyOf": [
+						{
+							"type": "boolean"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Late Night Snacking"
+				},
+				"eating_out_style": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Eating Out Style"
+				},
+				"budget_level": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Budget Level"
+				},
+				"meal_frequency_preference": {
+					"anyOf": [
+						{
+							"maximum": 8,
+							"minimum": 1,
+							"type": "integer"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Meal Frequency Preference"
+				},
+				"location_region": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Location Region"
+				},
+				"kitchen_access": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Kitchen Access"
+				},
+				"convenience_store_usage": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"type": "null"
+						}
+					],
+					"default": null,
+					"title": "Convenience Store Usage"
+				},
+				"avoid_alcohol": {
+					"default": false,
+					"title": "Avoid Alcohol",
+					"type": "boolean"
+				},
+				"avoid_supplements_without_consultation": {
+					"default": false,
+					"title": "Avoid Supplements Without Consultation",
+					"type": "boolean"
+				}
+			},
+			"required": ["age", "sex", "height_cm", "weight_kg"],
+			"title": "SafePromptProfile",
+			"type": "object"
+		}
+	},
+	"description": "Meal swap 候補生成のため Strands Agent に渡す payload。\n\n``medical_*_note`` は ``SafePromptProfile`` の段階で既に除去されている。\n``target_meal`` は ``plan.days[date].meals`` から slot 完全一致で取り出した\n1 件、``daily_context`` は ``DailyMacroContext`` で計算済み。",
+	"properties": {
+		"safe_prompt_profile": {
+			"$ref": "#/$defs/SafePromptProfile"
+		},
+		"target_meal": {
+			"$ref": "#/$defs/Meal"
+		},
+		"daily_context": {
+			"$ref": "#/$defs/DailyMacroContext"
+		}
+	},
+	"required": ["safe_prompt_profile", "target_meal", "daily_context"],
+	"title": "MealSwapContext",
+	"type": "object"
+}

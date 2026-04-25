@@ -1,0 +1,71 @@
+{
+	"description": "対象日の配分と他 meal の合計マクロ。\n\n``plan.target_*/7`` の週平均は使わず、``plan.days[i].daily_total_*`` を\n``original_day_total_*`` として採用する。これにより alcohol day / treat day /\nbatch day などの日次配分の差異を swap 後も維持する。",
+	"properties": {
+		"date": {
+			"description": "ISO YYYY-MM-DD。",
+			"title": "Date",
+			"type": "string"
+		},
+		"original_day_total_calories_kcal": {
+			"maximum": 10000,
+			"minimum": 0,
+			"title": "Original Day Total Calories Kcal",
+			"type": "integer"
+		},
+		"original_day_total_protein_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Original Day Total Protein G",
+			"type": "number"
+		},
+		"original_day_total_fat_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Original Day Total Fat G",
+			"type": "number"
+		},
+		"original_day_total_carbs_g": {
+			"maximum": 1200,
+			"minimum": 0,
+			"title": "Original Day Total Carbs G",
+			"type": "number"
+		},
+		"other_meals_total_calories_kcal": {
+			"maximum": 10000,
+			"minimum": 0,
+			"title": "Other Meals Total Calories Kcal",
+			"type": "integer"
+		},
+		"other_meals_total_protein_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Other Meals Total Protein G",
+			"type": "number"
+		},
+		"other_meals_total_fat_g": {
+			"maximum": 600,
+			"minimum": 0,
+			"title": "Other Meals Total Fat G",
+			"type": "number"
+		},
+		"other_meals_total_carbs_g": {
+			"maximum": 1200,
+			"minimum": 0,
+			"title": "Other Meals Total Carbs G",
+			"type": "number"
+		}
+	},
+	"required": [
+		"date",
+		"original_day_total_calories_kcal",
+		"original_day_total_protein_g",
+		"original_day_total_fat_g",
+		"original_day_total_carbs_g",
+		"other_meals_total_calories_kcal",
+		"other_meals_total_protein_g",
+		"other_meals_total_fat_g",
+		"other_meals_total_carbs_g"
+	],
+	"title": "DailyMacroContext",
+	"type": "object"
+}

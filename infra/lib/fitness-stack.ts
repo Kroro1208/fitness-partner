@@ -6,6 +6,7 @@ import { CrudLambdas } from "./constructs/crud-lambdas";
 import { FitnessDatabase } from "./constructs/database";
 import { GeneratePlanLambda } from "./constructs/generate-plan-lambda";
 import { HelloLambda } from "./constructs/hello-lambda";
+import { SwapMealLambda } from "./constructs/swap-meal-lambda";
 
 export class FitnessStack extends cdk.Stack {
 	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -62,9 +63,16 @@ export class FitnessStack extends cdk.Stack {
 				table: database.table,
 				agentcoreRuntimeArn,
 			});
+			// Plan 09: Meal swap Adapter Lambda。同 Runtime を再利用するため
+			// GeneratePlanLambda と同じ agentcoreRuntimeArn 前提で有効化する。
+			new SwapMealLambda(this, "SwapMealLambda", {
+				httpApi: api.httpApi,
+				table: database.table,
+				agentcoreRuntimeArn,
+			});
 		} else {
 			cdk.Annotations.of(this).addInfo(
-				"agentcoreRuntimeArn context not set — skipping GeneratePlanLambda. " +
+				"agentcoreRuntimeArn context not set — skipping GeneratePlanLambda and SwapMealLambda. " +
 					"Re-deploy with `-c agentcoreRuntimeArn=<arn>` after PlanGeneratorStack.",
 			);
 		}

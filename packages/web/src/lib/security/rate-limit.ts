@@ -66,20 +66,27 @@ export function enforceRateLimits(
 	rules: readonly RateLimitRule[],
 	now: number = Date.now(),
 ): RateLimitResult {
-	let retryAfterSeconds = 0;
-
-	for (const rule of rules) {
-		const result = consumeRateLimit(rule, now);
-		if (!result.allowed) {
-			retryAfterSeconds = Math.max(retryAfterSeconds, result.retryAfterSeconds);
-		}
-	}
+	const results = rules.map((rule) => consumeRateLimit(rule, now));
+	const retryAfterSeconds = maxRetryAfterSeconds(results);
 
 	if (retryAfterSeconds > 0) {
 		return { allowed: false, retryAfterSeconds };
 	}
 
 	return { allowed: true };
+}
+
+function maxRetryAfterSeconds(results: readonly RateLimitResult[]): number {
+	return results
+		.filter(
+			(result): result is { allowed: false; retryAfterSeconds: number } =>
+				result.allowed === false,
+		)
+		.reduce(
+			(maxRetryAfter, result) =>
+				Math.max(maxRetryAfter, result.retryAfterSeconds),
+			0,
+		);
 }
 
 export function getClientIp(request: NextRequest): string {

@@ -107,6 +107,22 @@ export const CompleteProfileForPlanSchema = z
 	})
 	.catchall(z.any());
 
+export const DailyMacroContextSchema = z
+	.object({
+		date: z.string().describe("ISO YYYY-MM-DD。"),
+		original_day_total_calories_kcal: z.number().int().gte(0).lte(10000),
+		original_day_total_protein_g: z.number().gte(0).lte(600),
+		original_day_total_fat_g: z.number().gte(0).lte(600),
+		original_day_total_carbs_g: z.number().gte(0).lte(1200),
+		other_meals_total_calories_kcal: z.number().int().gte(0).lte(10000),
+		other_meals_total_protein_g: z.number().gte(0).lte(600),
+		other_meals_total_fat_g: z.number().gte(0).lte(600),
+		other_meals_total_carbs_g: z.number().gte(0).lte(1200),
+	})
+	.describe(
+		"対象日の配分と他 meal の合計マクロ。\n\n``plan.target_*/7`` の週平均は使わず、``plan.days[i].daily_total_*`` を\n``original_day_total_*`` として採用する。これにより alcohol day / treat day /\nbatch day などの日次配分の差異を swap 後も維持する。",
+	);
+
 export const DayPlanSchema = z.object({
 	date: z.string().describe("ISO YYYY-MM-DD。"),
 	theme: z.string().min(1).max(80),
@@ -329,10 +345,56 @@ export const GeneratePlanResponseSchema = z.object({
 			.optional(),
 		personal_rules: z.array(z.string()).min(3).max(7),
 		timeline_notes: z.array(z.string()).optional(),
-		plan_id: z.string().describe("uuid v4。adapter が生成。"),
+		plan_id: z
+			.string()
+			.describe("uuid v4。adapter が生成。plan identity として不変。"),
 		week_start: z.string().describe("ISO 月曜。"),
 		generated_at: z.string().describe("ISO 8601 timestamp (UTC)。"),
+		revision: z
+			.number()
+			.int()
+			.gte(0)
+			.describe(
+				"monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
+			),
 	}),
+});
+
+export const GeneratedMealSwapCandidatesSchema = z.object({
+	candidates: z
+		.array(
+			z.object({
+				slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+				title: z.string().min(1).max(120),
+				items: z
+					.array(
+						z.object({
+							food_id: z
+								.union([z.string(), z.null()])
+								.describe("FoodCatalog の food_id。LLM 創作は null。")
+								.default(null),
+							name: z.string().min(1).max(120),
+							grams: z.number().gt(0).lte(2000),
+							calories_kcal: z.number().int().gte(0).lte(5000),
+							protein_g: z.number().gte(0).lte(300),
+							fat_g: z.number().gte(0).lte(300),
+							carbs_g: z.number().gte(0).lte(600),
+						}),
+					)
+					.min(1)
+					.max(10),
+				total_calories_kcal: z.number().int().gte(0).lte(5000),
+				total_protein_g: z.number().gte(0).lte(300),
+				total_fat_g: z.number().gte(0).lte(300),
+				total_carbs_g: z.number().gte(0).lte(600),
+				prep_tag: z
+					.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+					.default(null),
+				notes: z.union([z.array(z.string()), z.null()]).default(null),
+			}),
+		)
+		.min(3)
+		.max(3),
 });
 
 export const GeneratedWeeklyPlanSchema = z
@@ -539,6 +601,200 @@ export const MealItemSchema = z.object({
 	fat_g: z.number().gte(0).lte(300),
 	carbs_g: z.number().gte(0).lte(600),
 });
+
+export const MealSwapApplyRequestSchema = z
+	.object({
+		proposal_id: z.string(),
+		chosen_index: z.number().int().gte(0).lte(2),
+	})
+	.describe("apply は meal 内容を持たず、server 側の proposal を信頼する。");
+
+export const MealSwapApplyResponseSchema = z.object({
+	updated_day: z.object({
+		date: z.string().describe("ISO YYYY-MM-DD。"),
+		theme: z.string().min(1).max(80),
+		meals: z
+			.array(
+				z.object({
+					slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+					title: z.string().min(1).max(120),
+					items: z
+						.array(
+							z.object({
+								food_id: z
+									.union([z.string(), z.null()])
+									.describe("FoodCatalog の food_id。LLM 創作は null。")
+									.default(null),
+								name: z.string().min(1).max(120),
+								grams: z.number().gt(0).lte(2000),
+								calories_kcal: z.number().int().gte(0).lte(5000),
+								protein_g: z.number().gte(0).lte(300),
+								fat_g: z.number().gte(0).lte(300),
+								carbs_g: z.number().gte(0).lte(600),
+							}),
+						)
+						.min(1)
+						.max(10),
+					total_calories_kcal: z.number().int().gte(0).lte(5000),
+					total_protein_g: z.number().gte(0).lte(300),
+					total_fat_g: z.number().gte(0).lte(300),
+					total_carbs_g: z.number().gte(0).lte(600),
+					prep_tag: z
+						.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+						.default(null),
+					notes: z.union([z.array(z.string()), z.null()]).default(null),
+				}),
+			)
+			.min(3)
+			.max(4),
+		daily_total_calories_kcal: z.number().int().gte(0).lte(10000),
+		daily_total_protein_g: z.number().gte(0).lte(600),
+		daily_total_fat_g: z.number().gte(0).lte(600),
+		daily_total_carbs_g: z.number().gte(0).lte(1200),
+	}),
+	plan_id: z.string().describe("plan identity として不変。"),
+	revision: z
+		.number()
+		.int()
+		.gte(0)
+		.describe(
+			"apply 成功で +1 された新 revision。次の swap 時の expected_revision として使う。",
+		),
+});
+
+export const MealSwapCandidatesRequestSchema = z.object({
+	date: z.string().describe("ISO YYYY-MM-DD。plan.days[].date のいずれか。"),
+	slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+});
+
+export const MealSwapCandidatesResponseSchema = z
+	.object({
+		proposal_id: z.string().describe("uuid v4。"),
+		proposal_expires_at: z.string().describe("ISO 8601 (生成時刻 + 10 分)。"),
+		candidates: z
+			.array(
+				z.object({
+					slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+					title: z.string().min(1).max(120),
+					items: z
+						.array(
+							z.object({
+								food_id: z
+									.union([z.string(), z.null()])
+									.describe("FoodCatalog の food_id。LLM 創作は null。")
+									.default(null),
+								name: z.string().min(1).max(120),
+								grams: z.number().gt(0).lte(2000),
+								calories_kcal: z.number().int().gte(0).lte(5000),
+								protein_g: z.number().gte(0).lte(300),
+								fat_g: z.number().gte(0).lte(300),
+								carbs_g: z.number().gte(0).lte(600),
+							}),
+						)
+						.min(1)
+						.max(10),
+					total_calories_kcal: z.number().int().gte(0).lte(5000),
+					total_protein_g: z.number().gte(0).lte(300),
+					total_fat_g: z.number().gte(0).lte(300),
+					total_carbs_g: z.number().gte(0).lte(600),
+					prep_tag: z
+						.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+						.default(null),
+					notes: z.union([z.array(z.string()), z.null()]).default(null),
+				}),
+			)
+			.min(3)
+			.max(3),
+	})
+	.describe("candidates 生成結果。``proposal_id`` を client が apply で返す。");
+
+export const MealSwapContextSchema = z
+	.object({
+		safe_prompt_profile: z
+			.object({
+				name: z.union([z.string(), z.null()]).default(null),
+				age: z.number().int().gte(18).lte(120),
+				sex: z.enum(["male", "female"]),
+				height_cm: z.number().gt(0).lt(300),
+				weight_kg: z.number().gt(0).lt(500),
+				goal_weight_kg: z
+					.union([z.number().gt(0).lt(500), z.null()])
+					.default(null),
+				goal_description: z.union([z.string(), z.null()]).default(null),
+				desired_pace: z
+					.union([z.enum(["steady", "aggressive"]), z.null()])
+					.default(null),
+				favorite_meals: z.array(z.string()).optional(),
+				hated_foods: z.array(z.string()).optional(),
+				restrictions: z.array(z.string()).optional(),
+				cooking_preference: z.union([z.string(), z.null()]).default(null),
+				food_adventurousness: z
+					.union([z.number().int().gte(1).lte(10), z.null()])
+					.default(null),
+				current_snacks: z.array(z.string()).optional(),
+				snacking_reason: z.union([z.string(), z.null()]).default(null),
+				snack_taste_preference: z.union([z.string(), z.null()]).default(null),
+				late_night_snacking: z.union([z.boolean(), z.null()]).default(null),
+				eating_out_style: z.union([z.string(), z.null()]).default(null),
+				budget_level: z.union([z.string(), z.null()]).default(null),
+				meal_frequency_preference: z
+					.union([z.number().int().gte(1).lte(8), z.null()])
+					.default(null),
+				location_region: z.union([z.string(), z.null()]).default(null),
+				kitchen_access: z.union([z.string(), z.null()]).default(null),
+				convenience_store_usage: z.union([z.string(), z.null()]).default(null),
+				avoid_alcohol: z.boolean().default(false),
+				avoid_supplements_without_consultation: z.boolean().default(false),
+			})
+			.describe("LLM prompt 露出対象。medical_*_note は含めない。"),
+		target_meal: z.object({
+			slot: z.enum(["breakfast", "lunch", "dinner", "dessert"]),
+			title: z.string().min(1).max(120),
+			items: z
+				.array(
+					z.object({
+						food_id: z
+							.union([z.string(), z.null()])
+							.describe("FoodCatalog の food_id。LLM 創作は null。")
+							.default(null),
+						name: z.string().min(1).max(120),
+						grams: z.number().gt(0).lte(2000),
+						calories_kcal: z.number().int().gte(0).lte(5000),
+						protein_g: z.number().gte(0).lte(300),
+						fat_g: z.number().gte(0).lte(300),
+						carbs_g: z.number().gte(0).lte(600),
+					}),
+				)
+				.min(1)
+				.max(10),
+			total_calories_kcal: z.number().int().gte(0).lte(5000),
+			total_protein_g: z.number().gte(0).lte(300),
+			total_fat_g: z.number().gte(0).lte(300),
+			total_carbs_g: z.number().gte(0).lte(600),
+			prep_tag: z
+				.union([z.enum(["batch", "quick", "treat", "none"]), z.null()])
+				.default(null),
+			notes: z.union([z.array(z.string()), z.null()]).default(null),
+		}),
+		daily_context: z
+			.object({
+				date: z.string().describe("ISO YYYY-MM-DD。"),
+				original_day_total_calories_kcal: z.number().int().gte(0).lte(10000),
+				original_day_total_protein_g: z.number().gte(0).lte(600),
+				original_day_total_fat_g: z.number().gte(0).lte(600),
+				original_day_total_carbs_g: z.number().gte(0).lte(1200),
+				other_meals_total_calories_kcal: z.number().int().gte(0).lte(10000),
+				other_meals_total_protein_g: z.number().gte(0).lte(600),
+				other_meals_total_fat_g: z.number().gte(0).lte(600),
+				other_meals_total_carbs_g: z.number().gte(0).lte(1200),
+			})
+			.describe(
+				"対象日の配分と他 meal の合計マクロ。\n\n``plan.target_*/7`` の週平均は使わず、``plan.days[i].daily_total_*`` を\n``original_day_total_*`` として採用する。これにより alcohol day / treat day /\nbatch day などの日次配分の差異を swap 後も維持する。",
+			),
+	})
+	.describe(
+		"Meal swap 候補生成のため Strands Agent に渡す payload。\n\n``medical_*_note`` は ``SafePromptProfile`` の段階で既に除去されている。\n``target_meal`` は ``plan.days[date].meals`` から slot 完全一致で取り出した\n1 件、``daily_context`` は ``DailyMacroContext`` で計算済み。",
+	);
 
 export const NutrientValueSchema = z
 	.object({
@@ -1175,7 +1431,16 @@ export const WeeklyPlanSchema = z.object({
 		.optional(),
 	personal_rules: z.array(z.string()).min(3).max(7),
 	timeline_notes: z.array(z.string()).optional(),
-	plan_id: z.string().describe("uuid v4。adapter が生成。"),
+	plan_id: z
+		.string()
+		.describe("uuid v4。adapter が生成。plan identity として不変。"),
 	week_start: z.string().describe("ISO 月曜。"),
 	generated_at: z.string().describe("ISO 8601 timestamp (UTC)。"),
+	revision: z
+		.number()
+		.int()
+		.gte(0)
+		.describe(
+			"monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
+		),
 });

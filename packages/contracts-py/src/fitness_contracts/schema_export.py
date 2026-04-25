@@ -54,9 +54,22 @@ from fitness_contracts.models.plan.generate_plan import (
     GeneratePlanRequest,
     GeneratePlanResponse,
 )
+from fitness_contracts.models.plan.generated_meal_swap import (
+    GeneratedMealSwapCandidates,
+)
 from fitness_contracts.models.plan.generated_weekly_plan import GeneratedWeeklyPlan
 from fitness_contracts.models.plan.meal import Meal
 from fitness_contracts.models.plan.meal_item import MealItem
+from fitness_contracts.models.plan.meal_swap_api import (
+    MealSwapApplyRequest,
+    MealSwapApplyResponse,
+    MealSwapCandidatesRequest,
+    MealSwapCandidatesResponse,
+)
+from fitness_contracts.models.plan.meal_swap_context import (
+    DailyMacroContext,
+    MealSwapContext,
+)
 from fitness_contracts.models.plan.snack_swap import SnackSwap
 from fitness_contracts.models.plan.weekly_plan import WeeklyPlan
 from fitness_contracts.models.profile.update_user_profile_input import (
@@ -99,6 +112,14 @@ MODEL_REGISTRY: list[tuple[str, type[BaseModel]]] = [
     ("CompleteProfileForPlan", CompleteProfileForPlan),
     ("GeneratePlanRequest", GeneratePlanRequest),
     ("GeneratePlanResponse", GeneratePlanResponse),
+    # Plan 09: Meal swap
+    ("DailyMacroContext", DailyMacroContext),
+    ("MealSwapContext", MealSwapContext),
+    ("GeneratedMealSwapCandidates", GeneratedMealSwapCandidates),
+    ("MealSwapCandidatesRequest", MealSwapCandidatesRequest),
+    ("MealSwapCandidatesResponse", MealSwapCandidatesResponse),
+    ("MealSwapApplyRequest", MealSwapApplyRequest),
+    ("MealSwapApplyResponse", MealSwapApplyResponse),
 ]
 
 

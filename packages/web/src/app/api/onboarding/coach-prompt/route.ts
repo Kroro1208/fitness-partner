@@ -45,34 +45,33 @@ function buildFallbackPrompt(
 	return FALLBACK_PROMPTS[targetStage];
 }
 
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function getProperty(value: unknown, key: string): unknown {
+	return isUnknownRecord(value) ? value[key] : undefined;
+}
+
+function getRequestId(responseHeaders: unknown): unknown {
+	if (responseHeaders instanceof Headers) {
+		return responseHeaders.get("request-id");
+	}
+	return getProperty(responseHeaders, "request-id");
+}
+
 function summarizeAiError(error: unknown): Record<string, unknown> {
 	if (!(error instanceof Error)) {
 		return { message: String(error) };
 	}
 
-	const raw = error as Error & {
-		statusCode?: unknown;
-		responseBody?: unknown;
-		responseHeaders?: unknown;
-		data?: unknown;
-	};
-
-	const requestId =
-		raw.responseHeaders instanceof Headers
-			? raw.responseHeaders.get("request-id")
-			: typeof raw.responseHeaders === "object" &&
-					raw.responseHeaders !== null &&
-					"request-id" in raw.responseHeaders
-				? raw.responseHeaders["request-id" as keyof typeof raw.responseHeaders]
-				: undefined;
-
 	return {
-		name: raw.name,
-		message: raw.message,
-		statusCode: raw.statusCode,
-		requestId,
-		data: raw.data,
-		responseBody: raw.responseBody,
+		name: error.name,
+		message: error.message,
+		statusCode: getProperty(error, "statusCode"),
+		requestId: getRequestId(getProperty(error, "responseHeaders")),
+		data: getProperty(error, "data"),
+		responseBody: getProperty(error, "responseBody"),
 	};
 }
 

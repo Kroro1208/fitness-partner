@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+const invokeCommandMock = vi.fn();
+
 vi.mock("@aws-sdk/client-bedrock-agentcore", () => ({
 	BedrockAgentCoreClient: vi.fn().mockImplementation(() => ({
 		send: vi.fn().mockResolvedValue({
@@ -8,7 +10,7 @@ vi.mock("@aws-sdk/client-bedrock-agentcore", () => ({
 			})(),
 		}),
 	})),
-	InvokeAgentRuntimeCommand: vi.fn(),
+	InvokeAgentRuntimeCommand: invokeCommandMock,
 }));
 
 // fail-loud config: REGION / ARN の両方が required
@@ -69,5 +71,16 @@ describe("agentcore-client", () => {
 			5000,
 		);
 		expect(result).toEqual({ ok: true });
+		expect(invokeCommandMock).toHaveBeenCalledTimes(1);
+		expect(invokeCommandMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				agentRuntimeArn: "arn:aws:bedrock-agentcore:us-west-2:0:runtime/x",
+				qualifier: "DEFAULT",
+				contentType: "application/json",
+				accept: "application/json",
+				runtimeSessionId: expect.any(String),
+				payload: expect.any(Uint8Array),
+			}),
+		);
 	});
 });

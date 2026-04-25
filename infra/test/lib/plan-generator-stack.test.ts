@@ -13,7 +13,7 @@ describe("PlanGeneratorStack", () => {
 		});
 		const t = Template.fromStack(stack);
 		t.hasResourceProperties("AWS::BedrockAgentCore::Runtime", {
-			AgentRuntimeName: "Test-runtime",
+			AgentRuntimeName: "Test_runtime",
 			RoleArn: {
 				"Fn::GetAtt": [Match.anyValue(), "Arn"],
 			},
@@ -21,6 +21,14 @@ describe("PlanGeneratorStack", () => {
 				ContainerConfiguration: {
 					ContainerUri: Match.anyValue(),
 				},
+			},
+			EnvironmentVariables: {
+				FITNESS_TABLE_NAME: "FitnessTable",
+				FITNESS_TABLE_REGION: "ap-northeast-1",
+				PLAN_GENERATOR_MODEL_ID: "global.anthropic.claude-sonnet-4-6",
+			},
+			NetworkConfiguration: {
+				NetworkMode: "PUBLIC",
 			},
 		});
 		t.hasResourceProperties("AWS::IAM::Role", {

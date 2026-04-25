@@ -485,7 +485,7 @@ export function toProfileSnapshotCacheKey(
 	snapshot: Partial<OnboardingProfile>,
 ): string {
 	return JSON.stringify(
-		Object.entries(camelSnapshotToSnake(snapshot)).sort(([left], [right]) =>
+		Object.entries(camelSnapshotToSnake(snapshot)).toSorted(([left], [right]) =>
 			left.localeCompare(right),
 		),
 	);

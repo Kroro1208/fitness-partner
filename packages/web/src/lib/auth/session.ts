@@ -88,7 +88,9 @@ export async function getValidAccessTokenServer(): Promise<string | null> {
 		await setRefreshedTokens(refreshed.idToken, refreshed.accessToken);
 		return refreshed.accessToken;
 	} catch {
-		await clearSession();
+		// Server Component / RSC read paths cannot mutate cookies.
+		// Route Handlers (`/api/auth/me`, `/api/proxy`, `/api/auth/refresh`) are
+		// still responsible for clearing invalid sessions on write-capable paths.
 		return null;
 	}
 }

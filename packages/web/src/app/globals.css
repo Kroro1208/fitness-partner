@@ -1,29 +1,91 @@
 @import "tailwindcss";
 
 @theme {
+	/* ------------------------------------------------------------
+	 * Brand: sage green (primary) + terracotta (accent)
+	 * 100 / 500 / 600 / 700 の 4 階調で text / surface / hover / active を分離
+	 * ------------------------------------------------------------ */
+	--color-primary-50: #f1f6f2;
 	--color-primary-100: #e5efe7;
 	--color-primary-500: #4f7a5a;
 	--color-primary-600: #3f6549;
+	--color-primary-700: #2f5238;
 
 	--color-accent-100: #f8e8dd;
 	--color-accent-500: #d98f5c;
+	--color-accent-600: #c57a47;
 
+	/* ------------------------------------------------------------
+	 * Neutral scale (9-step)
+	 * 300 / 400 / 600 / 800 を追加して階層を表現可能に
+	 * ------------------------------------------------------------ */
 	--color-neutral-100: #f3f4f6;
 	--color-neutral-200: #e5e7eb;
+	--color-neutral-300: #d4d8dc;
+	--color-neutral-400: #9ca3af;
 	--color-neutral-500: #6b7280;
+	--color-neutral-600: #52525b;
 	--color-neutral-700: #4b5563;
+	--color-neutral-800: #2e3440;
 	--color-neutral-900: #1f2937;
 
+	/* Surfaces */
 	--color-bg-canvas: #f7f8f5;
 	--color-bg-surface: #ffffff;
 	--color-bg-subtle: #f1f4ee;
 
+	/* Feedback: 100 は背景、500 はアイコン/ボーダー、700 はテキスト (AA 4.5:1) */
 	--color-danger-100: #fbe8e8;
 	--color-danger-500: #c65a5a;
+	--color-danger-700: #8e3434;
 
 	--color-warning-100: #faf0da;
 	--color-warning-500: #c98a2e;
+	--color-warning-700: #7a5413;
 
+	/* ------------------------------------------------------------
+	 * shadcn 標準 alias
+	 * new-york preset が参照する基本トークンを独自パレットへマッピング
+	 * ------------------------------------------------------------ */
+	--color-background: var(--color-bg-canvas);
+	--color-foreground: var(--color-neutral-900);
+	--color-card: var(--color-bg-surface);
+	--color-card-foreground: var(--color-neutral-900);
+	--color-popover: var(--color-bg-surface);
+	--color-popover-foreground: var(--color-neutral-900);
+	--color-primary: var(--color-primary-500);
+	--color-primary-foreground: #ffffff;
+	--color-secondary: var(--color-bg-subtle);
+	--color-secondary-foreground: var(--color-neutral-900);
+	--color-muted: var(--color-neutral-100);
+	--color-muted-foreground: var(--color-neutral-600);
+	--color-accent: var(--color-accent-500);
+	--color-accent-foreground: #ffffff;
+	--color-destructive: var(--color-danger-500);
+	--color-destructive-foreground: #ffffff;
+	--color-border: var(--color-neutral-200);
+	--color-input: var(--color-neutral-200);
+	--color-ring: var(--color-primary-500);
+
+	/* ------------------------------------------------------------
+	 * Typography
+	 * Noto Sans JP: 日本語本文 / Geist Mono: 数値（kcal / P F C）
+	 * ------------------------------------------------------------ */
+	--font-sans:
+		var(--font-noto-sans-jp), ui-sans-serif, system-ui, -apple-system,
+		"Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+	--font-num:
+		var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+		Consolas, monospace;
+
+	--text-display: 1.75rem; /* 28px — Onboarding titles */
+	--text-title: 1.25rem; /* 20px — Card titles */
+	--text-body: 0.9375rem; /* 15px — Body */
+	--text-caption: 0.8125rem; /* 13px — Captions */
+
+	/* ------------------------------------------------------------
+	 * Shape & elevation
+	 * ------------------------------------------------------------ */
 	--radius-sm: 8px;
 	--radius-md: 14px;
 	--radius-lg: 20px;
@@ -34,14 +96,49 @@
 	--shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* ------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------ */
 html,
 body {
 	background-color: var(--color-bg-canvas);
 	color: var(--color-neutral-900);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
 }
 
+/* tabular-nums ユーティリティ（数値カードで桁ズレ防止） */
+.font-num {
+	font-family: var(--font-num);
+	font-variant-numeric: tabular-nums;
+}
+
+.tabular {
+	font-variant-numeric: tabular-nums;
+}
+
+/* Safe area for iOS home indicator */
 @supports (padding: max(0px)) {
 	.pb-safe {
 		padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+	}
+	.pb-safe-lg {
+		padding-bottom: max(env(safe-area-inset-bottom), 5rem);
+	}
+}
+
+/* Respect user motion preference */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint: must override author styles */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint: must override author styles */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint: must override author styles */
+		transition-duration: 0.01ms !important;
 	}
 }

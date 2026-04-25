@@ -43,7 +43,7 @@ export async function apiClientRaw(
 	const contentType = res.headers.get("content-type") ?? "";
 	const parsed: unknown = contentType.includes("application/json")
 		? await readJsonBodyOrThrow(res)
-		: await res.text().catch(() => "");
+		: await readTextBodyOrThrow(res);
 
 	if (!res.ok) {
 		throw new ApiError(
@@ -70,6 +70,22 @@ async function readJsonBodyOrThrow(res: Response): Promise<unknown> {
 	}
 
 	throw new Error("Response body was not valid JSON");
+}
+
+async function readTextBodyOrThrow(res: Response): Promise<string> {
+	try {
+		return await res.text();
+	} catch {
+		if (!res.ok) {
+			throw new ApiError(
+				res.status,
+				null,
+				`Request failed with status ${res.status}`,
+			);
+		}
+
+		throw new Error("Response body could not be read as text");
+	}
 }
 
 function normalizeHeaders(

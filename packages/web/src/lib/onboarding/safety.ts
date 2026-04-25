@@ -25,13 +25,11 @@ export type SafetyResult =
 	  };
 
 export function evaluateSafetyRisk(input: SafetyInput): SafetyResult {
-	const blockedReasons: string[] = [];
-	if (input.isPregnantOrBreastfeeding)
-		blockedReasons.push("pregnancy_or_breastfeeding");
-	if (input.hasEatingDisorderHistory)
-		blockedReasons.push("eating_disorder_history");
-	if (input.hasDoctorDietRestriction)
-		blockedReasons.push("doctor_diet_restriction");
+	const blockedReasons = [
+		input.isPregnantOrBreastfeeding ? "pregnancy_or_breastfeeding" : undefined,
+		input.hasEatingDisorderHistory ? "eating_disorder_history" : undefined,
+		input.hasDoctorDietRestriction ? "doctor_diet_restriction" : undefined,
+	].filter((reason): reason is string => reason !== undefined);
 
 	if (blockedReasons.length > 0) {
 		return {
@@ -42,9 +40,10 @@ export function evaluateSafetyRisk(input: SafetyInput): SafetyResult {
 		};
 	}
 
-	const warnings: string[] = [];
-	if (input.hasMedicalCondition) warnings.push("medical_condition");
-	if (input.onMedication) warnings.push("on_medication");
+	const warnings = [
+		input.hasMedicalCondition ? "medical_condition" : undefined,
+		input.onMedication ? "on_medication" : undefined,
+	].filter((warning): warning is string => warning !== undefined);
 
 	if (warnings.length > 0) {
 		return { level: "caution", blockedReason: null, reasons: [], warnings };

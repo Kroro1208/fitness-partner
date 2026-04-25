@@ -25,6 +25,15 @@ describe("FitnessStack", () => {
 		});
 	});
 
+	it("enables DynamoDB TTL on attribute 'ttl' (Plan 09: swap_proposal auto-expiry)", () => {
+		template.hasResourceProperties("AWS::DynamoDB::Table", {
+			TimeToLiveSpecification: {
+				AttributeName: "ttl",
+				Enabled: true,
+			},
+		});
+	});
+
 	it("creates a Cognito User Pool with email sign-in and MFA optional", () => {
 		template.hasResourceProperties("AWS::Cognito::UserPool", {
 			UsernameAttributes: ["email"],
@@ -194,5 +203,76 @@ describe("FitnessStack", () => {
 		expect(() => new FitnessStack(appNoContext, "NoContextStack")).toThrow(
 			"Missing required context",
 		);
+	});
+
+	// ── Plan 09: swap-meal (agentcoreRuntimeArn 未指定のため skip されていることを確認) ──
+
+	it("skips SwapMealLambda when agentcoreRuntimeArn is not provided", () => {
+		// このテストのトップレベル stack は agentcoreRuntimeArn 未指定のため、
+		// swap-candidates / swap-apply ルートが存在しないことを確認。
+		const routes = template.findResources("AWS::ApiGatewayV2::Route");
+		const routeKeys = Object.values(routes)
+			.map(
+				(r) =>
+					(r as { Properties?: { RouteKey?: string } }).Properties?.RouteKey,
+			)
+			.filter((k): k is string => typeof k === "string");
+		expect(routeKeys).not.toContain(
+			"POST /users/me/plans/{weekStart}/meals/swap-candidates",
+		);
+		expect(routeKeys).not.toContain(
+			"POST /users/me/plans/{weekStart}/meals/swap-apply",
+		);
+	});
+});
+
+describe("FitnessStack (with agentcoreRuntimeArn)", () => {
+	const app = new cdk.App({
+		context: {
+			inviteCodesParameterName: "/fitness/test/invite-codes",
+			agentcoreRuntimeArn:
+				"arn:aws:bedrock-agentcore:us-west-2:111122223333:runtime/abc",
+		},
+	});
+	const stack = new FitnessStack(app, "TestStackWithArn");
+	const template = Template.fromStack(stack);
+
+	it("creates SwapMealLambda with 2 routes (swap-candidates + swap-apply)", () => {
+		template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+			RouteKey: "POST /users/me/plans/{weekStart}/meals/swap-candidates",
+			AuthorizationType: "JWT",
+		});
+		template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+			RouteKey: "POST /users/me/plans/{weekStart}/meals/swap-apply",
+			AuthorizationType: "JWT",
+		});
+	});
+
+	it("SwapMealLambda grants DeleteItem with LeadingKeys=user#*", () => {
+		template.hasResourceProperties("AWS::IAM::Policy", {
+			PolicyDocument: {
+				Statement: Match.arrayWith([
+					Match.objectLike({
+						Action: Match.arrayWith([
+							"dynamodb:GetItem",
+							"dynamodb:PutItem",
+							"dynamodb:DeleteItem",
+						]),
+						Condition: {
+							"ForAllValues:StringLike": {
+								"dynamodb:LeadingKeys": ["user#*"],
+							},
+						},
+					}),
+				]),
+			},
+		});
+	});
+
+	it("GeneratePlanLambda is also deployed alongside SwapMealLambda", () => {
+		template.hasResourceProperties("AWS::ApiGatewayV2::Route", {
+			RouteKey: "POST /users/me/plans/generate",
+			AuthorizationType: "JWT",
+		});
 	});
 });

@@ -76,9 +76,11 @@ def test_weekly_requires_plan_id_week_start_generated_at():
 def test_weekly_constructs_from_generated_plus_meta():
     generated = _gen()
     plan = WeeklyPlan(**generated.model_dump(), plan_id="p1",
-                     week_start="2026-04-20", generated_at="2026-04-20T00:00:00Z")
+                     week_start="2026-04-20", generated_at="2026-04-20T00:00:00Z",
+                     revision=0)
     assert plan.plan_id == "p1"
     assert len(plan.days) == 7
+    assert plan.revision == 0
 
 
 def test_snack_swap_shape():

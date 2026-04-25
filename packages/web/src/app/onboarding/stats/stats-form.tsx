@@ -218,8 +218,10 @@ export function StatsForm({
 			</div>
 
 			{patchError && (
-				<Alert className="border-danger-500 bg-danger-100">
-					<AlertDescription>保存に失敗しました。</AlertDescription>
+				<Alert className="border-danger-500 bg-danger-100 text-danger-700">
+					<AlertDescription className="text-danger-700">
+						保存に失敗しました。
+					</AlertDescription>
 				</Alert>
 			)}
 

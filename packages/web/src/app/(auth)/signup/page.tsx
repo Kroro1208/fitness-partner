@@ -225,7 +225,7 @@ export default function SignUpPage() {
 							/>
 						</div>
 						{error && (
-							<p className="text-sm text-danger-500" role="alert">
+							<p className="text-sm text-danger-700" role="alert">
 								{error}
 							</p>
 						)}
@@ -311,7 +311,7 @@ export default function SignUpPage() {
 						/>
 					</div>
 					{error && (
-						<p className="text-sm text-danger-500" role="alert">
+						<p className="text-sm text-danger-700" role="alert">
 							{error}
 						</p>
 					)}

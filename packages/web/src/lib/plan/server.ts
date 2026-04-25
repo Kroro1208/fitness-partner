@@ -2,7 +2,7 @@ import "server-only";
 
 import { getValidAccessTokenServer } from "../auth/session";
 import { WeeklyPlanEnvelopeSchema } from "./envelope";
-import { type WeeklyPlanVM, weeklyPlanToVM } from "./plan-mappers";
+import { parseWeeklyPlanToVM, type WeeklyPlanVM } from "./plan-mappers";
 
 /**
  * Server-side fetch の失敗を呼び出し元で区別するための discriminated union。
@@ -56,7 +56,7 @@ export async function getWeeklyPlanServerSideResult(
 	if (!parsed.success) {
 		return { ok: false, reason: "parse_failure" };
 	}
-	return { ok: true, plan: weeklyPlanToVM(parsed.data.plan) };
+	return { ok: true, plan: parseWeeklyPlanToVM(parsed.data.plan) };
 }
 
 /**

@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import type { PreSignUpTriggerEvent } from "aws-lambda";
 import { z } from "zod";
+import { isConditionalCheckFailed } from "../shared/aws-errors";
 import { type Clock, systemClock } from "../shared/clock";
 import { docClient, TABLE_NAME } from "../shared/dynamo";
 
@@ -128,7 +128,7 @@ async function putRedemption(item: RedemptionItem): Promise<RedemptionResult> {
 		);
 		return "ok";
 	} catch (error) {
-		if (error instanceof ConditionalCheckFailedException) {
+		if (isConditionalCheckFailed(error)) {
 			return "already_redeemed";
 		}
 		throw error;

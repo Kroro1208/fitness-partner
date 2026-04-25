@@ -7,16 +7,15 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 
-import { fetchWeeklyPlanDto, generatePlanDto } from "@/lib/api/plans";
-import { type WeeklyPlanVM, weeklyPlanToVM } from "@/lib/plan/plan-mappers";
+import { fetchWeeklyPlan, generatePlan } from "@/lib/api/plans";
+import type { WeeklyPlanVM } from "@/lib/plan/plan-mappers";
+import { planQueryKey } from "@/lib/plan/plan-query";
 
 function planQueryOptions(weekStart: string) {
 	return queryOptions({
-		queryKey: ["weekly-plan", weekStart] as const,
-		queryFn: async (): Promise<WeeklyPlanVM | null> => {
-			const dto = await fetchWeeklyPlanDto(weekStart);
-			return dto === null ? null : weeklyPlanToVM(dto);
-		},
+		queryKey: planQueryKey(weekStart),
+		queryFn: async (): Promise<WeeklyPlanVM | null> =>
+			fetchWeeklyPlan(weekStart),
 		staleTime: 60_000,
 	});
 }
@@ -36,11 +35,11 @@ export function useWeeklyPlan(
 export function useGeneratePlan() {
 	const qc = useQueryClient();
 	return useMutation({
-		mutationFn: generatePlanDto,
+		mutationFn: generatePlan,
 		onSuccess: (data) => {
 			qc.setQueryData(
-				planQueryOptions(data.week_start).queryKey,
-				weeklyPlanToVM(data.weekly_plan),
+				planQueryOptions(data.weekStart).queryKey,
+				data.weeklyPlan,
 			);
 		},
 	});

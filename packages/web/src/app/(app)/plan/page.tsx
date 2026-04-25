@@ -1,24 +1,18 @@
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Suspense } from "react";
 
-export default function PlanPage() {
+import { PlanLoadingState } from "@/components/domain/plan-loading-state";
+import { weekStartOf } from "@/lib/date/week-start";
+import { getWeeklyPlanServerSideResult } from "@/lib/plan/server";
+
+import { PlanContent } from "./plan-content";
+
+export default async function PlanPage() {
+	const weekStart = weekStartOf(new Date());
+	const result = await getWeeklyPlanServerSideResult(weekStart);
+	const initialPlan = result.ok ? result.plan : undefined;
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>7日プラン</CardTitle>
-				<CardDescription>まだ未実装です</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<p className="text-sm text-neutral-500">
-					Plan 07
-					ではオンボーディング完了までを実装しています。7日プラン生成は後続フェーズで接続します。
-				</p>
-			</CardContent>
-		</Card>
+		<Suspense fallback={<PlanLoadingState />}>
+			<PlanContent weekStart={weekStart} initialPlan={initialPlan} />
+		</Suspense>
 	);
 }

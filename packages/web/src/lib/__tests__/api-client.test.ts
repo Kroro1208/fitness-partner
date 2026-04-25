@@ -114,6 +114,16 @@ describe("apiClient", () => {
 		expect(result).toBe("raw text");
 	});
 
+	it("非 JSON レスポンス本文の読み取り失敗は空文字に潰さず throw する", async () => {
+		const res = textResponse("raw text");
+		vi.spyOn(res, "text").mockRejectedValueOnce(new Error("stream failed"));
+		fetchSpy.mockResolvedValueOnce(res);
+
+		await expect(apiClientRaw("x")).rejects.toThrow(
+			"Response body could not be read as text",
+		);
+	});
+
 	it("4xx/5xx の場合は ApiError を投げる", async () => {
 		fetchSpy.mockResolvedValueOnce(jsonResponse({ error: "nope" }, 500));
 

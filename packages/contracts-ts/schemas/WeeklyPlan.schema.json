@@ -372,7 +372,7 @@
 			"type": "array"
 		},
 		"plan_id": {
-			"description": "uuid v4。adapter が生成。",
+			"description": "uuid v4。adapter が生成。plan identity として不変。",
 			"title": "Plan Id",
 			"type": "string"
 		},
@@ -385,6 +385,12 @@
 			"description": "ISO 8601 timestamp (UTC)。",
 			"title": "Generated At",
 			"type": "string"
+		},
+		"revision": {
+			"description": "monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
+			"minimum": 0,
+			"title": "Revision",
+			"type": "integer"
 		}
 	},
 	"required": [
@@ -397,7 +403,8 @@
 		"personal_rules",
 		"plan_id",
 		"week_start",
-		"generated_at"
+		"generated_at",
+		"revision"
 	],
 	"title": "WeeklyPlan",
 	"type": "object"

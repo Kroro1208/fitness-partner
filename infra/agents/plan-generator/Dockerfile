@@ -22,4 +22,4 @@ RUN uv pip install --system --no-cache --no-sources /opt/fitness-contracts \
 
 ENV PYTHONPATH=/app/src
 
-CMD ["python", "-m", "plan_generator.handler"]
+CMD ["uvicorn", "plan_generator.handler:app", "--host", "0.0.0.0", "--port", "8080"]

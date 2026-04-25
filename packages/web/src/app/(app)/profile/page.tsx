@@ -26,6 +26,42 @@ import {
 const SECTION_KEYS = ["body", "activity", "wellness"] as const;
 type Section = (typeof SECTION_KEYS)[number];
 
+const FIELD_LABELS: Record<ProfileField, string> = {
+	age: "年齢",
+	sex: "性別",
+	heightCm: "身長",
+	weightKg: "体重",
+	activityLevel: "活動レベル",
+	desiredPace: "目標ペース",
+	sleepHours: "睡眠時間",
+	stressLevel: "ストレス",
+};
+
+const FIELD_UNITS: Partial<Record<ProfileField, string>> = {
+	age: "歳",
+	heightCm: "cm",
+	weightKg: "kg",
+	sleepHours: "時間",
+};
+
+const SEX_LABELS: Record<string, string> = {
+	male: "男性",
+	female: "女性",
+};
+
+const ACTIVITY_LEVEL_LABELS: Record<string, string> = {
+	sedentary: "ほぼ座り仕事",
+	light: "軽い活動",
+	moderate: "中程度の活動",
+	active: "活発",
+	very_active: "非常に活発",
+};
+
+const DESIRED_PACE_LABELS: Record<string, string> = {
+	steady: "じっくり",
+	aggressive: "早めに",
+};
+
 const SECTIONS = {
 	body: {
 		title: "身体情報",
@@ -47,9 +83,19 @@ const SECTIONS = {
 	{ title: string; description: string; fields: readonly ProfileField[] }
 >;
 
-function formatValue(value: unknown): string {
+function formatValue(field: ProfileField, value: unknown): string {
 	if (value === null || value === undefined) return "—";
-	return String(value);
+	if (field === "sex" && typeof value === "string") {
+		return SEX_LABELS[value] ?? value;
+	}
+	if (field === "activityLevel" && typeof value === "string") {
+		return ACTIVITY_LEVEL_LABELS[value] ?? value;
+	}
+	if (field === "desiredPace" && typeof value === "string") {
+		return DESIRED_PACE_LABELS[value] ?? value;
+	}
+	const unit = FIELD_UNITS[field];
+	return unit ? `${value} ${unit}` : String(value);
 }
 
 export default function ProfilePage() {
@@ -158,12 +204,14 @@ function ProfileSection({
 						onSaved={onSaved}
 					/>
 				) : (
-					<dl className="grid grid-cols-2 gap-3 text-sm">
+					<dl className="grid grid-cols-2 gap-3 text-body">
 						{meta.fields.map((field) => (
 							<div key={field}>
-								<dt className="text-neutral-500">{field}</dt>
-								<dd className="text-neutral-900 font-medium">
-									{formatValue(profile[field])}
+								<dt className="text-caption text-neutral-600">
+									{FIELD_LABELS[field]}
+								</dt>
+								<dd className="font-medium text-neutral-900 tabular">
+									{formatValue(field, profile[field])}
 								</dd>
 							</div>
 						))}
@@ -217,7 +265,7 @@ function ProfileEditForm({
 		<form onSubmit={onSubmit} className="space-y-4">
 			{fields.map((field) => (
 				<div key={field} className="space-y-1.5">
-					<Label htmlFor={field}>{field}</Label>
+					<Label htmlFor={field}>{FIELD_LABELS[field]}</Label>
 					<Input
 						id={field}
 						value={values[field] ?? ""}
@@ -228,7 +276,7 @@ function ProfileEditForm({
 				</div>
 			))}
 			{error && (
-				<p className="text-sm text-danger-500" role="alert">
+				<p className="text-sm text-danger-700" role="alert">
 					{error}
 				</p>
 			)}

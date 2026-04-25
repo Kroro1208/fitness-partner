@@ -1,0 +1,17 @@
+{
+	"properties": {
+		"date": {
+			"description": "ISO YYYY-MM-DD。plan.days[].date のいずれか。",
+			"title": "Date",
+			"type": "string"
+		},
+		"slot": {
+			"enum": ["breakfast", "lunch", "dinner", "dessert"],
+			"title": "Slot",
+			"type": "string"
+		}
+	},
+	"required": ["date", "slot"],
+	"title": "MealSwapCandidatesRequest",
+	"type": "object"
+}

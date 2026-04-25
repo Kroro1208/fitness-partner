@@ -19,17 +19,16 @@ function isPublicCognitoError(name: string): boolean {
 	return COGNITO_PUBLIC_ERROR_NAMES.has(name);
 }
 
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
 function getErrorName(error: unknown): string | undefined {
 	if (error instanceof Error && typeof error.name === "string") {
 		return error.name;
 	}
-	if (
-		typeof error === "object" &&
-		error !== null &&
-		"name" in error &&
-		typeof (error as { name: unknown }).name === "string"
-	) {
-		return (error as { name: string }).name;
+	if (isUnknownRecord(error) && typeof error.name === "string") {
+		return error.name;
 	}
 	return undefined;
 }

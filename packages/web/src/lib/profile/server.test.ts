@@ -61,4 +61,26 @@ describe("getProfileServerSide", () => {
 			status: 503,
 		});
 	});
+
+	it("returns parse_failure when 200 response misses profile", async () => {
+		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
+		global.fetch = vi
+			.fn()
+			.mockResolvedValue(new Response(JSON.stringify({}), { status: 200 }));
+		const { getProfileServerSideResult } = await import("./server");
+		const result = await getProfileServerSideResult();
+		expect(result).toEqual({ ok: false, reason: "parse_failure" });
+	});
+
+	it("throws instead of returning null on server-side failure", async () => {
+		(await getValidAccessTokenServerMock()).mockResolvedValue(null);
+		const consoleError = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => {});
+		const { getProfileServerSide } = await import("./server");
+		await expect(getProfileServerSide()).rejects.toThrow(
+			"getProfileServerSide failed: missing_access_token",
+		);
+		consoleError.mockRestore();
+	});
 });

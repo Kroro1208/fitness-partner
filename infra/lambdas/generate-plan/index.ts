@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import {
 	type CompleteProfileForPlan,
@@ -14,8 +13,10 @@ import type {
 } from "aws-lambda";
 import { z } from "zod";
 import { requireUserId } from "../shared/auth";
+import { isConditionalCheckFailed } from "../shared/aws-errors";
 import type { IsoDateString, UserId } from "../shared/brand";
 import { toIsoDateString } from "../shared/brand";
+import { systemClock } from "../shared/clock";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { planKey } from "../shared/keys/plan";
@@ -33,7 +34,7 @@ import {
 import { type InvokePayload, invokeAgent } from "./agentcore-client";
 import { toSafeAgentInput, toSafePromptProfile } from "./mappers";
 
-const TIMEOUT_MS = 25_000;
+const TIMEOUT_MS = 110_000;
 
 // ---- Pure Core helpers --------------------------------------------------
 
@@ -94,7 +95,9 @@ export function assembleWeeklyPlan(
 		generated_at: string;
 	},
 ): z.infer<typeof WeeklyPlanSchema> {
-	return { ...generated, ...meta };
+	// Plan 09: revision は swap のたびに +1 される monotonic counter。新規 plan は 0。
+	// plan_id / generated_at と同じく Strands には渡さず adapter 側で付与する。
+	return { ...generated, ...meta, revision: 0 };
 }
 
 // ---- Impure Shell wrappers ----------------------------------------------
@@ -194,7 +197,7 @@ export async function handler(
 		const weeklyPlan = assembleWeeklyPlan(genParse.data, {
 			plan_id: randomUUID(),
 			week_start,
-			generated_at: new Date().toISOString(),
+			generated_at: systemClock.now().toISOString(),
 		});
 
 		try {
@@ -212,13 +215,7 @@ export async function handler(
 				}),
 			);
 		} catch (err) {
-			// 本番 SDK は `ConditionalCheckFailedException` インスタンスを投げ、
-			// テストハーネスは `name === "ConditionalCheckFailedException"` の素の Error を投げる。
-			// 両方を同じ recovery 経路にルーティングする。
-			if (
-				err instanceof ConditionalCheckFailedException ||
-				(err instanceof Error && err.name === "ConditionalCheckFailedException")
-			) {
+			if (isConditionalCheckFailed(err)) {
 				return recoverFromConditionalRace(auth.userId, weekStartBranded);
 			}
 			console.error("ddb put failed", err);

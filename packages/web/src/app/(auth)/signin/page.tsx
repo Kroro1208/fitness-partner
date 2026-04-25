@@ -168,7 +168,7 @@ export default function SignInPage() {
 									{hasError && (
 										<p
 											id={`${field.name}-error`}
-											className="text-sm text-danger-500"
+											className="text-sm text-danger-700"
 											role="alert"
 										>
 											{errors.join("、")}
@@ -203,7 +203,7 @@ export default function SignInPage() {
 									{hasError && (
 										<p
 											id={`${field.name}-error`}
-											className="text-sm text-danger-500"
+											className="text-sm text-danger-700"
 											role="alert"
 										>
 											{errors.join("、")}
@@ -217,7 +217,7 @@ export default function SignInPage() {
 					<form.Subscribe selector={(state) => state.errorMap.onSubmit}>
 						{(submitError) =>
 							submitError ? (
-								<p className="text-sm text-danger-500" role="alert">
+								<p className="text-sm text-danger-700" role="alert">
 									{formatFormError(submitError)}
 								</p>
 							) : null

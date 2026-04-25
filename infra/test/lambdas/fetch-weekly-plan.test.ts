@@ -16,7 +16,7 @@ beforeEach(() => {
  * 生成済み WeeklyPlanSchema を満たす最小 fixture を組み立てる helper。
  * strict parse を通すため全 required フィールドを埋める。
  */
-function buildValidPlanItem() {
+function buildValidPlanItem(overrides: Record<string, unknown> = {}) {
 	const meal = {
 		slot: "breakfast" as const,
 		title: "卵とご飯",
@@ -53,6 +53,7 @@ function buildValidPlanItem() {
 		plan_id: "p1",
 		week_start: "2026-04-13",
 		generated_at: "2026-04-13T00:00:00Z",
+		revision: 0,
 		target_calories_kcal: 2000,
 		target_protein_g: 150,
 		target_fat_g: 70,
@@ -68,6 +69,7 @@ function buildValidPlanItem() {
 		],
 		hydration_target_liters: 2.5,
 		personal_rules: ["rule1", "rule2", "rule3"],
+		...overrides,
 	};
 }
 
@@ -91,6 +93,24 @@ describe("fetchWeeklyPlan", () => {
 		expect(body.plan.days).toHaveLength(7);
 		expect(body.plan.pk).toBeUndefined();
 		expect(body.plan.sk).toBeUndefined();
+	});
+
+	it("returns legacy plan with missing revision as revision 0", async () => {
+		const { revision: _revision, ...legacyItem } = buildValidPlanItem();
+		ddbMock.on(GetCommand).resolves({ Item: legacyItem });
+
+		const result = await handler(
+			makeEvent({
+				method: "GET",
+				path: "/users/me/plans/2026-04-13",
+				pathParameters: { weekStart: "2026-04-13" },
+				sub: "user-123",
+			}),
+		);
+
+		expect(result.statusCode).toBe(200);
+		const body = JSON.parse(String(result.body));
+		expect(body.plan.revision).toBe(0);
 	});
 
 	it("ConsistentRead: true を GetCommand に渡す", async () => {

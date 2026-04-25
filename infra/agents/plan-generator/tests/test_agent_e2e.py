@@ -25,19 +25,23 @@ def _golden_plan() -> GeneratedWeeklyPlan:
     item = MealItem(
         name="鶏むね", grams=150, calories_kcal=180, protein_g=33, fat_g=3, carbs_g=0
     )
-    meal = Meal(
-        slot="breakfast",
-        title="朝食",
-        items=[item],
-        total_calories_kcal=180,
-        total_protein_g=33,
-        total_fat_g=3,
-        total_carbs_g=0,
-    )
+
+    def _meal(slot: str) -> Meal:
+        return Meal(
+            slot=slot,
+            title="朝食",
+            items=[item],
+            total_calories_kcal=180,
+            total_protein_g=33,
+            total_fat_g=3,
+            total_carbs_g=0,
+        )
+
+    # Plan 09 Task A1: DayPlan.meals の slot 一意性 validator を満たすため各 slot 1 件ずつ。
     day = DayPlan(
         date="2026-04-20",
         theme="高タンパク",
-        meals=[meal] * 3,
+        meals=[_meal("breakfast"), _meal("lunch"), _meal("dinner")],
         daily_total_calories_kcal=540,
         daily_total_protein_g=99,
         daily_total_fat_g=9,
@@ -110,7 +114,7 @@ def test_build_agent_wires_tools_and_output_schema():
 
     bedrock_mock.assert_called_once()
     kwargs = bedrock_mock.call_args.kwargs
-    assert "anthropic.claude" in kwargs["model_id"]
+    assert kwargs["model_id"] == "global.anthropic.claude-sonnet-4-6"
     assert kwargs["region_name"] == "us-west-2"
 
     # 4 tools が登録され、全て tool_names に入っている
@@ -169,4 +173,6 @@ def test_system_prompt_contains_food_hints_and_plan08_rules():
     assert "GeneratedWeeklyPlan" in prompt
     assert "protein_gap_g is 0" in prompt  # Plan 08 で whey 抑止の注意
     assert "do NOT include plan_id" in prompt  # 責務分離の注意
+    assert "at least 3 distinct breakfast titles/week" in prompt
+    assert "do not repeat the exact same breakfast" in prompt
     assert "medical conditions" in prompt  # 医療情報除外

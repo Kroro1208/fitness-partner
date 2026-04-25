@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { MealVM } from "@/lib/plan/plan-mappers";
 
@@ -6,43 +7,90 @@ const SLOT_LABEL = {
 	lunch: "昼食",
 	dinner: "夕食",
 	dessert: "デザート",
-} as const;
+} satisfies Record<MealVM["slot"], string>;
 
-export function MealCard({ meal }: { meal: MealVM }) {
+export interface MealCardProps {
+	meal: MealVM;
+	/**
+	 * Plan 09: Meal swap 起動 callback。
+	 * 渡された場合のみ「差し替え」ボタンを表示する。呼び出し側 (Home / Plan) が
+	 * (date, slot) を bind した handler を渡す。
+	 */
+	onSwap?: () => void;
+	/** swap mutation 中など pending 状態。ボタン disabled 表示に使う。 */
+	swapPending?: boolean;
+	/** 別 meal の swap session が開いている間も二重起動を防ぐため disable する。 */
+	swapDisabled?: boolean;
+}
+
+export function MealCard({
+	meal,
+	onSwap,
+	swapPending,
+	swapDisabled,
+}: MealCardProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="text-base">
-					{SLOT_LABEL[meal.slot]} — {meal.title}
+				<CardTitle className="text-body">
+					<span className="text-caption font-normal text-neutral-600">
+						{SLOT_LABEL[meal.slot]}
+					</span>
+					<span className="mx-2 text-neutral-300" aria-hidden>
+						/
+					</span>
+					<span>{meal.title}</span>
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-2 text-sm">
+			<CardContent className="space-y-2 text-body">
 				<ul className="space-y-1">
 					{meal.items.map((item, i) => {
-						// MealItem は LLM 出力で安定 ID が無いが、Zod parse 後は immutable で
-						// 並び替え・追加・削除も起こらない (1 render 内で固定)。同 slot 内で
-						// 完全重複する ingredient は契約上発生しないので index 併用キーで十分。
 						const key = `${item.foodId ?? item.name}-${item.grams}-${i}`;
 						return (
-							<li key={key} className="flex justify-between">
-								<span>
-									{item.name}{" "}
-									<span className="text-neutral-500">({item.grams}g)</span>
+							<li
+								key={key}
+								className="flex items-baseline justify-between gap-2"
+							>
+								<span className="min-w-0 truncate">
+									{item.name}
+									<span className="ml-1 text-caption tabular text-neutral-500">
+										({item.grams}g)
+									</span>
 								</span>
-								<span className="text-neutral-600">
-									{item.caloriesKcal}kcal
+								<span className="shrink-0 tabular text-neutral-700">
+									{item.caloriesKcal}
+									<span className="ml-0.5 text-caption text-neutral-500">
+										kcal
+									</span>
 								</span>
 							</li>
 						);
 					})}
 				</ul>
-				<div className="flex justify-between border-t pt-2 text-neutral-700">
-					<span>合計</span>
-					<span>
-						{meal.totalCaloriesKcal}kcal / P{meal.totalProteinG.toFixed(0)} F
-						{meal.totalFatG.toFixed(0)} C{meal.totalCarbsG.toFixed(0)}
+				<div className="flex items-baseline justify-between border-t border-neutral-200 pt-2 text-caption text-neutral-600">
+					<span className="font-medium text-neutral-900">合計</span>
+					<span className="tabular text-neutral-900">
+						<span className="font-semibold">{meal.totalCaloriesKcal}</span>
+						<span className="ml-0.5 text-caption text-neutral-500">kcal</span>
+						<span className="ml-3 text-caption text-neutral-500">
+							P{meal.totalProteinG.toFixed(0)} F{meal.totalFatG.toFixed(0)} C
+							{meal.totalCarbsG.toFixed(0)}
+						</span>
 					</span>
 				</div>
+				{onSwap !== undefined && (
+					<div className="flex justify-end pt-1">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onSwap}
+							disabled={swapPending === true || swapDisabled === true}
+						>
+							{swapPending === true ? "候補生成中..." : "差し替え"}
+						</Button>
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);

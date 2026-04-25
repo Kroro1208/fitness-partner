@@ -8,6 +8,14 @@ export interface AgentCoreRuntimeProps {
 	readonly fitnessTableArn: string;
 }
 
+function toAgentCoreRuntimeName(stackName: string): string {
+	const normalized = `${stackName}_runtime`.replace(/[^A-Za-z0-9_]/g, "_");
+	const withLetterPrefix = /^[A-Za-z]/.test(normalized)
+		? normalized
+		: `R${normalized}`;
+	return withLetterPrefix.slice(0, 48);
+}
+
 export class AgentCoreRuntime extends Construct {
 	public readonly runtimeArn: string;
 
@@ -16,7 +24,7 @@ export class AgentCoreRuntime extends Construct {
 		const stack = cdk.Stack.of(this);
 		const account = stack.account;
 		const region = stack.region;
-		const runtimeName = `${stack.stackName}-runtime`;
+		const runtimeName = toAgentCoreRuntimeName(stack.stackName);
 
 		// build context = repo root
 		const image = new DockerImageAsset(this, "Image", {
@@ -150,8 +158,27 @@ export class AgentCoreRuntime extends Construct {
 						ContainerUri: image.imageUri,
 					},
 				},
+				EnvironmentVariables: {
+					FITNESS_TABLE_NAME: cdk.Fn.select(
+						1,
+						cdk.Fn.split("/", props.fitnessTableArn),
+					),
+					FITNESS_TABLE_REGION: "ap-northeast-1",
+					PLAN_GENERATOR_MODEL_ID: "global.anthropic.claude-sonnet-4-6",
+				},
+				NetworkConfiguration: {
+					NetworkMode: "PUBLIC",
+				},
 			},
 		});
+		// AgentCore control plane は create 時に execution role の ECR 権限を即時検証する。
+		// Role ARN 参照だけだと inline policy の作成順が保証されず、権限反映前に
+		// Runtime create が走って ECR access denied になることがある。
+		runtime.node.addDependency(role);
+		const defaultPolicy = role.node.tryFindChild("DefaultPolicy");
+		if (defaultPolicy) {
+			runtime.node.addDependency(defaultPolicy);
+		}
 
 		this.runtimeArn = runtime.getAtt("AgentRuntimeArn").toString();
 

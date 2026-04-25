@@ -53,6 +53,7 @@ describe("generate-plan handler", () => {
 			plan_id: "old-id",
 			week_start: "2026-04-20",
 			generated_at: "2026-04-19T00:00:00Z",
+			revision: 0,
 		};
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })
@@ -86,6 +87,8 @@ describe("generate-plan handler", () => {
 		const body = JSON.parse(res.body ?? "{}");
 		expect(body.weekly_plan.days).toHaveLength(7);
 		expect(body.plan_id).toMatch(/^[0-9a-f-]{36}$/);
+		// Plan 09: 新規 plan は revision=0 で始まる
+		expect(body.weekly_plan.revision).toBe(0);
 	});
 
 	it("GeneratedWeeklyPlan schema 違反で 502", async () => {
@@ -108,6 +111,7 @@ describe("generate-plan handler", () => {
 			plan_id: "raced-id",
 			week_start: "2026-04-20",
 			generated_at: "2026-04-19T00:00:00Z",
+			revision: 0,
 		};
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })

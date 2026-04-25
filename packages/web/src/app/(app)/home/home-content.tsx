@@ -1,28 +1,38 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 import { DailySummaryCard } from "@/components/domain/daily-summary-card";
+import { HydrationCard } from "@/components/domain/hydration-card";
 import { MacroTargetsCard } from "@/components/domain/macro-targets-card";
+import { MealSwapSessionModal } from "@/components/domain/meal-swap-session-modal";
+import { PersonalRulesCard } from "@/components/domain/personal-rules-card";
 import { PlanEmptyState } from "@/components/domain/plan-empty-state";
 import { PlanErrorBanner } from "@/components/domain/plan-error-banner";
 import { PlanLoadingState } from "@/components/domain/plan-loading-state";
 import { SevenDayMealList } from "@/components/domain/seven-day-meal-list";
+import { SnackSwapsCard } from "@/components/domain/snack-swaps-card";
+import { SupplementsCard } from "@/components/domain/supplements-card";
+import { TimelineCard } from "@/components/domain/timeline-card";
+import { useMealSwapFlow } from "@/hooks/use-meal-swap-flow";
 import { useGeneratePlan, useWeeklyPlan } from "@/hooks/use-plan";
-import { todayJstString } from "@/lib/date/week-start";
 import type { WeeklyPlanVM } from "@/lib/plan/plan-mappers";
+
+type HomeContentProps = {
+	weekStart: string;
+	today: string;
+	initialPlan?: WeeklyPlanVM | null;
+	planError?: boolean;
+};
 
 export function HomeContent({
 	weekStart,
+	today,
 	initialPlan,
-}: {
-	weekStart: string;
-	initialPlan?: WeeklyPlanVM | null;
-}) {
+	planError = false,
+}: HomeContentProps) {
 	const router = useRouter();
-	const search = useSearchParams();
-	const planError = search.get("planError") === "1";
 
 	const {
 		data: plan,
@@ -30,6 +40,7 @@ export function HomeContent({
 		isError,
 	} = useWeeklyPlan(weekStart, { initialData: initialPlan });
 	const generate = useGeneratePlan();
+	const mealSwap = useMealSwapFlow(weekStart);
 
 	const triggerGeneratePlan = useCallback(() => {
 		if (generate.isPending) return;
@@ -70,8 +81,7 @@ export function HomeContent({
 			/>
 		);
 
-	const today =
-		plan.days.find((d) => d.date === todayJstString()) ?? plan.days[0];
+	const todayPlan = plan.days.find((d) => d.date === today) ?? plan.days[0];
 	return (
 		<div className="space-y-4">
 			{isError && (
@@ -81,8 +91,25 @@ export function HomeContent({
 				/>
 			)}
 			<MacroTargetsCard plan={plan} />
-			{today && <DailySummaryCard day={today} plan={plan} />}
-			<SevenDayMealList days={plan.days} />
+			{todayPlan && <DailySummaryCard day={todayPlan} plan={plan} />}
+			<SevenDayMealList
+				days={plan.days}
+				onSwap={mealSwap.openSwap}
+				pendingTarget={mealSwap.session?.target ?? null}
+				swapDisabled={mealSwap.swapDisabled}
+			/>
+			<SnackSwapsCard snackSwaps={plan.snackSwaps} />
+			<HydrationCard hydration={plan.hydration} />
+			<SupplementsCard supplements={plan.supplementRecommendations} />
+			<PersonalRulesCard rules={plan.personalRules} />
+			<TimelineCard notes={plan.timelineNotes} />
+
+			<MealSwapSessionModal
+				session={mealSwap.session}
+				onClose={mealSwap.close}
+				onApply={mealSwap.apply}
+				onRegenerate={mealSwap.regenerate}
+			/>
 		</div>
 	);
 }

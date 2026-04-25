@@ -4,9 +4,10 @@
 	"private": true,
 	"scripts": {
 		"test": "vitest run",
-		"deploy:plan-generator": "cdk deploy PlanGeneratorStack --outputs-file cdk-outputs.json -c fitnessTableName=${FITNESS_TABLE_NAME}",
+		"deploy:plan-generator": "cdk deploy PlanGeneratorStack --outputs-file cdk-outputs.json -c fitnessTableName=${FITNESS_TABLE_NAME} -c inviteCodesParameterName=${INVITE_CODES_PARAMETER_NAME}",
 		"deploy:fitness-with-arn": "cdk deploy FitnessStack -c inviteCodesParameterName=${INVITE_CODES_PARAMETER_NAME} -c agentcoreRuntimeArn=$(node ./scripts/extract-runtime-arn.mjs cdk-outputs.json)",
-		"deploy:plan08": "pnpm deploy:plan-generator && pnpm deploy:fitness-with-arn"
+		"deploy:plan08": "pnpm deploy:plan-generator && pnpm deploy:fitness-with-arn",
+		"deploy:plan09": "pnpm deploy:plan-generator && pnpm deploy:fitness-with-arn"
 	},
 	"dependencies": {
 		"@aws-sdk/client-bedrock-agentcore": "^3.1031.0",

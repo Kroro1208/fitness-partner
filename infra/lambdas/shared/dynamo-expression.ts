@@ -17,17 +17,14 @@ export function buildProfileUpdateExpression(params: {
 		(field) => [`#${field}`, field] as const,
 	);
 
-	const updateParts: string[] = [];
-	if (setEntries.length > 0) {
-		updateParts.push(
-			`SET ${setEntries.map(([key]) => `#${key} = :${key}`).join(", ")}`,
-		);
-	}
-	if (removeEntries.length > 0) {
-		updateParts.push(
-			`REMOVE ${removeEntries.map(([name]) => name).join(", ")}`,
-		);
-	}
+	const updateParts = [
+		setEntries.length > 0
+			? `SET ${setEntries.map(([key]) => `#${key} = :${key}`).join(", ")}`
+			: undefined,
+		removeEntries.length > 0
+			? `REMOVE ${removeEntries.map(([name]) => name).join(", ")}`
+			: undefined,
+	].filter((part): part is string => part !== undefined);
 
 	return {
 		UpdateExpression: updateParts.join(" "),

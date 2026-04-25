@@ -22,8 +22,8 @@ export class GeneratePlanLambda extends Construct {
 			entry: path.join(__dirname, "../../lambdas/generate-plan/index.ts"),
 			handler: "handler",
 			runtime: lambda.Runtime.NODEJS_22_X,
-			timeout: cdk.Duration.seconds(28),
-			memorySize: 512,
+			timeout: cdk.Duration.seconds(120),
+			memorySize: 1024,
 			environment: {
 				TABLE_NAME: props.table.tableName,
 				AGENTCORE_RUNTIME_ARN: props.agentcoreRuntimeArn,
@@ -47,7 +47,13 @@ export class GeneratePlanLambda extends Construct {
 		fn.addToRolePolicy(
 			new iam.PolicyStatement({
 				actions: ["bedrock-agentcore:InvokeAgentRuntime"],
-				resources: [props.agentcoreRuntimeArn],
+				// AgentCore invoke は qualifier=DEFAULT を付けると
+				// `...:runtime/<id>/qualifier/DEFAULT` 側で IAM 評価される。
+				// runtime 本体 ARN だけだと AccessDenied になるため、配下も許可する。
+				resources: [
+					props.agentcoreRuntimeArn,
+					`${props.agentcoreRuntimeArn}/*`,
+				],
 			}),
 		);
 

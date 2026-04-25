@@ -13,21 +13,22 @@ export type SafetyResult =
 	| { level: "blocked"; reasons: string[]; warnings: [] };
 
 export function evaluateSafetyGuard(input: SafetyInput): SafetyResult {
-	const blockedReasons: string[] = [];
-	if (input.is_pregnant_or_breastfeeding)
-		blockedReasons.push("pregnancy_or_breastfeeding");
-	if (input.has_eating_disorder_history)
-		blockedReasons.push("eating_disorder_history");
-	if (input.has_doctor_diet_restriction)
-		blockedReasons.push("doctor_diet_restriction");
+	const blockedReasons = [
+		input.is_pregnant_or_breastfeeding
+			? "pregnancy_or_breastfeeding"
+			: undefined,
+		input.has_eating_disorder_history ? "eating_disorder_history" : undefined,
+		input.has_doctor_diet_restriction ? "doctor_diet_restriction" : undefined,
+	].filter((reason): reason is string => reason !== undefined);
 
 	if (blockedReasons.length > 0) {
 		return { level: "blocked", reasons: blockedReasons, warnings: [] };
 	}
 
-	const warnings: string[] = [];
-	if (input.has_medical_condition) warnings.push("medical_condition");
-	if (input.on_medication) warnings.push("on_medication");
+	const warnings = [
+		input.has_medical_condition ? "medical_condition" : undefined,
+		input.on_medication ? "on_medication" : undefined,
+	].filter((warning): warning is string => warning !== undefined);
 
 	if (warnings.length > 0) {
 		return { level: "caution", reasons: [], warnings };

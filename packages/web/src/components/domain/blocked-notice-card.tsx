@@ -14,7 +14,7 @@ export function BlockedNoticeCard({ reasons }: BlockedNoticeCardProps) {
 	return (
 		<Card className="border-danger-500 bg-danger-100">
 			<CardHeader>
-				<CardTitle className="text-danger-500">
+				<CardTitle className="text-danger-700">
 					通常プランの作成を停止しています
 				</CardTitle>
 			</CardHeader>

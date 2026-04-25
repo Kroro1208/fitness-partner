@@ -6,4 +6,5 @@ from strands import tool
 @tool
 def calculate_hydration(input: HydrationInput) -> HydrationResult:
     """Calculate hydration target (liters/day) from weight and activity."""
-    return calculate_hydration_target(input)
+    normalized = HydrationInput.model_validate(input)
+    return calculate_hydration_target(normalized)

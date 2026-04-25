@@ -12,7 +12,9 @@ export function MacroTargetsCard({ plan }: { plan: WeeklyPlanVM }) {
 		<Card>
 			<CardHeader>
 				<CardTitle>1 日の目標</CardTitle>
-				<CardDescription>あなたに合わせた calorie / macro 目標</CardDescription>
+				<CardDescription>
+					あなたに合わせた カロリー・PFC (タンパク質/脂質/炭水化物) 目標
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="grid grid-cols-4 gap-2 text-center">
 				<Stat label="kcal" value={plan.targetCaloriesKcal} />
@@ -26,9 +28,11 @@ export function MacroTargetsCard({ plan }: { plan: WeeklyPlanVM }) {
 
 function Stat({ label, value }: { label: string; value: number }) {
 	return (
-		<div className="rounded bg-neutral-50 p-2">
-			<div className="text-lg font-semibold">{Math.round(value)}</div>
-			<div className="text-xs text-neutral-500">{label}</div>
+		<div className="rounded-md bg-neutral-100 p-3">
+			<div className="text-title font-semibold tabular text-neutral-900 leading-none">
+				{Math.round(value)}
+			</div>
+			<div className="mt-1 text-caption text-neutral-600">{label}</div>
 		</div>
 	);
 }

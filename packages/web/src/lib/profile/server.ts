@@ -6,15 +6,21 @@ import { z } from "zod";
 import { getValidAccessTokenServer } from "../auth/session";
 import { type OnboardingProfile, toOnboardingProfile } from "./profile-mappers";
 
-const ProfileEnvelopeSchema = z.object({
-	profile: UserProfileSchema.optional(),
-});
+const ProfileEnvelopeSchema = z
+	.object({
+		profile: UserProfileSchema,
+	})
+	.strict();
 
 export type GetProfileServerSideResult =
 	| { ok: true; profile: OnboardingProfile | null }
 	| {
 			ok: false;
-			reason: "missing_access_token" | "missing_api_base" | "upstream_failure";
+			reason:
+				| "missing_access_token"
+				| "missing_api_base"
+				| "upstream_failure"
+				| "parse_failure";
 			status?: number;
 	  };
 
@@ -41,8 +47,11 @@ export async function getProfileServerSideResult(): Promise<GetProfileServerSide
 		return { ok: false, reason: "upstream_failure", status: res.status };
 	}
 
-	const body = ProfileEnvelopeSchema.parse(await res.json());
-	return { ok: true, profile: toOnboardingProfile(body.profile ?? null) };
+	const parsed = ProfileEnvelopeSchema.safeParse(await res.json());
+	if (!parsed.success) {
+		return { ok: false, reason: "parse_failure" };
+	}
+	return { ok: true, profile: toOnboardingProfile(parsed.data.profile) };
 }
 
 /**
@@ -51,5 +60,12 @@ export async function getProfileServerSideResult(): Promise<GetProfileServerSide
  */
 export async function getProfileServerSide(): Promise<OnboardingProfile | null> {
 	const result = await getProfileServerSideResult();
-	return result.ok ? result.profile : null;
+	if (!result.ok) {
+		console.error("getProfileServerSide failed", {
+			reason: result.reason,
+			status: result.status,
+		});
+		throw new Error(`getProfileServerSide failed: ${result.reason}`);
+	}
+	return result.profile;
 }

@@ -1,0 +1,18 @@
+{
+	"description": "apply は meal 内容を持たず、server 側の proposal を信頼する。",
+	"properties": {
+		"proposal_id": {
+			"title": "Proposal Id",
+			"type": "string"
+		},
+		"chosen_index": {
+			"maximum": 2,
+			"minimum": 0,
+			"title": "Chosen Index",
+			"type": "integer"
+		}
+	},
+	"required": ["proposal_id", "chosen_index"],
+	"title": "MealSwapApplyRequest",
+	"type": "object"
+}
