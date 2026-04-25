@@ -26,11 +26,30 @@ process.env.AGENTCORE_RUNTIME_ARN =
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
-const invokeMock = vi.fn();
-vi.mock("../../../lambdas/swap-meal/agentcore-client", () => ({
-	invokeSwapAgent: (...args: unknown[]) => invokeMock(...args),
-	__resetClientForTests: () => {},
+// 境界モック: agentcore-client の内部関数ではなく AWS SDK の BedrockAgentCoreClient
+// を vi.mock で置換し、agentcore-client.ts の payload 構築 / stream parse / abort 処理を
+// 本物のまま実行する。aws-sdk-client-mock (DDB) と同じ「外部 SDK 境界で止める」原則。
+const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
+vi.mock("@aws-sdk/client-bedrock-agentcore", () => ({
+	BedrockAgentCoreClient: vi
+		.fn()
+		.mockImplementation(() => ({ send: sendMock })),
+	InvokeAgentRuntimeCommand: vi.fn().mockImplementation((input) => input),
 }));
+
+/** AgentCore の InvokeAgentRuntimeCommand 戻り値 (response: AsyncIterable<Uint8Array>) を組み立てる。 */
+function mockSwapResponse(payload: unknown): void {
+	sendMock.mockResolvedValueOnce({
+		response: (async function* () {
+			yield new TextEncoder().encode(JSON.stringify(payload));
+		})(),
+	});
+}
+
+/** AbortError 等で send が reject する分岐。 */
+function mockSwapSendError(error: Error): void {
+	sendMock.mockRejectedValueOnce(error);
+}
 
 async function importHandler() {
 	return (await import("../../../lambdas/swap-meal/index")).handler;
@@ -38,7 +57,7 @@ async function importHandler() {
 
 beforeEach(() => {
 	ddbMock.reset();
-	invokeMock.mockReset();
+	sendMock.mockReset();
 });
 
 // -----------------------------------------------------------------------
@@ -91,7 +110,7 @@ describe("swap-meal handler candidates", () => {
 		expect(res.statusCode).toBe(429);
 		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "rate_limited" });
 		expect(res.headers?.["Retry-After"]).toBeDefined();
-		expect(invokeMock).not.toHaveBeenCalled();
+		expect(sendMock).not.toHaveBeenCalled();
 	});
 
 	it("404 plan_not_found", async () => {
@@ -123,7 +142,7 @@ describe("swap-meal handler candidates", () => {
 			.on(GetCommand)
 			.resolvesOnce({ Item: completeProfileItem })
 			.resolvesOnce({ Item: buildPersistedPlanRow() });
-		invokeMock.mockResolvedValueOnce({
+		mockSwapResponse({
 			generated_candidates: {
 				candidates: [buildMeal("breakfast", "a"), buildMeal("breakfast", "b")],
 			},
@@ -143,7 +162,7 @@ describe("swap-meal handler candidates", () => {
 			.on(GetCommand)
 			.resolvesOnce({ Item: completeProfileItem })
 			.resolvesOnce({ Item: buildPersistedPlanRow() });
-		invokeMock.mockResolvedValueOnce({
+		mockSwapResponse({
 			unexpected_key: {
 				candidates: [
 					buildMeal("breakfast", "a"),
@@ -167,7 +186,7 @@ describe("swap-meal handler candidates", () => {
 			.on(GetCommand)
 			.resolvesOnce({ Item: completeProfileItem })
 			.resolvesOnce({ Item: buildPersistedPlanRow() });
-		invokeMock.mockResolvedValueOnce({
+		mockSwapResponse({
 			generated_candidates: {
 				candidates: [
 					buildMeal("breakfast", "a"),
@@ -193,7 +212,7 @@ describe("swap-meal handler candidates", () => {
 			.resolvesOnce({ Item: buildPersistedPlanRow() });
 		const err = new Error("aborted");
 		err.name = "AbortError";
-		invokeMock.mockRejectedValueOnce(err);
+		mockSwapSendError(err);
 		const handler = await importHandler();
 		const res = await handler(
 			makeCandidatesEvent({ date: "2026-04-20", slot: "breakfast" }),
@@ -208,7 +227,7 @@ describe("swap-meal handler candidates", () => {
 			.resolvesOnce({ Item: completeProfileItem })
 			.resolvesOnce({ Item: buildPersistedPlanRow(5) });
 		ddbMock.on(PutCommand).resolvesOnce({});
-		invokeMock.mockResolvedValueOnce({
+		mockSwapResponse({
 			generated_candidates: {
 				candidates: [
 					buildMeal("breakfast", "a"),
@@ -364,6 +383,9 @@ describe("swap-meal handler apply", () => {
 		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "plan_stale" });
 	});
 
+	// 1 happy path 振る舞いを 4 観点 (revision +1 / ConditionExpression / DeleteItem / day 反映) で検証する。
+	// 各観点は同一の Arrange/Act から派生する論理的に不可分な振る舞いの側面のため、
+	// 1 it に集約する (分割すると Arrange の重複が大きく診断性も上がらない)。
 	it("200 Happy: revision +1 / ConditionExpression / DeleteItem 呼ばれる", async () => {
 		ddbMock
 			.on(GetCommand)
@@ -509,6 +531,8 @@ describe("swap-meal handler concurrency", () => {
 		);
 		expect(res2.statusCode).toBe(409);
 		expect(JSON.parse(res2.body ?? "{}")).toEqual({ error: "plan_stale" });
+		// apply 経路は AgentCore (LLM) を呼ばない契約を明示
+		expect(sendMock).not.toHaveBeenCalled();
 	});
 
 	it("DeleteItem 失敗後でも再 apply は 409 (revision monotonicity)", async () => {
@@ -537,5 +561,7 @@ describe("swap-meal handler concurrency", () => {
 		);
 		expect(res2.statusCode).toBe(409);
 		expect(JSON.parse(res2.body ?? "{}")).toEqual({ error: "plan_stale" });
+		// apply 経路は AgentCore (LLM) を呼ばない契約を明示
+		expect(sendMock).not.toHaveBeenCalled();
 	});
 });

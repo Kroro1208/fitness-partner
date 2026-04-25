@@ -7,6 +7,22 @@ alcohol day / treat day / batch day の配分を維持する。
 
 from plan_generator.prompts.food_hints import render_food_hints
 
+# プロンプト本体に必ず含める不変キー。
+# テストはこの tuple を import して `for v in SWAP_PROMPT_INVARIANTS: assert v in prompt`
+# で検証する。プロンプトの言い回しを書き換えるときは、対応する不変キーを残すか、
+# この tuple ごと更新する (drift をコードレビューで検出する)。
+# 候補数=3 の数値制約は GeneratedMealSwapCandidates の Field(min_length=3, max_length=3)
+# で schema レベルに固定済みのため、ここは「指示が明文化されているか」のシグナル検査に留める。
+SWAP_PROMPT_INVARIANTS: tuple[str, ...] = (
+    "EXACTLY 3",          # 候補数指示
+    "same slot",          # slot 一致制約
+    "original_day_total", # 予算基準キー
+    "other_meals_total",  # 控除対象キー
+    "NEVER",              # 排除指令キーワード
+    "medical",            # 医療情報除外
+    "get_food_by_id",     # tool 利用許可
+)
+
 
 _BASE = """\
 You are a personal fitness nutrition planner.

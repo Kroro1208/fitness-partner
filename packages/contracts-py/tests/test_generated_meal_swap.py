@@ -34,20 +34,11 @@ def _meal(slot: str, title: str) -> Meal:
     )
 
 
-def test_rejects_single_candidate() -> None:
-    with pytest.raises(ValidationError):
-        GeneratedMealSwapCandidates(candidates=[_meal("breakfast", "a")])
-
-
-def test_rejects_four_candidates() -> None:
+@pytest.mark.parametrize("invalid_count", [0, 1, 2, 4, 5, 10])
+def test_rejects_candidate_count_other_than_three(invalid_count: int) -> None:
     with pytest.raises(ValidationError):
         GeneratedMealSwapCandidates(
-            candidates=[
-                _meal("breakfast", "a"),
-                _meal("breakfast", "b"),
-                _meal("breakfast", "c"),
-                _meal("breakfast", "d"),
-            ]
+            candidates=[_meal("breakfast", f"m{i}") for i in range(invalid_count)]
         )
 
 

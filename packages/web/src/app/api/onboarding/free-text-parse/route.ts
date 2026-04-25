@@ -6,6 +6,15 @@ import { z } from "zod";
 
 import { readJsonBody } from "@/app/api/onboarding/_shared/read-json-body";
 import { getSession } from "@/lib/auth/session";
+import {
+	consumeRateLimit,
+	rateLimitedResponse,
+} from "@/lib/security/rate-limit";
+import {
+	DEFAULT_JSON_BODY_LIMIT_BYTES,
+	enforceContentLength,
+	enforceSameOrigin,
+} from "@/lib/security/request-guard";
 
 // LLM の structured output 形状。契約の FreeTextParseResponse から note_field を除いた部分。
 const llmOutputSchema = z.object({
@@ -25,22 +34,64 @@ const SYSTEM_PROMPT = `
 - suggested_tags: 構造化候補の文字列配列 (食材名、料理名、習慣名など)
 - 構造化済みフィールドを上書きする意図は持たない。note と tag のみを返す
 - 出力は日本語
-`.trim();
+	`.trim();
+
+const FREE_TEXT_MAX_CHARS = 2_000;
+const SNAPSHOT_MAX_BYTES = 8 * 1024;
+const FREE_TEXT_PARSE_RATE_LIMIT = {
+	bucket: "ai:free-text-parse:user",
+	limit: 20,
+	windowMs: 60 * 60_000,
+} as const;
+
+function jsonByteLength(value: unknown): number {
+	return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}
 
 export async function POST(request: Request) {
+	const origin = enforceSameOrigin(request);
+	if (!origin.ok) return origin.response;
+
+	const size = enforceContentLength(request, DEFAULT_JSON_BODY_LIMIT_BYTES);
+	if (!size.ok) return size.response;
+
 	const session = await getSession();
 	if (!session) {
 		return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 	}
 
-	const bodyResult = await readJsonBody(request);
+	const rateLimit = consumeRateLimit({
+		...FREE_TEXT_PARSE_RATE_LIMIT,
+		key: session.userId,
+	});
+	if (!rateLimit.allowed) {
+		return rateLimitedResponse(rateLimit.retryAfterSeconds);
+	}
+
+	const bodyResult = await readJsonBody(request, {
+		maxBytes: DEFAULT_JSON_BODY_LIMIT_BYTES,
+	});
 	if (!bodyResult.ok) {
-		return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+		return NextResponse.json(
+			{
+				error:
+					bodyResult.reason === "payload_too_large"
+						? "payload_too_large"
+						: "invalid_json",
+			},
+			{ status: bodyResult.reason === "payload_too_large" ? 413 : 400 },
+		);
 	}
 
 	const parsed = FreeTextParseRequestSchema.safeParse(bodyResult.body);
 	if (!parsed.success) {
 		return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+	}
+	if (
+		parsed.data.free_text.length > FREE_TEXT_MAX_CHARS ||
+		jsonByteLength(parsed.data.structured_snapshot) > SNAPSHOT_MAX_BYTES
+	) {
+		return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
 	}
 
 	try {

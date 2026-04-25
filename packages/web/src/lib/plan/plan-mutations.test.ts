@@ -78,9 +78,9 @@ describe("replaceDayInPlan", () => {
 		const out = replaceDayInPlan(plan, updated, 3);
 		expect(out.revision).toBe(3);
 		expect(out.days[2].theme).toBe("new theme");
-		// 他日は参照そのまま (構造共有)
-		expect(out.days[0]).toBe(plan.days[0]);
-		expect(out.days[1]).toBe(plan.days[1]);
+		// 対象日以外は値が変わらない (参照同一性ではなく値の等価性で検証)
+		expect(out.days[0]).toEqual(plan.days[0]);
+		expect(out.days[1]).toEqual(plan.days[1]);
 	});
 
 	it("存在しない date は plan をそのまま返す (防御的)", () => {

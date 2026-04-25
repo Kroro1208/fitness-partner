@@ -23,10 +23,9 @@ describe("swap-meal agentcore-client", () => {
 				);
 			})(),
 		});
-		const { invokeSwapAgent, __resetClientForTests } = await import(
+		const { invokeSwapAgent } = await import(
 			"../../../lambdas/swap-meal/agentcore-client"
 		);
-		__resetClientForTests();
 
 		const result = await invokeSwapAgent(
 			{

@@ -7,9 +7,13 @@ import {
 	getRefreshToken,
 	setRefreshedTokens,
 } from "@/lib/auth/session";
+import { enforceSameOrigin } from "@/lib/security/request-guard";
 
-export async function POST() {
+export async function POST(request: Request) {
 	try {
+		const origin = enforceSameOrigin(request);
+		if (!origin.ok) return origin.response;
+
 		const refreshToken = await getRefreshToken();
 		if (!refreshToken) {
 			return NextResponse.json({ error: "no_refresh_token" }, { status: 401 });

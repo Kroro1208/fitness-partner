@@ -66,13 +66,16 @@ def test_candidates_response_requires_three_candidates() -> None:
         )
 
 
-def test_apply_request_chosen_index_range() -> None:
+@pytest.mark.parametrize("invalid_index", [-1, 3, 4, 100])
+def test_apply_request_rejects_chosen_index_out_of_range(invalid_index: int) -> None:
     with pytest.raises(ValidationError):
-        MealSwapApplyRequest(proposal_id="p1", chosen_index=-1)
-    with pytest.raises(ValidationError):
-        MealSwapApplyRequest(proposal_id="p1", chosen_index=3)
-    ok = MealSwapApplyRequest(proposal_id="p1", chosen_index=0)
-    assert ok.chosen_index == 0
+        MealSwapApplyRequest(proposal_id="p1", chosen_index=invalid_index)
+
+
+@pytest.mark.parametrize("valid_index", [0, 1, 2])
+def test_apply_request_accepts_chosen_index_within_range(valid_index: int) -> None:
+    ok = MealSwapApplyRequest(proposal_id="p1", chosen_index=valid_index)
+    assert ok.chosen_index == valid_index
 
 
 def test_apply_response_requires_revision_ge_zero() -> None:
@@ -80,7 +83,10 @@ def test_apply_response_requires_revision_ge_zero() -> None:
         MealSwapApplyResponse(updated_day=_day(), plan_id="p1", revision=-1)
 
 
-def test_apply_response_includes_revision() -> None:
-    resp = MealSwapApplyResponse(updated_day=_day(), plan_id="pid-1", revision=3)
-    assert resp.revision == 3
+@pytest.mark.parametrize("valid_revision", [0, 1, 3, 100])
+def test_apply_response_accepts_non_negative_revision(valid_revision: int) -> None:
+    resp = MealSwapApplyResponse(
+        updated_day=_day(), plan_id="pid-1", revision=valid_revision
+    )
+    assert resp.revision == valid_revision
     assert resp.plan_id == "pid-1"

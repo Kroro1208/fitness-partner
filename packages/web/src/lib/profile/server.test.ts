@@ -78,8 +78,10 @@ describe("getProfileServerSide", () => {
 			.spyOn(console, "error")
 			.mockImplementation(() => {});
 		const { getProfileServerSide } = await import("./server");
+		// reason がメッセージに含まれることだけ検証 (前置きの "getProfileServerSide failed:"
+		// は実装詳細の wording のため正規表現で結合度を緩める)。
 		await expect(getProfileServerSide()).rejects.toThrow(
-			"getProfileServerSide failed: missing_access_token",
+			/missing_access_token/,
 		);
 		consoleError.mockRestore();
 	});

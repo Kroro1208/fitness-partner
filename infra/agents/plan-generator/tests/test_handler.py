@@ -98,17 +98,13 @@ def test_returns_generated_plan(monkeypatch):
 
 
 def test_handler_passes_safe_inputs_to_agent(monkeypatch):
-    captured: list[str] = []
-
-    def fake_generate_plan(message: str):
-        captured.append(message)
-        return _gen_plan()
-
-    monkeypatch.setattr(handler_module, "_generate_weekly_plan", fake_generate_plan)
+    generate_mock = MagicMock(return_value=_gen_plan())
+    monkeypatch.setattr(handler_module, "_generate_weekly_plan", generate_mock)
 
     handler_module.handler(_valid_event())
 
-    payload = json.loads(captured[0])
+    generate_mock.assert_called_once()
+    payload = json.loads(generate_mock.call_args.args[0])
     assert payload["week_start"] == "2026-04-20"
     assert "safe_prompt_profile" in payload
     assert "safe_agent_input" in payload
@@ -199,16 +195,27 @@ def _gen_swap_candidates():
 
 
 def test_handler_routes_swap_candidates_to_swap_handler(monkeypatch):
-    called: list[str] = []
+    swap_mock = MagicMock(return_value={"generated_candidates": {"candidates": []}})
+    monkeypatch.setattr(handler_module, "handle_swap_candidates", swap_mock)
+    monkeypatch.setattr(handler_module, "_AGENT", MagicMock(return_value=_gen_plan()))
 
-    def fake_handle_swap(event):
-        called.append("swap")
-        return {"generated_candidates": {"candidates": []}}
+    event = _swap_event()
+    res = handler_module.handler(event)
 
-    monkeypatch.setattr(handler_module, "handle_swap_candidates", fake_handle_swap)
-    res = handler_module.handler(_swap_event())
-    assert called == ["swap"]
+    # action="swap_candidates" のとき swap handler が 1 回だけ呼ばれ、event が渡される
+    swap_mock.assert_called_once_with(event)
     assert "generated_candidates" in res
+
+
+def test_handler_does_not_route_to_swap_handler_for_other_actions(monkeypatch):
+    swap_mock = MagicMock()
+    monkeypatch.setattr(handler_module, "handle_swap_candidates", swap_mock)
+    monkeypatch.setattr(handler_module, "_AGENT", MagicMock(return_value=_gen_plan()))
+
+    handler_module.handler(_valid_event())  # action 未指定 = generate_plan
+
+    # 他 action では swap handler は一切呼ばれない
+    swap_mock.assert_not_called()
 
 
 def test_handler_unknown_action_raises():
@@ -223,6 +230,21 @@ def test_handler_defaults_to_generate_plan_when_action_absent(monkeypatch):
     assert "generated_weekly_plan" in res
 
 
+def test_handler_propagates_agent_runtime_error(monkeypatch):
+    """Bedrock / Strands Agent が throw した場合、handler は同じ例外を伝播させる。
+    上位 (Lambda runtime) でリトライ / DLQ 制御するため、ここで握りつぶさない契約。"""
+
+    class _ThrottlingError(Exception):
+        pass
+
+    failing_agent = MagicMock(side_effect=_ThrottlingError("throttled"))
+    monkeypatch.setattr(handler_module, "_AGENT", failing_agent)
+
+    with pytest.raises(_ThrottlingError):
+        handler_module.handler(_valid_event())
+    failing_agent.assert_called_once()
+
+
 def test_swap_handler_returns_generated_candidates(monkeypatch):
     monkeypatch.setattr(
         handler_module,
@@ -235,15 +257,13 @@ def test_swap_handler_returns_generated_candidates(monkeypatch):
 
 
 def test_swap_handler_passes_swap_context_to_agent(monkeypatch):
-    captured: list[str] = []
+    generate_mock = MagicMock(return_value=_gen_swap_candidates())
+    monkeypatch.setattr(handler_module, "_generate_swap_candidates", generate_mock)
 
-    def fake_generate(message: str):
-        captured.append(message)
-        return _gen_swap_candidates()
-
-    monkeypatch.setattr(handler_module, "_generate_swap_candidates", fake_generate)
     handler_module.handle_swap_candidates(_swap_event())
-    payload = json.loads(captured[0])
+
+    generate_mock.assert_called_once()
+    payload = json.loads(generate_mock.call_args.args[0])
     assert payload["target_meal"]["slot"] == "breakfast"
     assert payload["daily_context"]["original_day_total_calories_kcal"] == 2000
     assert "safe_prompt_profile" in payload

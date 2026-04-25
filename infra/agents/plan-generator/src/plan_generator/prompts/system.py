@@ -2,6 +2,19 @@
 
 from plan_generator.prompts.food_hints import render_food_hints
 
+# プロンプト本体に必ず含める不変キー。
+# テストは `for v in SYSTEM_PROMPT_INVARIANTS: assert v in prompt` で検証する。
+# プロンプトの言い回しを書き換えるときは対応する不変キーを残すか、この tuple ごと更新する。
+SYSTEM_PROMPT_INVARIANTS: tuple[str, ...] = (
+    "FOOD_HINTS",
+    "GeneratedWeeklyPlan",
+    "protein_gap_g is 0",                       # Plan 08 whey 抑止注意
+    "do NOT include plan_id",                    # adapter 責務
+    "at least 3 distinct breakfast titles/week", # breakfast 分散
+    "do not repeat the exact same breakfast",    # 重複抑止
+    "medical conditions",                        # 医療情報除外
+)
+
 
 _TOOL_BASE = """\
 You are a personal fitness nutrition planner.

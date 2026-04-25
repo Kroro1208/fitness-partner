@@ -1,16 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+// auth ドメイン境界の adapter として getSession をモックする。実体は内部で
+// Next.js の cookie store と JWT 公開鍵検証 (Cognito JWKS) を呼ぶため、実体を通すには
+// それら全てをモックする必要があり、結局モック境界が同じ階層に下がるだけ。
+// auth subsystem を 1 つの外部依存として扱う。
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("ai", () => ({ generateText: vi.fn() }));
 vi.mock("@ai-sdk/anthropic", () => ({ anthropic: () => ({}) }));
 
+/** session の有無を 1 行で切り替えるテストヘルパー。Arrange を 1 行に短縮する。 */
+async function setSession(user: { userId: string; email: string } | null) {
+	const { getSession } = await import("@/lib/auth/session");
+	(getSession as ReturnType<typeof vi.fn>).mockResolvedValue(user);
+}
+
 describe("POST /api/onboarding/coach-prompt", () => {
-	beforeEach(() => vi.clearAllMocks());
+	beforeEach(async () => {
+		vi.clearAllMocks();
+		const { resetRateLimitStoreForTest } = await import(
+			"@/lib/security/rate-limit"
+		);
+		resetRateLimitStoreForTest();
+	});
 
 	it("returns 401 when no session", async () => {
-		const { getSession } = await import("@/lib/auth/session");
-		(getSession as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+		await setSession(null);
 		const { POST } = await import("./route");
 		const req = new Request("http://x/api/onboarding/coach-prompt", {
 			method: "POST",
@@ -21,11 +36,7 @@ describe("POST /api/onboarding/coach-prompt", () => {
 	});
 
 	it("returns 400 on invalid body", async () => {
-		const { getSession } = await import("@/lib/auth/session");
-		(getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
-			userId: "u",
-			email: "x",
-		});
+		await setSession({ userId: "u", email: "x" });
 		const { POST } = await import("./route");
 		const req = new Request("http://x/api/onboarding/coach-prompt", {
 			method: "POST",
@@ -36,11 +47,7 @@ describe("POST /api/onboarding/coach-prompt", () => {
 	});
 
 	it("returns prompt on success", async () => {
-		const { getSession } = await import("@/lib/auth/session");
-		(getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
-			userId: "u",
-			email: "x",
-		});
+		await setSession({ userId: "u", email: "x" });
 		const { generateText } = await import("ai");
 		(generateText as ReturnType<typeof vi.fn>).mockResolvedValue({
 			text: "Welcome.",
@@ -60,12 +67,64 @@ describe("POST /api/onboarding/coach-prompt", () => {
 		expect(body.cached).toBe(false);
 	});
 
-	it("returns a fallback prompt when Anthropic generation fails", async () => {
-		const { getSession } = await import("@/lib/auth/session");
-		(getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
-			userId: "u",
-			email: "x",
+	it("returns 403 when origin is cross-site", async () => {
+		await setSession({ userId: "u", email: "x" });
+		const { generateText } = await import("ai");
+		const { POST } = await import("./route");
+		const req = {
+			url: "http://app.example/api/onboarding/coach-prompt",
+			headers: new Headers({
+				origin: "http://evil.example",
+				"sec-fetch-site": "cross-site",
+			}),
+			text: async () =>
+				JSON.stringify({
+					target_stage: "stats",
+					profile_snapshot: { age: 30 },
+				}),
+		} as unknown as Request;
+
+		const res = await POST(req);
+
+		expect(res.status).toBe(403);
+		expect(generateText).not.toHaveBeenCalled();
+	});
+
+	it("rate limits each authenticated user", async () => {
+		await setSession({ userId: "limited-user", email: "x" });
+		const { generateText } = await import("ai");
+		(generateText as ReturnType<typeof vi.fn>).mockResolvedValue({
+			text: "Welcome.",
 		});
+		const { POST, COACH_PROMPT_RATE_LIMIT } = await import("./route");
+
+		for (let i = 0; i < COACH_PROMPT_RATE_LIMIT.limit; i += 1) {
+			const ok = await POST(
+				new Request("http://x/api/onboarding/coach-prompt", {
+					method: "POST",
+					body: JSON.stringify({
+						target_stage: "stats",
+						profile_snapshot: { age: 30 },
+					}),
+				}),
+			);
+			expect(ok.status).toBe(200);
+		}
+
+		const blocked = await POST(
+			new Request("http://x/api/onboarding/coach-prompt", {
+				method: "POST",
+				body: JSON.stringify({
+					target_stage: "stats",
+					profile_snapshot: { age: 30 },
+				}),
+			}),
+		);
+		expect(blocked.status).toBe(429);
+	});
+
+	it("returns a fallback prompt when Anthropic generation fails", async () => {
+		await setSession({ userId: "u", email: "x" });
 		const { generateText } = await import("ai");
 		(generateText as ReturnType<typeof vi.fn>).mockRejectedValue(
 			Object.assign(new Error("credit balance is too low"), {

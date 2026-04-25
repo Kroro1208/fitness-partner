@@ -106,13 +106,15 @@ def test_build_swap_agent_wires_tools_and_output_schema():
         "get_food_by_id",
     }.issubset(set(agent.tool_names))
 
-    # structured_output_model が GeneratedMealSwapCandidates で紐付く
-    assert agent._default_structured_output_model is GeneratedMealSwapCandidates
+    # schema 接続は test_handle_swap_through_real_agent_with_mocked_llm_call で
+    # GeneratedMealSwapCandidates として model_validate できることを通じて間接的に検証する。
 
-    # system_prompt が swap 特有のキーワードを含む
-    assert "EXACTLY 3" in agent.system_prompt
-    assert "same slot" in agent.system_prompt
-    assert "original_day_total" in agent.system_prompt
+    # system_prompt が swap 特有の不変キーを含む
+    from plan_generator.prompts.system_swap import SWAP_PROMPT_INVARIANTS
+
+    prompt_lower = agent.system_prompt.lower()
+    for invariant in SWAP_PROMPT_INVARIANTS:
+        assert invariant.lower() in prompt_lower, invariant
 
 
 def test_handle_swap_through_real_agent_with_mocked_llm_call(monkeypatch):
@@ -148,17 +150,16 @@ def test_handle_swap_through_real_agent_with_mocked_llm_call(monkeypatch):
     assert len(response["generated_candidates"]["candidates"]) == 3
 
 
-def test_swap_system_prompt_contains_swap_specific_directives():
-    """system_swap.py の build_swap_system_prompt() が swap 特有のルールと
-    FOOD_HINTS を含むこと。"""
-    from plan_generator.prompts.system_swap import build_swap_system_prompt
+def test_swap_system_prompt_contains_required_invariants():
+    """build_swap_system_prompt() が SWAP_PROMPT_INVARIANTS と FOOD_HINTS を含むこと。"""
+    from plan_generator.prompts.system_swap import (
+        SWAP_PROMPT_INVARIANTS,
+        build_swap_system_prompt,
+    )
 
     prompt = build_swap_system_prompt()
-    assert "EXACTLY 3" in prompt
-    assert "same slot" in prompt
-    assert "original_day_total" in prompt
-    assert "other_meals_total" in prompt
+    prompt_lower = prompt.lower()
+    for invariant in SWAP_PROMPT_INVARIANTS:
+        assert invariant.lower() in prompt_lower, invariant
     # FOOD_HINTS の存在 (render_food_hints() の出力は "FOOD_HINTS" を必ず含む)
     assert "food_id" in prompt or "FOOD_HINTS" in prompt
-    # 医療情報除外
-    assert "medical" in prompt.lower()

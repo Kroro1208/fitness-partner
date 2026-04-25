@@ -21,6 +21,9 @@ import { parseWeeklyPlanToVM } from "@/lib/plan/plan-mappers";
 import { planQueryKey } from "@/lib/plan/plan-query";
 
 const replaceMock = vi.fn();
+// next/navigation の router は Next.js framework adapter であり、test 環境には存在しない。
+// framework adapter として置換する。replaceMock の呼び出しは「URL を更新する」
+// 観察可能な副作用の発火検証として扱う (内部関数の呼び出し検証ではない)。
 vi.mock("next/navigation", () => ({
 	useSearchParams: () => new URLSearchParams(""),
 	useRouter: () => ({ replace: replaceMock, push: vi.fn() }),

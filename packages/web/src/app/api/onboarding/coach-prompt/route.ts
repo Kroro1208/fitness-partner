@@ -5,6 +5,15 @@ import { NextResponse } from "next/server";
 
 import { readJsonBody } from "@/app/api/onboarding/_shared/read-json-body";
 import { getSession } from "@/lib/auth/session";
+import {
+	consumeRateLimit,
+	rateLimitedResponse,
+} from "@/lib/security/rate-limit";
+import {
+	DEFAULT_JSON_BODY_LIMIT_BYTES,
+	enforceContentLength,
+	enforceSameOrigin,
+} from "@/lib/security/request-guard";
 
 const SYSTEM_PROMPT = `
 あなたはパーソナルフィットネスコーチです。
@@ -38,6 +47,17 @@ const FALLBACK_PROMPTS = {
 	(typeof CoachPromptRequestSchema._type)["target_stage"],
 	string
 >;
+
+const PROFILE_SNAPSHOT_MAX_BYTES = 8 * 1024;
+export const COACH_PROMPT_RATE_LIMIT = {
+	bucket: "ai:coach-prompt:user",
+	limit: 30,
+	windowMs: 60 * 60_000,
+} as const;
+
+function jsonByteLength(value: unknown): number {
+	return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}
 
 function buildFallbackPrompt(
 	targetStage: (typeof CoachPromptRequestSchema._type)["target_stage"],
@@ -76,19 +96,48 @@ function summarizeAiError(error: unknown): Record<string, unknown> {
 }
 
 export async function POST(request: Request) {
+	const origin = enforceSameOrigin(request);
+	if (!origin.ok) return origin.response;
+
+	const size = enforceContentLength(request, DEFAULT_JSON_BODY_LIMIT_BYTES);
+	if (!size.ok) return size.response;
+
 	const session = await getSession();
 	if (!session) {
 		return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 	}
 
-	const bodyResult = await readJsonBody(request);
+	const rateLimit = consumeRateLimit({
+		...COACH_PROMPT_RATE_LIMIT,
+		key: session.userId,
+	});
+	if (!rateLimit.allowed) {
+		return rateLimitedResponse(rateLimit.retryAfterSeconds);
+	}
+
+	const bodyResult = await readJsonBody(request, {
+		maxBytes: DEFAULT_JSON_BODY_LIMIT_BYTES,
+	});
 	if (!bodyResult.ok) {
-		return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+		return NextResponse.json(
+			{
+				error:
+					bodyResult.reason === "payload_too_large"
+						? "payload_too_large"
+						: "invalid_json",
+			},
+			{ status: bodyResult.reason === "payload_too_large" ? 413 : 400 },
+		);
 	}
 
 	const parsed = CoachPromptRequestSchema.safeParse(bodyResult.body);
 	if (!parsed.success) {
 		return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+	}
+	if (
+		jsonByteLength(parsed.data.profile_snapshot) > PROFILE_SNAPSHOT_MAX_BYTES
+	) {
+		return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
 	}
 
 	try {

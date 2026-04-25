@@ -26,7 +26,7 @@ vi.mock("@/lib/auth/cognito", () => ({
 	cognitoRefreshTokens: cognitoRefreshTokensMock,
 }));
 
-import { GET } from "../src/app/api/proxy/[...path]/route";
+import { GET, POST } from "../src/app/api/proxy/[...path]/route";
 
 const PROXY_PATH = ["users", "me", "profile"];
 const PROXY_URL = `http://localhost:3000/api/proxy/${PROXY_PATH.join("/")}`;
@@ -49,6 +49,24 @@ function invokeProxy(url: string = PROXY_URL) {
 	return GET(new NextRequest(url), {
 		params: Promise.resolve({ path: PROXY_PATH }),
 	});
+}
+
+function invokeProxyPost(input: {
+	url?: string;
+	path?: string[];
+	headers?: HeadersInit;
+	body?: BodyInit;
+}) {
+	const path = input.path ?? ["users", "me", "meals"];
+	const url = input.url ?? `http://localhost:3000/api/proxy/${path.join("/")}`;
+	return POST(
+		new NextRequest(url, {
+			method: "POST",
+			headers: input.headers,
+			body: input.body,
+		}),
+		{ params: Promise.resolve({ path }) },
+	);
 }
 
 function authHeader(init: RequestInit | undefined): string | null {
@@ -232,6 +250,57 @@ describe("proxy route", () => {
 			expect(String(url)).toBe(
 				"https://api.example.com/users/me/profile?limit=10&cursor=abc",
 			);
+		});
+
+		describe("proxy hardening", () => {
+			it("許可されていない upstream path は転送しない", async () => {
+				getAccessTokenMock.mockResolvedValueOnce("access-token");
+				const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+				const response = await invokeProxyPost({
+					path: ["admin", "users"],
+					body: JSON.stringify({ ok: true }),
+				});
+
+				expect(response.status).toBe(404);
+				expect(await response.json()).toEqual({ error: "not_found" });
+				expect(fetchSpy).not.toHaveBeenCalled();
+			});
+
+			it("変更系リクエストの cross-site Origin を拒否する", async () => {
+				const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+				const response = await POST(
+					{
+						method: "POST",
+						url: "http://app.example/api/proxy/users/me/meals",
+						headers: new Headers({
+							origin: "http://evil.example",
+							"sec-fetch-site": "cross-site",
+						}),
+					} as unknown as NextRequest,
+					{
+						params: Promise.resolve({ path: ["users", "me", "meals"] }),
+					},
+				);
+
+				expect(response.status).toBe(403);
+				expect(await response.json()).toEqual({ error: "invalid_origin" });
+				expect(fetchSpy).not.toHaveBeenCalled();
+			});
+
+			it("本文サイズ上限を超えるリクエストは upstream に転送しない", async () => {
+				getAccessTokenMock.mockResolvedValueOnce("access-token");
+				const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+				const response = await invokeProxyPost({
+					body: "x".repeat(256 * 1024 + 1),
+				});
+
+				expect(response.status).toBe(413);
+				expect(await response.json()).toEqual({ error: "payload_too_large" });
+				expect(fetchSpy).not.toHaveBeenCalled();
+			});
 		});
 	});
 });

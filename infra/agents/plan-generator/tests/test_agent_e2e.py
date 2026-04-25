@@ -1,13 +1,14 @@
-"""Agent e2e: build_agent() が返す実 Agent を通し、Bedrock invoke だけ mock する。
+"""Agent wiring test: build_agent() が返す実 Agent を通し、Bedrock invoke だけ mock する。
 
-Strands Agent 内部の system prompt / tool wiring / structured_output_model 接続を
-実際に通す。BedrockModel の __init__ だけ stub して Bedrock credential 不要化。
+Strands Agent 内部の system prompt / tool wiring を実際に通す。BedrockModel の
+__init__ だけ stub して Bedrock credential 不要化。schema 接続は handler 経由の
+振る舞いテスト (test_handler_through_real_agent_with_mocked_llm_call) で検証する。
 
 strands-agents 1.x の実 API:
-- `structured_output_model` (plan 原文は `output_schema` だが、実 API 名は structured_output_model)。
-  Agent 保管属性は `_default_structured_output_model`。
-- tool 一覧は `agent.tool_names` (list[str]) で参照する。
+- tool 一覧は `agent.tool_names` (list[str]) で参照する (公開 API)。
 - Agent.__call__ は AgentResult を返す; `.structured_output` が Pydantic model。
+- 内部の `_default_structured_output_model` は private 属性のため直接 assert しない
+  (SDK rename / wrap で簡単に壊れる)。
 """
 
 from unittest.mock import MagicMock, patch
@@ -126,8 +127,8 @@ def test_build_agent_wires_tools_and_output_schema():
         "get_food_by_id",
     }.issubset(set(agent.tool_names))
 
-    # structured_output_model が GeneratedWeeklyPlan で紐付いている
-    assert agent._default_structured_output_model is GeneratedWeeklyPlan
+    # schema 接続は test_handler_through_real_agent_with_mocked_llm_call で
+    # GeneratedWeeklyPlan として model_validate できることを通じて間接的に検証する。
 
 
 def test_handler_through_real_agent_with_mocked_llm_call(monkeypatch):
@@ -164,15 +165,13 @@ def test_handler_through_real_agent_with_mocked_llm_call(monkeypatch):
     assert len(response["generated_weekly_plan"]["days"]) == 7
 
 
-def test_system_prompt_contains_food_hints_and_plan08_rules():
-    """system.py の build_system_prompt() が FOOD_HINTS と主要ルールを含む。"""
-    from plan_generator.prompts.system import build_system_prompt
+def test_system_prompt_contains_required_invariants():
+    """SYSTEM_PROMPT_INVARIANTS の全キーが build_system_prompt() の出力に含まれること。"""
+    from plan_generator.prompts.system import (
+        SYSTEM_PROMPT_INVARIANTS,
+        build_system_prompt,
+    )
 
     prompt = build_system_prompt()
-    assert "FOOD_HINTS" in prompt
-    assert "GeneratedWeeklyPlan" in prompt
-    assert "protein_gap_g is 0" in prompt  # Plan 08 で whey 抑止の注意
-    assert "do NOT include plan_id" in prompt  # 責務分離の注意
-    assert "at least 3 distinct breakfast titles/week" in prompt
-    assert "do not repeat the exact same breakfast" in prompt
-    assert "medical conditions" in prompt  # 医療情報除外
+    for invariant in SYSTEM_PROMPT_INVARIANTS:
+        assert invariant in prompt, invariant

@@ -70,7 +70,7 @@ const baseDay = (date: string) => ({
 	daily_total_carbs_g: 78,
 });
 
-const _baseDto = () => ({
+const baseDto = () => ({
 	plan_id: "p1",
 	week_start: "2026-04-20",
 	generated_at: "2026-04-20T00:00:00Z",
@@ -99,20 +99,20 @@ const _baseDto = () => ({
 
 describe("weeklyPlanToVM", () => {
 	it("snake_case → camelCase 基本", () => {
-		const vm = parseWeeklyPlanToVM(_baseDto());
+		const vm = parseWeeklyPlanToVM(baseDto());
 		expect(vm.planId).toBe("p1");
 		expect(vm.targetCaloriesKcal).toBe(2000);
 		expect(vm.days).toHaveLength(7);
 	});
 
 	it("Plan 09: revision を VM に反映", () => {
-		const vm = parseWeeklyPlanToVM({ ..._baseDto(), revision: 7 });
+		const vm = parseWeeklyPlanToVM({ ...baseDto(), revision: 7 });
 		expect(vm.revision).toBe(7);
 	});
 
 	it("Plan 09: snack_swaps → snackSwaps camelCase", () => {
 		const vm = parseWeeklyPlanToVM({
-			..._baseDto(),
+			...baseDto(),
 			snack_swaps: [
 				{
 					current_snack: "チョコ",
@@ -134,7 +134,7 @@ describe("weeklyPlanToVM", () => {
 
 	it("Plan 09: hydration を target + breakdown にまとめる", () => {
 		const vm = parseWeeklyPlanToVM({
-			..._baseDto(),
+			...baseDto(),
 			hydration_target_liters: 2.8,
 			hydration_breakdown: ["起床時 500ml", "午前中 600ml"],
 		});
@@ -146,7 +146,7 @@ describe("weeklyPlanToVM", () => {
 
 	it("Plan 09: supplement_recommendations → camelCase (dose/timing/whyRelevant/caution)", () => {
 		const vm = parseWeeklyPlanToVM({
-			..._baseDto(),
+			...baseDto(),
 			supplement_recommendations: [
 				{
 					name: "whey",
@@ -184,7 +184,7 @@ describe("weeklyPlanToVM", () => {
 
 	it("Plan 09: personal_rules / timeline_notes / weekly_notes はそのまま array コピー", () => {
 		const vm = parseWeeklyPlanToVM({
-			..._baseDto(),
+			...baseDto(),
 			personal_rules: ["r1", "r2", "r3"],
 			timeline_notes: ["朝食は 8:00", "夕食は 19:00"],
 			weekly_notes: ["今週は batch-cook 日"],

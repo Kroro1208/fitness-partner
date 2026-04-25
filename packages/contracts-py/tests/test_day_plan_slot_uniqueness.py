@@ -47,7 +47,11 @@ def test_day_plan_rejects_duplicate_slots() -> None:
             daily_total_fat_g=15,
             daily_total_carbs_g=60,
         )
-    assert "unique slots" in str(ei.value)
+    # メッセージ文字列ではなく errors() の構造で検証 (Pydantic 更新で文字列が変わっても安定)
+    errors = ei.value.errors()
+    # model_validator(mode="after") から raise された ValueError は type="value_error" でラップされる
+    assert len(errors) == 1, errors
+    assert errors[0]["type"] == "value_error", errors
 
 
 def test_day_plan_accepts_unique_slots() -> None:

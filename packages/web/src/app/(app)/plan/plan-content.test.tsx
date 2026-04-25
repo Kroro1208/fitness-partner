@@ -16,6 +16,10 @@ import { parseWeeklyPlanToVM } from "@/lib/plan/plan-mappers";
 let searchParams = new URLSearchParams("");
 const replaceMock = vi.fn();
 
+// next/navigation の router / search params は Next.js framework adapter であり、
+// test 環境には存在しない。framework adapter として置換する (Khorikov 的にも
+// "外部依存の境界" モックに該当)。replaceMock の呼び出しは「URL を更新する」
+// 観察可能な副作用の発火検証として扱う (内部関数の呼び出し検証ではない)。
 vi.mock("next/navigation", () => ({
 	useSearchParams: () => searchParams,
 	useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
@@ -154,13 +158,18 @@ describe("PlanContent", () => {
 		expect(screen.getByText("朝食3")).toBeInTheDocument();
 	});
 
-	it("day tab click で URL query を更新する", () => {
+	it("day tab click で URL query 更新の副作用を発火する", () => {
 		renderPlanContent({
 			initialPlan: parseWeeklyPlanToVM(makeWeeklyPlanWire()),
 		});
 
 		fireEvent.click(screen.getByRole("tab", { name: /4\/22/ }));
 
+		// 副作用: URL 更新 (Next.js router 経由)。
+		// 本物の router では replace が URL を更新し useSearchParams() も追従するが、
+		// test 環境のモックは static なので tab の aria-selected 同期は起きない。
+		// 単選択 tab の選択状態同期は別の test (query string が plan 内の日付なら...)
+		// で初期 render 時に検証している。
 		expect(replaceMock).toHaveBeenCalledWith("/plan?day=2026-04-22");
 	});
 });

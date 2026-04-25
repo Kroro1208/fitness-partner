@@ -78,8 +78,3 @@ async function streamToString(stream: unknown): Promise<string> {
 	const chunks = await Array.fromAsync(stream, (chunk) => Buffer.from(chunk));
 	return Buffer.concat(chunks).toString("utf8");
 }
-
-/** test からクライアントキャッシュをリセットするためのフック。 */
-export function __resetClientForTests(): void {
-	_client = null;
-}

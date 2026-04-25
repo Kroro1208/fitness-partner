@@ -65,16 +65,43 @@ def _daily_context_kwargs(**overrides: object) -> dict[str, object]:
     return base
 
 
-def test_daily_macro_context_requires_original_day_totals() -> None:
+@pytest.mark.parametrize(
+    "missing_field",
+    [
+        "original_day_total_calories_kcal",
+        "original_day_total_protein_g",
+        "original_day_total_fat_g",
+        "original_day_total_carbs_g",
+        "other_meals_total_calories_kcal",
+        "other_meals_total_protein_g",
+        "other_meals_total_fat_g",
+        "other_meals_total_carbs_g",
+        "date",
+    ],
+)
+def test_daily_macro_context_requires_field(missing_field: str) -> None:
     kwargs = _daily_context_kwargs()
-    kwargs.pop("original_day_total_calories_kcal")
+    kwargs.pop(missing_field)
     with pytest.raises(ValidationError):
         DailyMacroContext(**kwargs)
 
 
-def test_daily_macro_context_rejects_negative() -> None:
+@pytest.mark.parametrize(
+    "negative_field",
+    [
+        "original_day_total_calories_kcal",
+        "original_day_total_protein_g",
+        "original_day_total_fat_g",
+        "original_day_total_carbs_g",
+        "other_meals_total_calories_kcal",
+        "other_meals_total_protein_g",
+        "other_meals_total_fat_g",
+        "other_meals_total_carbs_g",
+    ],
+)
+def test_daily_macro_context_rejects_negative(negative_field: str) -> None:
     with pytest.raises(ValidationError):
-        DailyMacroContext(**_daily_context_kwargs(original_day_total_protein_g=-1))
+        DailyMacroContext(**_daily_context_kwargs(**{negative_field: -1}))
 
 
 def test_daily_macro_context_happy_path() -> None:
@@ -92,3 +119,19 @@ def test_meal_swap_context_composes_all_fields() -> None:
     assert ctx.target_meal.slot == "breakfast"
     assert ctx.daily_context.date == "2026-04-27"
     assert ctx.safe_prompt_profile.age == 30
+
+
+def test_meal_swap_context_rejects_missing_target_meal() -> None:
+    with pytest.raises(ValidationError):
+        MealSwapContext(  # type: ignore[call-arg]
+            safe_prompt_profile=_safe_profile(),
+            daily_context=DailyMacroContext(**_daily_context_kwargs()),
+        )
+
+
+def test_meal_swap_context_rejects_missing_safe_prompt_profile() -> None:
+    with pytest.raises(ValidationError):
+        MealSwapContext(  # type: ignore[call-arg]
+            target_meal=_target_meal(),
+            daily_context=DailyMacroContext(**_daily_context_kwargs()),
+        )

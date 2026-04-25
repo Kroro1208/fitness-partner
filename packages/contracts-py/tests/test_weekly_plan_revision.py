@@ -87,9 +87,20 @@ def test_weekly_plan_accepts_revision_positive() -> None:
 
 
 def test_generated_weekly_plan_does_not_have_revision() -> None:
-    """Strands が出力する GeneratedWeeklyPlan は revision を持たない (adapter 責務)。"""
+    """Strands が出力する GeneratedWeeklyPlan の serialized 出力に revision キーが含まれない
+    (adapter 責務)。Pydantic の internal model_fields ではなく、観察可能な model_dump()
+    の振る舞いで検証する。"""
     from fitness_contracts.models.plan.generated_weekly_plan import (
         GeneratedWeeklyPlan,
     )
 
-    assert "revision" not in GeneratedWeeklyPlan.model_fields
+    instance = GeneratedWeeklyPlan(
+        target_calories_kcal=2000,
+        target_protein_g=120,
+        target_fat_g=60,
+        target_carbs_g=200,
+        days=[_day(f"2026-04-2{i}") for i in range(7)],
+        personal_rules=["a", "b", "c"],
+        hydration_target_liters=2.5,
+    )
+    assert "revision" not in instance.model_dump()

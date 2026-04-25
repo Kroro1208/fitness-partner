@@ -9,6 +9,7 @@ import {
 	getClientIp,
 	rateLimitedResponse,
 } from "@/lib/security/rate-limit";
+import { enforceSameOrigin } from "@/lib/security/request-guard";
 
 const bodySchema = z.object({
 	email: z.string().email(),
@@ -29,6 +30,9 @@ const SIGNIN_EMAIL_LIMIT = {
 
 export async function POST(request: NextRequest) {
 	try {
+		const origin = enforceSameOrigin(request);
+		if (!origin.ok) return origin.response;
+
 		const ip = getClientIp(request);
 		const ipRateLimit = enforceRateLimits([{ ...SIGNIN_IP_LIMIT, key: ip }]);
 		if (!ipRateLimit.allowed) {
