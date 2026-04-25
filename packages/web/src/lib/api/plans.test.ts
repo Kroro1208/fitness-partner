@@ -121,4 +121,21 @@ describe("generatePlan", () => {
 		} satisfies Partial<ApiError>);
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 	});
+
+	it("weekly_plan に revision が無くても Zod が通り成功する", async () => {
+		const weeklyPlan = makeWeeklyPlan();
+		const { revision: _r, ...withoutRevision } = weeklyPlan;
+		fetchSpy.mockResolvedValueOnce(
+			jsonResponse({
+				plan_id: "p1",
+				week_start: "2026-04-20",
+				generated_at: "2026-04-23T00:00:00Z",
+				weekly_plan: withoutRevision,
+			}),
+		);
+
+		const result = await generatePlan({ weekStart: "2026-04-20" });
+		expect(result.planId).toBe("p1");
+		expect(result.weeklyPlan.revision).toBe(0);
+	});
 });

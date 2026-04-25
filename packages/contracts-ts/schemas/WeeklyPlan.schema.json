@@ -387,6 +387,7 @@
 			"type": "string"
 		},
 		"revision": {
+			"default": 0,
 			"description": "monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
 			"minimum": 0,
 			"title": "Revision",
@@ -403,8 +404,7 @@
 		"personal_rules",
 		"plan_id",
 		"week_start",
-		"generated_at",
-		"revision"
+		"generated_at"
 	],
 	"title": "WeeklyPlan",
 	"type": "object"

@@ -36,11 +36,14 @@ export function useGeneratePlan() {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: generatePlan,
-		onSuccess: (data) => {
-			qc.setQueryData(
-				planQueryOptions(data.weekStart).queryKey,
-				data.weeklyPlan,
-			);
+		onSuccess: (data, variables) => {
+			// 画面の `useWeeklyPlan(weekStart)` は mutation 入力の週。API の `data.weekStart`
+			// が一瞬でもずれるとキャッシュが当たらず、成功後も空プラン/エラー表示に
+			// 取り残されるため、必ず `variables.weekStart` へ入れる。API 週はフォールバック用に二重登録。
+			qc.setQueryData(planQueryKey(variables.weekStart), data.weeklyPlan);
+			if (data.weekStart !== variables.weekStart) {
+				qc.setQueryData(planQueryKey(data.weekStart), data.weeklyPlan);
+			}
 		},
 	});
 }

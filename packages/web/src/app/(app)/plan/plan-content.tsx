@@ -33,7 +33,7 @@ export function PlanContent({
 	const {
 		data: plan,
 		isLoading,
-		isError,
+		isLoadingError,
 	} = useWeeklyPlan(weekStart, {
 		initialData: initialPlan,
 	});
@@ -66,7 +66,7 @@ export function PlanContent({
 	if (generate.isPending && !plan)
 		return <PlanLoadingState message="プランを生成中..." />;
 	if (isLoading) return <PlanLoadingState />;
-	if (isError && !plan)
+	if (isLoadingError)
 		return (
 			<PlanErrorBanner
 				onRetry={triggerGenerate}

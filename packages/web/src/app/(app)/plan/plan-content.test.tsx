@@ -121,6 +121,19 @@ afterEach(() => {
 });
 
 describe("PlanContent", () => {
+	it("initial plan がある場合は cache から表示し、追加 fetch や generate を実行しない", () => {
+		renderPlanContent({
+			initialPlan: parseWeeklyPlanToVM(makeWeeklyPlanWire()),
+		});
+
+		expect(screen.getByText(/1 日の目標/)).toBeInTheDocument();
+		expect(screen.getByRole("tab", { name: /4\/20/ })).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "プランを作成する" }),
+		).toBeNull();
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
 	it("server fetch failure without initial plan shows error banner", async () => {
 		fetchSpy.mockResolvedValueOnce(jsonResponse({ error: "boom" }, 500));
 

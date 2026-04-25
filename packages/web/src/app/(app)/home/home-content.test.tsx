@@ -142,10 +142,12 @@ function renderHome({
 	weekStart = "2026-04-20",
 	initialPlan,
 	seededPlan,
+	seededUpdatedAt = 0,
 }: {
 	weekStart?: string;
 	initialPlan?: ReturnType<typeof parseWeeklyPlanToVM> | null;
 	seededPlan?: ReturnType<typeof parseWeeklyPlanToVM> | null;
+	seededUpdatedAt?: number;
 } = {}) {
 	const qc = new QueryClient({
 		defaultOptions: {
@@ -155,7 +157,7 @@ function renderHome({
 	});
 	if (seededPlan !== undefined) {
 		qc.setQueryData(planQueryKey(weekStart), seededPlan, {
-			updatedAt: 0,
+			updatedAt: seededUpdatedAt,
 		});
 	}
 	const wrapper = ({ children }: { children: ReactNode }) => (
@@ -186,6 +188,32 @@ afterEach(() => {
 });
 
 describe("HomeContent", () => {
+	it("initial plan がある場合は cache から表示し、追加 fetch や generate を実行しない", () => {
+		const initialPlan = parseWeeklyPlanToVM(makeWeeklyPlanWire());
+
+		renderHome({ initialPlan });
+
+		expect(screen.getByText(/1 日の目標/)).toBeInTheDocument();
+		expect(screen.getByText(/今日のサマリー/)).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "プランを作成する" }),
+		).toBeNull();
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
+	it("fresh cache がある場合は cache から表示し、追加 fetch や generate を実行しない", () => {
+		const seededPlan = parseWeeklyPlanToVM(makeWeeklyPlanWire());
+
+		renderHome({ seededPlan, seededUpdatedAt: Date.now() });
+
+		expect(screen.getByText(/1 日の目標/)).toBeInTheDocument();
+		expect(screen.getByText(/今日のサマリー/)).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "プランを作成する" }),
+		).toBeNull();
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
+
 	it("plan なしなら empty state を表示する", async () => {
 		fetchSpy.mockResolvedValueOnce(jsonResponse({ error: "not_found" }, 404));
 
@@ -245,6 +273,27 @@ describe("HomeContent", () => {
 
 		expect(await screen.findByText(/1 日の目標/)).toBeInTheDocument();
 		expect(screen.getByText(/今日のサマリー/)).toBeInTheDocument();
+	});
+
+	it("generate 成功: API の week_start がリクエスト週と違っても、ホーム週のキャッシュに入り UI 表示する", async () => {
+		fetchSpy
+			.mockResolvedValueOnce(jsonResponse({ error: "not_found" }, 404))
+			.mockResolvedValueOnce(
+				jsonResponse({
+					plan_id: "p1",
+					week_start: "2026-04-27",
+					generated_at: "2026-04-23T00:00:00Z",
+					weekly_plan: makeWeeklyPlanWire(),
+				}),
+			);
+
+		renderHome({ weekStart: "2026-04-20" });
+
+		fireEvent.click(
+			await screen.findByRole("button", { name: "プランを作成する" }),
+		);
+
+		expect(await screen.findByText(/1 日の目標/)).toBeInTheDocument();
 	});
 
 	it("meal swap apply 成功で画面の meal title が更新される", async () => {

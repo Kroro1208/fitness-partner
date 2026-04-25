@@ -356,7 +356,8 @@ export const GeneratePlanResponseSchema = z.object({
 			.gte(0)
 			.describe(
 				"monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
-			),
+			)
+			.default(0),
 	}),
 });
 
@@ -1442,5 +1443,6 @@ export const WeeklyPlanSchema = z.object({
 		.gte(0)
 		.describe(
 			"monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
-		),
+		)
+		.default(0),
 });

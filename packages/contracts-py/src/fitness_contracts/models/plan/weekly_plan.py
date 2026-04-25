@@ -12,6 +12,7 @@ class WeeklyPlan(GeneratedWeeklyPlan):
     week_start: str = Field(description="ISO 月曜。")
     generated_at: str = Field(description="ISO 8601 timestamp (UTC)。")
     revision: int = Field(
+        default=0,
         ge=0,
         description="monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。",
     )

@@ -63,12 +63,12 @@ def _base_kwargs(**overrides: object) -> dict[str, object]:
     return base
 
 
-def test_weekly_plan_requires_revision() -> None:
+def test_weekly_plan_default_revision_zero_when_omitted() -> None:
+    """adapter が revision を付け忘れても 0 として扱い、JSON 上は欠落し得る。"""
     kwargs = _base_kwargs()
     kwargs.pop("revision")
-    with pytest.raises(ValidationError) as ei:
-        WeeklyPlan(**kwargs)
-    assert "revision" in str(ei.value)
+    plan = WeeklyPlan(**kwargs)
+    assert plan.revision == 0
 
 
 def test_weekly_plan_revision_ge_zero() -> None:

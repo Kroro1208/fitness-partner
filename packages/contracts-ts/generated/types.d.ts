@@ -293,7 +293,7 @@ export interface WeeklyPlan {
 	/**
 	 * monotonic counter。新規 plan は 0、swap のたびに +1 される optimistic concurrency token。
 	 */
-	revision: number;
+	revision?: number;
 }
 export interface SnackSwap {
 	current_snack: string;
