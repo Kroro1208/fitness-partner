@@ -1,3 +1,4 @@
+import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockSend, mockInvoke } = vi.hoisted(() => ({
@@ -68,6 +69,31 @@ describe("generate-plan handler", () => {
 		expect(res.statusCode).toBe(200);
 		expect(JSON.parse(res.body ?? "{}").plan_id).toBe("old-id");
 		expect(mockInvoke).not.toHaveBeenCalled();
+		expect(
+			mockSend.mock.calls.some((call) => call[0] instanceof UpdateCommand),
+		).toBe(false);
+	});
+
+	it("rate limit 超過時は 429 を返し AgentCore を呼ばない", async () => {
+		mockSend
+			.mockResolvedValueOnce({ Item: completeProfileItem })
+			.mockResolvedValueOnce({})
+			.mockRejectedValueOnce(
+				Object.assign(new Error("rate exceeded"), {
+					name: "ConditionalCheckFailedException",
+				}),
+			);
+
+		const res = await handler(
+			makeAuthEvent({
+				body: JSON.stringify({ week_start: "2026-04-20" }),
+			}),
+		);
+
+		expect(res.statusCode).toBe(429);
+		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "rate_limited" });
+		expect(res.headers?.["Retry-After"]).toBeDefined();
+		expect(mockInvoke).not.toHaveBeenCalled();
 	});
 
 	it("正常系: AgentCore → Put → 200", async () => {
@@ -116,6 +142,7 @@ describe("generate-plan handler", () => {
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })
 			.mockResolvedValueOnce({})
+			.mockResolvedValueOnce({})
 			.mockRejectedValueOnce(
 				Object.assign(new Error("ccf"), {
 					name: "ConditionalCheckFailedException",
@@ -139,6 +166,7 @@ describe("generate-plan handler", () => {
 	it("Put 非 conditional 失敗で 502 persistence_failed", async () => {
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })
+			.mockResolvedValueOnce({})
 			.mockResolvedValueOnce({})
 			.mockRejectedValueOnce(new Error("DDB throttled"));
 		mockInvoke.mockResolvedValueOnce({

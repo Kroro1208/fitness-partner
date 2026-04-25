@@ -37,7 +37,11 @@ export class GeneratePlanLambda extends Construct {
 		// grantReadWriteData は table 全体へ GetItem/PutItem を許してしまうため使わない。
 		fn.addToRolePolicy(
 			new iam.PolicyStatement({
-				actions: ["dynamodb:GetItem", "dynamodb:PutItem"],
+				actions: [
+					"dynamodb:GetItem",
+					"dynamodb:PutItem",
+					"dynamodb:UpdateItem",
+				],
 				resources: [props.table.tableArn],
 				conditions: {
 					"ForAllValues:StringLike": { "dynamodb:LeadingKeys": ["user#*"] },

@@ -40,7 +40,11 @@ describe("GeneratePlanLambda", () => {
 			PolicyDocument: Match.objectLike({
 				Statement: Match.arrayWith([
 					Match.objectLike({
-						Action: Match.arrayWith(["dynamodb:GetItem", "dynamodb:PutItem"]),
+						Action: Match.arrayWith([
+							"dynamodb:GetItem",
+							"dynamodb:PutItem",
+							"dynamodb:UpdateItem",
+						]),
 						Condition: Match.objectLike({
 							"ForAllValues:StringLike": Match.objectLike({
 								"dynamodb:LeadingKeys": ["user#*"],

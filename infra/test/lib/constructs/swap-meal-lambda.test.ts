@@ -37,7 +37,7 @@ describe("SwapMealLambda", () => {
 		});
 	});
 
-	it("grants DeleteItem in addition to Get/Put on the table with LeadingKeys=user#*", () => {
+	it("grants rate limit + proposal permissions on the table with LeadingKeys=user#*", () => {
 		const t = buildStack();
 		t.hasResourceProperties("AWS::IAM::Policy", {
 			PolicyDocument: {
@@ -46,6 +46,7 @@ describe("SwapMealLambda", () => {
 						Action: Match.arrayWith([
 							"dynamodb:GetItem",
 							"dynamodb:PutItem",
+							"dynamodb:UpdateItem",
 							"dynamodb:DeleteItem",
 						]),
 						Condition: {

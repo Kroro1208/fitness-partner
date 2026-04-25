@@ -43,12 +43,14 @@ export class SwapMealLambda extends Construct {
 		// Plan 08 と同じ最小権限パターン。swap-meal は proposal DeleteItem が追加で必要。
 		// - GetItem: profile / plan / swap_proposal
 		// - PutItem: plan (apply 時、ConditionExpression で revision 比較) / swap_proposal (candidates 時)
+		// - UpdateItem: rate limit bucket
 		// - DeleteItem: swap_proposal (apply 成功時の one-shot 消費)
 		fn.addToRolePolicy(
 			new iam.PolicyStatement({
 				actions: [
 					"dynamodb:GetItem",
 					"dynamodb:PutItem",
+					"dynamodb:UpdateItem",
 					"dynamodb:DeleteItem",
 				],
 				resources: [props.table.tableArn],

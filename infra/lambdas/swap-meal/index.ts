@@ -22,12 +22,14 @@ import { systemClock } from "../shared/clock";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { planKey } from "../shared/keys/plan";
+import { consumeUserRateLimit } from "../shared/rate-limit";
 import { ok, requireJsonBody, withServerError } from "../shared/response";
 import {
 	badGatewayJson,
 	badRequestJson,
 	errorJson,
 	gatewayTimeoutJson,
+	rateLimitedJson,
 } from "../shared/response-json";
 import { invokeSwapAgent } from "./agentcore-client";
 import {
@@ -44,6 +46,11 @@ import {
 } from "./swap-mappers";
 
 const CANDIDATES_TIMEOUT_MS = 25_000;
+const SWAP_CANDIDATES_RATE_LIMIT = {
+	name: "swap-candidates",
+	limit: 20,
+	windowSeconds: 10 * 60,
+} as const;
 
 const SwapCandidatesEnvelopeSchema = z
 	.object({
@@ -209,6 +216,16 @@ async function handleCandidates(
 	const target = findSwapTarget(plan, date, slot);
 	if (target === null) return errorJson(404, { error: "meal_not_found" });
 
+	const nowSec = toEpochSeconds(systemClock.now());
+	const rateLimit = await consumeUserRateLimit({
+		userId: auth.userId,
+		rule: SWAP_CANDIDATES_RATE_LIMIT,
+		nowEpochSeconds: nowSec,
+	});
+	if (!rateLimit.allowed) {
+		return rateLimitedJson(rateLimit.retryAfterSeconds);
+	}
+
 	// SafePromptProfile + DailyMacroContext を組み立て
 	const safeProfile = toSafePromptProfile(profileParse.data);
 	const dailyContext = buildDailyMacroContext(plan, date, slot);
@@ -229,7 +246,6 @@ async function handleCandidates(
 
 	// proposal を DDB に保存
 	const proposalId = randomUUID();
-	const nowSec = toEpochSeconds(systemClock.now());
 	const proposalItem = buildProposalItem({
 		userId: auth.userId,
 		proposalId,

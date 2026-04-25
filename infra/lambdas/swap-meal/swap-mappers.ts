@@ -18,6 +18,10 @@ export interface UpdatedPlanForSwap {
 	updatedPlan: WeeklyPlan;
 }
 
+function planRevision(plan: WeeklyPlan): number {
+	return plan.revision ?? 0;
+}
+
 /**
  * target 日 / slot から DailyMacroContext を算出する純粋関数。
  *
@@ -143,7 +147,7 @@ export function buildUpdatedPlanForSwap(
 			days: plan.days.map((day, index) =>
 				index === targetDayIdx ? updatedDay : day,
 			),
-			revision: plan.revision + 1,
+			revision: planRevision(plan) + 1,
 		},
 	};
 }
@@ -190,7 +194,7 @@ export function buildProposalItem(input: BuildProposalInput): ProposalItem {
 		date: input.date,
 		slot: input.slot,
 		current_plan_id: input.plan.plan_id,
-		expected_revision: input.plan.revision,
+		expected_revision: planRevision(input.plan),
 		candidates: input.candidates,
 		created_at: new Date(input.nowEpochSeconds * 1000).toISOString(),
 		ttl: input.nowEpochSeconds + ttlSeconds,

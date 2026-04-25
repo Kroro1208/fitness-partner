@@ -20,6 +20,7 @@ import { systemClock } from "../shared/clock";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { planKey } from "../shared/keys/plan";
+import { consumeUserRateLimit } from "../shared/rate-limit";
 import {
 	badRequest,
 	ok,
@@ -30,11 +31,17 @@ import {
 	badGatewayJson,
 	badRequestJson,
 	gatewayTimeoutJson,
+	rateLimitedJson,
 } from "../shared/response-json";
 import { type InvokePayload, invokeAgent } from "./agentcore-client";
 import { toSafeAgentInput, toSafePromptProfile } from "./mappers";
 
 const TIMEOUT_MS = 110_000;
+const GENERATE_PLAN_RATE_LIMIT = {
+	name: "generate-plan",
+	limit: 3,
+	windowSeconds: 60 * 60,
+} as const;
 
 // ---- Pure Core helpers --------------------------------------------------
 
@@ -159,6 +166,15 @@ export async function handler(
 		if (!force_regenerate) {
 			const existing = await readExistingPlan(auth.userId, weekStartBranded);
 			if (existing !== null) return ok(existing);
+		}
+
+		const rateLimit = await consumeUserRateLimit({
+			userId: auth.userId,
+			rule: GENERATE_PLAN_RATE_LIMIT,
+			nowEpochSeconds: Math.floor(systemClock.now().getTime() / 1000),
+		});
+		if (!rateLimit.allowed) {
+			return rateLimitedJson(rateLimit.retryAfterSeconds);
 		}
 
 		// ---- Adapter 入力マッピング (validate-then-compute 境界) ----

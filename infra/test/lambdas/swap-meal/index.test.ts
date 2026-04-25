@@ -3,6 +3,7 @@ import {
 	DynamoDBDocumentClient,
 	GetCommand,
 	PutCommand,
+	UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { mockClient } from "aws-sdk-client-mock";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -69,6 +70,28 @@ describe("swap-meal handler candidates", () => {
 		);
 		expect(res.statusCode).toBe(404);
 		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "meal_not_found" });
+	});
+
+	it("429 rate_limited: 上限超過時は AgentCore を呼ばない", async () => {
+		ddbMock
+			.on(GetCommand)
+			.resolvesOnce({ Item: completeProfileItem })
+			.resolvesOnce({ Item: buildPersistedPlanRow() });
+		ddbMock.on(UpdateCommand).rejectsOnce(
+			Object.assign(new Error("rate exceeded"), {
+				name: "ConditionalCheckFailedException",
+			}),
+		);
+
+		const handler = await importHandler();
+		const res = await handler(
+			makeCandidatesEvent({ date: "2026-04-20", slot: "breakfast" }),
+		);
+
+		expect(res.statusCode).toBe(429);
+		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "rate_limited" });
+		expect(res.headers?.["Retry-After"]).toBeDefined();
+		expect(invokeMock).not.toHaveBeenCalled();
 	});
 
 	it("404 plan_not_found", async () => {

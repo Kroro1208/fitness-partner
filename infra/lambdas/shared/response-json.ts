@@ -22,3 +22,13 @@ export const badGatewayJson = (body: Record<string, unknown>) =>
 	errorJson(502, body);
 export const gatewayTimeoutJson = (body: Record<string, unknown>) =>
 	errorJson(504, body);
+export function rateLimitedJson(retryAfterSeconds: number) {
+	return {
+		statusCode: 429,
+		headers: {
+			"Content-Type": "application/json",
+			"Retry-After": String(retryAfterSeconds),
+		},
+		body: JSON.stringify({ error: "rate_limited" }),
+	};
+}
