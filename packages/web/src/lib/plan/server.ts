@@ -1,12 +1,13 @@
 import "server-only";
 
+import { redirect } from "next/navigation";
+
 import { getValidAccessTokenServer } from "../auth/session";
 import { WeeklyPlanEnvelopeSchema } from "./envelope";
 import { parseWeeklyPlanToVM, type WeeklyPlanVM } from "./plan-mappers";
 
 /**
  * Server-side fetch の失敗を呼び出し元で区別するための discriminated union。
- * Plan 07 の `getProfileServerSideResult` と同構造。
  * - missing_access_token: セッション切れ
  * - missing_api_base:     deploy 設定不備 (env var 未設定)
  * - upstream_failure:     API Gateway / Lambda の 5xx
@@ -60,21 +61,30 @@ export async function getWeeklyPlanServerSideResult(
 }
 
 /**
- * Server Component 用の WeeklyPlan 取得 (simple 形)。
- * 失敗は `console.error` に残してから `null` に畳む (観測可能なまま UI 側に
- * reactive な再 fetch を委譲する)。詳細理由が必要なら
- * `getWeeklyPlanServerSideResult` を直接呼ぶ。
+ * Server Component から呼ぶ WeeklyPlan ロード helper。
+ *
+ * profile/server.ts の `loadOnboardingProfile` と同じ構造:
+ *   - `missing_access_token` (= セッション切れ) は expected error として
+ *     `redirect("/signin")` で再ログイン誘導
+ *   - その他は throw して `error.tsx` に委譲
+ *
+ * 旧 `getWeeklyPlanServerSide` は `missing_access_token` まで一律 throw に
+ * 変換しており、ユーザーは突然「エラーが発生しました」画面に遷移してしまっていた。
+ * skill: AP4 (expected error の throw 化) を是正している。
  */
-export async function getWeeklyPlanServerSide(
+export async function loadWeeklyPlan(
 	weekStart: string,
 ): Promise<WeeklyPlanVM | null> {
 	const result = await getWeeklyPlanServerSideResult(weekStart);
-	if (!result.ok) {
-		console.error("getWeeklyPlanServerSide failed", {
-			reason: result.reason,
-			status: result.status,
-		});
-		throw new Error(`getWeeklyPlanServerSide failed: ${result.reason}`);
+	if (result.ok) return result.plan;
+
+	if (result.reason === "missing_access_token") {
+		redirect("/signin");
 	}
-	return result.plan;
+
+	console.error("loadWeeklyPlan failed", {
+		reason: result.reason,
+		status: result.status,
+	});
+	throw new Error(`loadWeeklyPlan failed: ${result.reason}`);
 }

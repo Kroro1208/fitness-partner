@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { coachPromptQueryOptions, useOnboarding } from "@/hooks/use-onboarding";
+import { ONBOARDING_ERROR_MESSAGES } from "@/lib/onboarding/error-messages";
 import { buildAdvancePlan } from "@/lib/onboarding/submission-plans";
 import type { OnboardingProfile } from "@/lib/profile/profile-mappers";
 
@@ -112,8 +113,11 @@ export function StatsForm({
 			plan.coachPromptPrefetch.targetStage,
 			plan.coachPromptPrefetch.snapshot,
 		);
-		await patch(plan.basePatch, plan.nextStage);
-		router.push(plan.redirectPath);
+		// patch は mutate ベース。失敗時は mutation.error → patchError Alert で表示。
+		// 成功時のみ onSuccess で遷移する。
+		patch(plan.basePatch, plan.nextStage, {
+			onSuccess: () => router.push(plan.redirectPath),
+		});
 	};
 
 	return (
@@ -220,7 +224,7 @@ export function StatsForm({
 			{patchError && (
 				<Alert className="border-danger-500 bg-danger-100 text-danger-700">
 					<AlertDescription className="text-danger-700">
-						保存に失敗しました。
+						{ONBOARDING_ERROR_MESSAGES.patchFailed}
 					</AlertDescription>
 				</Alert>
 			)}

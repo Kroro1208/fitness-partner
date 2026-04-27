@@ -12,7 +12,7 @@ export type { OnboardingStage } from "@/lib/onboarding/stage-routing";
  *
  * contracts-ts 由来の `UserProfile` は snake_case を保つ一方、React / hook /
  * Server Component / local state では camelCase に統一する。boundary
- * (`useProfile`, `useUpdateProfile`, `getProfileServerSide`) で DTO ↔ ViewModel
+ * (`useProfile`, `useUpdateProfile`, `loadOnboardingProfile`) で DTO ↔ ViewModel
  * 変換をここで吸収する。
  *
  * 全フィールド optional。`null` は「明示的にクリア済み」を表す。

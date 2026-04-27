@@ -141,7 +141,11 @@ describe("POST /api/onboarding/coach-prompt", () => {
 				},
 			}),
 		);
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		// LLM 失敗は graceful degrade (200 + cached: true) なので
+		// 「業務エラー」ではなく「観測対象 warn」として記録される。
+		// 旧実装は console.error だったが、4xx 相当の業務的フォールバックは
+		// warn 級が適切なので test 側も合わせる。
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const { POST } = await import("./route");
 		const req = new Request("http://x/api/onboarding/coach-prompt", {
 			method: "POST",
@@ -155,7 +159,7 @@ describe("POST /api/onboarding/coach-prompt", () => {
 		const body = await res.json();
 		expect(body.cached).toBe(true);
 		expect(body.prompt).toContain("基本情報");
-		expect(errorSpy).toHaveBeenCalledOnce();
-		errorSpy.mockRestore();
+		expect(warnSpy).toHaveBeenCalledOnce();
+		warnSpy.mockRestore();
 	});
 });

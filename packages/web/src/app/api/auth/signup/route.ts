@@ -2,13 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { cognitoSignUp } from "@/lib/auth/cognito";
-import { handleAuthError } from "@/lib/auth/errors";
 import {
-	enforceRateLimits,
+	enforceRateLimitsOrThrow,
 	getClientIp,
-	rateLimitedResponse,
 } from "@/lib/security/rate-limit";
 import { enforceSameOrigin } from "@/lib/security/request-guard";
+import { withRouteErrorHandling } from "@/shared/http/with-route-error-handling";
 
 const bodySchema = z.object({
 	email: z.string().email(),
@@ -29,29 +28,19 @@ const SIGNUP_EMAIL_LIMIT = {
 	windowMs: 30 * 60_000,
 } as const;
 
-export async function POST(request: NextRequest) {
-	try {
-		const origin = enforceSameOrigin(request);
-		if (!origin.ok) return origin.response;
+export const POST = withRouteErrorHandling(async (request: NextRequest) => {
+	enforceSameOrigin(request);
 
-		const ip = getClientIp(request);
-		const ipRateLimit = enforceRateLimits([{ ...SIGNUP_IP_LIMIT, key: ip }]);
-		if (!ipRateLimit.allowed) {
-			return rateLimitedResponse(ipRateLimit.retryAfterSeconds);
-		}
+	const ip = getClientIp(request);
+	enforceRateLimitsOrThrow([{ ...SIGNUP_IP_LIMIT, key: ip }]);
 
-		const json = await request.json();
-		const { email, password, inviteCode } = bodySchema.parse(json);
-		const emailRateLimit = enforceRateLimits([
-			{ ...SIGNUP_EMAIL_LIMIT, key: email.toLowerCase() },
-		]);
-		if (!emailRateLimit.allowed) {
-			return rateLimitedResponse(emailRateLimit.retryAfterSeconds);
-		}
+	const json = await request.json();
+	const { email, password, inviteCode } = bodySchema.parse(json);
 
-		await cognitoSignUp(email, password, inviteCode);
-		return NextResponse.json({ needsConfirmation: true });
-	} catch (error) {
-		return handleAuthError(error);
-	}
-}
+	enforceRateLimitsOrThrow([
+		{ ...SIGNUP_EMAIL_LIMIT, key: email.toLowerCase() },
+	]);
+
+	await cognitoSignUp(email, password, inviteCode);
+	return NextResponse.json({ needsConfirmation: true });
+});

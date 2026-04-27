@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { z } from "zod";
 
 import { ApiError } from "@/lib/api-client";
@@ -33,6 +34,10 @@ async function fetchMe(): Promise<AuthUser | null> {
 export function useAuth() {
 	const queryClient = useQueryClient();
 	const router = useRouter();
+	// signOut 失敗時の UI 通知用 local state。
+	// 旧実装は `signOutMutation` に onError がなく、失敗が silent failure
+	// だったため、最低限ユーザーが「失敗した」と認識できる出口を作る。
+	const [signOutError, setSignOutError] = useState<string | null>(null);
 
 	const query = useQuery({
 		queryKey: ["auth", "me"],
@@ -46,8 +51,21 @@ export function useAuth() {
 			if (!res.ok) throw new Error("signout failed");
 		},
 		onSuccess: () => {
+			setSignOutError(null);
 			queryClient.clear();
 			router.replace("/signin");
+		},
+		onError: (error) => {
+			// 旧実装は onError 不在で silent failure だった。
+			// ユーザー由来のメッセージは UI 側で固定文言にマップ前提のため、
+			// ここでは「失敗した」というシグナルだけ state に置く。
+			console.warn("signout failed", {
+				name: error instanceof Error ? error.name : "unknown",
+				message: error instanceof Error ? error.message : String(error),
+			});
+			setSignOutError(
+				"ログアウトに失敗しました。通信を確認して再度お試しください。",
+			);
 		},
 	});
 
@@ -55,7 +73,11 @@ export function useAuth() {
 		user: query.data ?? null,
 		isLoading: query.isLoading,
 		isAuthenticated: !!query.data,
-		signOut: () => signOutMutation.mutate(),
+		signOut: () => {
+			setSignOutError(null);
+			signOutMutation.mutate();
+		},
 		isSigningOut: signOutMutation.isPending,
+		signOutError,
 	};
 }

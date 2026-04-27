@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { coachPromptQueryOptions, useOnboarding } from "@/hooks/use-onboarding";
+import { ONBOARDING_ERROR_MESSAGES } from "@/lib/onboarding/error-messages";
 import { buildAdvancePlan } from "@/lib/onboarding/submission-plans";
 import type { OnboardingProfile } from "@/lib/profile/profile-mappers";
 import { trimmedOrNull } from "@/lib/utils";
@@ -130,9 +131,7 @@ export function LifestyleForm({
 				plan.freeTextParse.snapshot,
 			);
 			if (!parseResult.ok) {
-				setFreeTextParseError(
-					"自由記述の自動反映に失敗しました。このままでは内容を提案に反映できないため、もう一度お試しください。",
-				);
+				setFreeTextParseError(ONBOARDING_ERROR_MESSAGES.freeTextParseFailed);
 				return;
 			}
 		}
@@ -140,8 +139,11 @@ export function LifestyleForm({
 			plan.coachPromptPrefetch.targetStage,
 			plan.coachPromptPrefetch.snapshot,
 		);
-		await patch(plan.basePatch, plan.nextStage);
-		router.push(plan.redirectPath);
+		// patch は mutate ベース。失敗時は mutation.error → patchError Alert で表示。
+		// 成功時のみ onSuccess で遷移する (画面遷移を success 経路に閉じ込める)。
+		patch(plan.basePatch, plan.nextStage, {
+			onSuccess: () => router.push(plan.redirectPath),
+		});
 	};
 
 	return (
@@ -237,7 +239,9 @@ export function LifestyleForm({
 
 			{patchError && (
 				<Alert className="border-danger-500 bg-danger-100">
-					<AlertDescription>保存に失敗しました。</AlertDescription>
+					<AlertDescription>
+						{ONBOARDING_ERROR_MESSAGES.patchFailed}
+					</AlertDescription>
 				</Alert>
 			)}
 			{freeTextParseError && (

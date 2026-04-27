@@ -87,10 +87,18 @@ export async function getValidAccessTokenServer(): Promise<string | null> {
 		const refreshed = await cognitoRefreshTokens(refreshToken);
 		await setRefreshedTokens(refreshed.idToken, refreshed.accessToken);
 		return refreshed.accessToken;
-	} catch {
-		// Server Component / RSC read paths cannot mutate cookies.
-		// Route Handlers (`/api/auth/me`, `/api/proxy`, `/api/auth/refresh`) are
-		// still responsible for clearing invalid sessions on write-capable paths.
+	} catch (error) {
+		// 旧実装は空 catch で refresh 連続失敗が観測不能だった。
+		// Server Component / RSC の read context では cookies を mutate できず、
+		// invalid session の cleanup は write-capable な Route Handler
+		// (`/api/auth/me`, `/api/proxy`, `/api/auth/refresh`) 側に委ねる。
+		// ここでは null を返しつつ観測ログだけ残す。
+		// 期待される失敗 (refresh token 失効) と想定外 (network 障害) を
+		// 区別する余地はあるが、この層は呼び出し元の挙動に影響しないため warn 止まり。
+		console.warn("getValidAccessTokenServer refresh failed", {
+			name: error instanceof Error ? error.name : "unknown",
+			message: error instanceof Error ? error.message : String(error),
+		});
 		return null;
 	}
 }

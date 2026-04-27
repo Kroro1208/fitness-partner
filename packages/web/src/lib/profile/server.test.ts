@@ -5,25 +5,36 @@ vi.mock("../auth/session", () => ({
 	getValidAccessTokenServer: vi.fn(),
 }));
 
+// `redirect()` は内部で NEXT_REDIRECT を throw する Next.js 制御例外。
+// vitest 環境では実際の navigation 機構が動かないため、ここでは
+// テスト可観測な独自 marker を throw して識別する。
+vi.mock("next/navigation", () => ({
+	redirect: (path: string) => {
+		const e = new Error(`__redirect__${path}`);
+		e.name = "RedirectMock";
+		throw e;
+	},
+}));
+
 async function getValidAccessTokenServerMock() {
 	const { getValidAccessTokenServer } = await import("../auth/session");
 	return vi.mocked(getValidAccessTokenServer);
 }
 
-describe("getProfileServerSide", () => {
+describe("getProfileServerSideResult / loadOnboardingProfile", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		process.env.API_GATEWAY_URL = "https://api.example.com";
 	});
 
-	it("returns null when no access token", async () => {
+	it("missing_access_token を返す (Result 形)", async () => {
 		(await getValidAccessTokenServerMock()).mockResolvedValue(null);
 		const { getProfileServerSideResult } = await import("./server");
 		const result = await getProfileServerSideResult();
 		expect(result).toEqual({ ok: false, reason: "missing_access_token" });
 	});
 
-	it("returns profile on 200", async () => {
+	it("200 でプロフィールを返す", async () => {
 		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
 		global.fetch = vi
 			.fn()
@@ -33,22 +44,22 @@ describe("getProfileServerSide", () => {
 					{ status: 200 },
 				),
 			);
-		const { getProfileServerSide } = await import("./server");
-		const result = await getProfileServerSide();
+		const { loadOnboardingProfile } = await import("./server");
+		const result = await loadOnboardingProfile();
 		expect(result?.onboardingStage).toBe("stats");
 	});
 
-	it("returns null on 404", async () => {
+	it("404 で null を返す (=プロフィール未作成)", async () => {
 		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
 		global.fetch = vi
 			.fn()
 			.mockResolvedValue(new Response(null, { status: 404 }));
-		const { getProfileServerSide } = await import("./server");
-		const result = await getProfileServerSide();
+		const { loadOnboardingProfile } = await import("./server");
+		const result = await loadOnboardingProfile();
 		expect(result).toBeNull();
 	});
 
-	it("returns upstream failure details on non-404 error", async () => {
+	it("upstream 503 は upstream_failure を返す (Result 形)", async () => {
 		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
 		global.fetch = vi
 			.fn()
@@ -62,7 +73,7 @@ describe("getProfileServerSide", () => {
 		});
 	});
 
-	it("returns parse_failure when 200 response misses profile", async () => {
+	it("200 でも profile フィールド欠損は parse_failure", async () => {
 		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
 		global.fetch = vi
 			.fn()
@@ -72,16 +83,27 @@ describe("getProfileServerSide", () => {
 		expect(result).toEqual({ ok: false, reason: "parse_failure" });
 	});
 
-	it("throws instead of returning null on server-side failure", async () => {
+	it("loadOnboardingProfile は missing_access_token で redirect('/signin')", async () => {
+		// 旧実装は throw していたが、セッション切れは expected error なので
+		// redirect で再ログイン誘導するのが正しい挙動。
 		(await getValidAccessTokenServerMock()).mockResolvedValue(null);
+		const { loadOnboardingProfile } = await import("./server");
+		await expect(loadOnboardingProfile()).rejects.toThrow(
+			/__redirect__\/signin/,
+		);
+	});
+
+	it("loadOnboardingProfile は upstream_failure を throw する (= error.tsx 行き)", async () => {
+		(await getValidAccessTokenServerMock()).mockResolvedValue("token");
+		global.fetch = vi
+			.fn()
+			.mockResolvedValue(new Response(null, { status: 503 }));
 		const consoleError = vi
 			.spyOn(console, "error")
 			.mockImplementation(() => {});
-		const { getProfileServerSide } = await import("./server");
-		// reason がメッセージに含まれることだけ検証 (前置きの "getProfileServerSide failed:"
-		// は実装詳細の wording のため正規表現で結合度を緩める)。
-		await expect(getProfileServerSide()).rejects.toThrow(
-			/missing_access_token/,
+		const { loadOnboardingProfile } = await import("./server");
+		await expect(loadOnboardingProfile()).rejects.toThrow(
+			/loadOnboardingProfile failed: upstream_failure/,
 		);
 		consoleError.mockRestore();
 	});

@@ -1,4 +1,19 @@
-import { type NextRequest, NextResponse } from "next/server";
+// インメモリのレート制限。
+//
+// なぜ NextResponse を返す `rateLimitedResponse` を廃止したか:
+//   - 旧 API は `if (!result.allowed) return rateLimitedResponse(s);` という
+//     「lib が NextResponse を生成して route が return する」二段構成だった。
+//     これは AP2 (lib に HTTP 層が漏れる) 違反で、wrapper 集約も妨げていた。
+//   - `enforceRateLimitsOrThrow` に変えることで、route handler 側は
+//     1 行で済み、429 + Retry-After は AppError 側 (RateLimitedError) が持つ。
+//
+// 注意: モジュールスコープの Map はプロセス内共有。
+//   - Vercel Functions のコールドスタート / 複数 instance では分散しない。
+//   - 将来的に Upstash Redis 等への移行が必要だが、本 PR の責務外。
+
+import type { NextRequest } from "next/server";
+
+import { RateLimitedError } from "@/shared/errors/app-error";
 
 type RateLimitEntry = {
 	count: number;
@@ -76,6 +91,34 @@ export function enforceRateLimits(
 	return { allowed: true };
 }
 
+/**
+ * `enforceRateLimits` の throw 版。
+ * Route Handler では allowed 判定 → 即 RateLimitedError throw が定型なので
+ * 1 行で済むようにした。`withRouteErrorHandling` 配下で使うこと。
+ */
+export function enforceRateLimitsOrThrow(
+	rules: readonly RateLimitRule[],
+	now: number = Date.now(),
+): void {
+	const result = enforceRateLimits(rules, now);
+	if (!result.allowed) {
+		throw new RateLimitedError(result.retryAfterSeconds);
+	}
+}
+
+/**
+ * `consumeRateLimit` の throw 版。単一ルールのときに使う。
+ */
+export function consumeRateLimitOrThrow(
+	rule: RateLimitRule,
+	now: number = Date.now(),
+): void {
+	const result = consumeRateLimit(rule, now);
+	if (!result.allowed) {
+		throw new RateLimitedError(result.retryAfterSeconds);
+	}
+}
+
 function maxRetryAfterSeconds(results: readonly RateLimitResult[]): number {
 	return results
 		.filter(
@@ -103,19 +146,6 @@ export function getClientIp(request: NextRequest): string {
 	if (cfConnectingIp) return cfConnectingIp;
 
 	return "unknown";
-}
-
-export function rateLimitedResponse(retryAfterSeconds: number): NextResponse {
-	return NextResponse.json(
-		{ error: "rate_limited" },
-		{
-			status: 429,
-			headers: {
-				"Cache-Control": "no-store",
-				"Retry-After": String(retryAfterSeconds),
-			},
-		},
-	);
 }
 
 export function resetRateLimitStoreForTest(): void {

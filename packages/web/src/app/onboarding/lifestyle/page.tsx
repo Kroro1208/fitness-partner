@@ -1,6 +1,6 @@
 import { createOnboardingMetadata } from "@/app/onboarding/metadata";
 import { OnboardingShell } from "@/components/domain/onboarding-shell";
-import { getProfileServerSide } from "@/lib/profile/server";
+import { loadOnboardingProfile } from "@/lib/profile/server";
 import { LifestyleForm } from "./lifestyle-form";
 
 export const metadata = createOnboardingMetadata(
@@ -9,7 +9,9 @@ export const metadata = createOnboardingMetadata(
 );
 
 export default async function LifestylePage() {
-	const profile = await getProfileServerSide();
+	// セッション切れは loadOnboardingProfile 内で redirect("/signin")。
+	// そのほかの取得失敗 (config / upstream / parse) は throw して error.tsx へ。
+	const profile = await loadOnboardingProfile();
 
 	return (
 		<OnboardingShell stage="lifestyle" backHref="/onboarding/stats">

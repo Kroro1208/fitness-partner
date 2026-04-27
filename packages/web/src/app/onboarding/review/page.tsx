@@ -1,6 +1,6 @@
 import { createOnboardingMetadata } from "@/app/onboarding/metadata";
 import { OnboardingShell } from "@/components/domain/onboarding-shell";
-import { getProfileServerSide } from "@/lib/profile/server";
+import { loadOnboardingProfile } from "@/lib/profile/server";
 import { ReviewContent } from "./review-content";
 
 export const metadata = createOnboardingMetadata(
@@ -9,7 +9,8 @@ export const metadata = createOnboardingMetadata(
 );
 
 export default async function ReviewPage() {
-	const profile = await getProfileServerSide();
+	// セッション切れは loadOnboardingProfile 内で redirect("/signin")。
+	const profile = await loadOnboardingProfile();
 
 	return (
 		<OnboardingShell stage="review" backHref="/onboarding/feasibility">

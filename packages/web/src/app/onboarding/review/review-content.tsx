@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { useGeneratePlan } from "@/hooks/use-plan";
 import { weekStartOf } from "@/lib/date/week-start";
+import { ONBOARDING_ERROR_MESSAGES } from "@/lib/onboarding/error-messages";
 import type { OnboardingProfile } from "@/lib/profile/profile-mappers";
 
 const PACE_LABELS: Record<"steady" | "aggressive", string> = {
@@ -101,20 +102,37 @@ export function ReviewContent({
 		useOnboarding(initialProfile);
 	const generate = useGeneratePlan();
 
-	const handleComplete = async () => {
-		try {
-			await patch({}, "complete");
-		} catch {
-			// patchError state が Alert に反映されるので、ここでは静かに中断する。
-			return;
-		}
-		try {
-			await generate.mutateAsync({ weekStart: weekStartOf(new Date()) });
-			router.push("/home");
-		} catch (err) {
-			console.error("plan generation failed", err);
-			router.push("/home?planError=1");
-		}
+	// 完了は 2 段階の副作用 (profile を complete に PATCH → plan を生成):
+	//   1. patch 成功 → generate 起動
+	//   2. generate 成功 → /home へ
+	//   3. generate 失敗 → /home?planError=1 へ (UI 側で固定文言を出す)
+	//
+	// 旧実装は `await mutateAsync` + try/catch で組んでおり、patch 失敗時の
+	// catch が `return` だけの空 catch アンチパターンになっていた。
+	// `mutate` + onSuccess / onError コールバックに置き換えると、失敗時は
+	// React Query が `mutation.error` に保持し Alert を再描画するだけで済むため、
+	// アプリコード側に空 catch を書く必要がない。
+	const handleComplete = () => {
+		patch({}, "complete", {
+			onSuccess: () => {
+				generate.mutate(
+					{ weekStart: weekStartOf(new Date()) },
+					{
+						onSuccess: () => router.push("/home"),
+						onError: (err) => {
+							// generate 失敗は home 画面で fallback バナーを出す。
+							// クエリパラメータでフラグするだけで、ユーザーは home の
+							// PlanErrorBanner で「再生成」を試みる導線がある。
+							console.warn("plan generation failed", {
+								name: err instanceof Error ? err.name : "unknown",
+								message: err instanceof Error ? err.message : String(err),
+							});
+							router.push("/home?planError=1");
+						},
+					},
+				);
+			},
+		});
 	};
 
 	const completeButtonLabel = isPatching
@@ -273,7 +291,9 @@ export function ReviewContent({
 
 			{patchError && (
 				<Alert className="border-danger-500 bg-danger-100">
-					<AlertDescription>保存に失敗しました。</AlertDescription>
+					<AlertDescription>
+						{ONBOARDING_ERROR_MESSAGES.patchFailed}
+					</AlertDescription>
 				</Alert>
 			)}
 

@@ -193,14 +193,27 @@ export function useOnboarding(initialProfile?: OnboardingProfile | null) {
 	});
 	const updateMutation = useMutation(updateProfileMutationOptions(qc));
 
-	const patch = async (
+	// `mutate` (not `mutateAsync`) を使う理由:
+	//   - mutateAsync は失敗時に reject する Promise を返す。await 側で
+	//     `try/catch` しないと unhandled rejection になるため、各 form に
+	//     `try { await patch(...) } catch {}` という空 catch アンチパターンが
+	//     蔓延していた (mutation.error 経由で Alert 表示するため catch は無意味)。
+	//   - mutate は Promise を返さない代わりに onSuccess / onError コールバックで
+	//     成功/失敗を通知する。Promise rejection が発生しないので catch 不要。
+	//   - エラー UI は依然 `mutation.error` (= patchError) で表示できる。
+	//   - 成功時の遷移は onSuccess で連結する (画面遷移は副作用なので明示的に書く)。
+	const patch = (
 		input: Partial<OnboardingProfilePatch>,
 		nextStage: OnboardingStage | "complete",
-	) => {
-		await updateMutation.mutateAsync({
-			...input,
-			onboardingStage: nextStage,
-		});
+		callbacks?: { onSuccess?: () => void },
+	): void => {
+		updateMutation.mutate(
+			{
+				...input,
+				onboardingStage: nextStage,
+			},
+			callbacks,
+		);
 	};
 
 	const prefetchCoachPrompt = (

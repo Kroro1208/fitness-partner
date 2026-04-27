@@ -3,7 +3,17 @@
 import { useCallback, useRef, useState } from "react";
 
 import { useSwapApply, useSwapCandidates } from "@/hooks/use-meal-swap";
+import { getUserSafeApiErrorMessage } from "@/lib/api-client";
 import type { MealVM } from "@/lib/plan/plan-mappers";
+
+// 旧実装の `toErrorMessage` は `err instanceof Error ? err.message : "..."` で
+// `err.message` を直接 modal に表示していた。これは skill: layer-conventions
+// "catch した error をそのまま表示" 違反で、サーバー由来の error kind や
+// Zod 英文 message が露出していた。
+//
+// 修正:
+//   `getUserSafeApiErrorMessage(err)` 経由で固定文言にマップする。
+//   ApiError 以外の Error / unknown はすべて generic "予期しないエラー" に丸める。
 
 type MealSlot = MealVM["slot"];
 
@@ -104,7 +114,9 @@ export function useMealSwapFlow(weekStart: string) {
 				setSession(createResolvedSession(target, data));
 			} catch (err) {
 				if (requestIdRef.current !== requestId) return;
-				setSession(createFailedSession(target, toErrorMessage(err)));
+				setSession(
+					createFailedSession(target, getUserSafeApiErrorMessage(err)),
+				);
 			}
 		},
 		[swapCandidates, weekStart],
@@ -139,7 +151,9 @@ export function useMealSwapFlow(weekStart: string) {
 				swapApply.reset();
 			} catch (err) {
 				if (requestIdRef.current !== requestId) return;
-				setSession((prev) => withSessionError(prev, toErrorMessage(err)));
+				setSession((prev) =>
+					withSessionError(prev, getUserSafeApiErrorMessage(err)),
+				);
 			}
 		},
 		[session, swapApply, swapCandidates],
@@ -160,9 +174,4 @@ export function useMealSwapFlow(weekStart: string) {
 		close,
 		swapDisabled: session !== null,
 	};
-}
-
-function toErrorMessage(err: unknown): string {
-	if (err instanceof Error) return err.message;
-	return "不明なエラーが発生しました";
 }

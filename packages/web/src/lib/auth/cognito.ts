@@ -8,6 +8,17 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import { z } from "zod";
 
+import { InternalServerError } from "@/shared/errors/app-error";
+
+// Cognito SDK の thin adapter。
+// なぜ SDK 例外をそのまま throw に伝搬し、Result を返さないか:
+//   - SDK 例外の分類は `shared/errors/auth-error-mapper.ts` が一括で行い、
+//     `withRouteErrorHandling` が Route Handler 境界で AppError に変換する。
+//   - ここで Result に詰め直すと、SDK が将来追加した新しい例外名を
+//     2 箇所で扱う必要が出る (mapper と adapter)。一元化のため throw のまま流す。
+//   - cognito.ts は「SDK 呼び出し」「入力 schema parse」しか行わず、
+//     業務ロジック (usecase) ではないため AP1 (usecase 全体 try/catch) には該当しない。
+
 const envSchema = z.object({
 	COGNITO_USER_POOL_ID: z.string().min(1),
 	COGNITO_CLIENT_ID: z.string().min(1),
@@ -110,7 +121,12 @@ export async function cognitoSignIn(
 	);
 	const tokens = res.AuthenticationResult;
 	if (!tokens?.IdToken || !tokens.AccessToken || !tokens.RefreshToken) {
-		throw new Error("Cognito did not return a complete token set");
+		// 不変条件違反: 成功レスポンスのはずなのに token 欠損。
+		// バグ・SDK 仕様変更・upstream 異常のいずれか。InternalServerError として
+		// 観測ログに残し、レスポンスは "internal_error" に丸める。
+		throw new InternalServerError("internal_error", {
+			cause: new Error("Cognito did not return a complete token set"),
+		});
 	}
 	return {
 		idToken: tokens.IdToken,
@@ -140,7 +156,9 @@ export async function cognitoRefreshTokens(
 	);
 	const tokens = res.AuthenticationResult;
 	if (!tokens?.IdToken || !tokens.AccessToken) {
-		throw new Error("Cognito did not return refreshed tokens");
+		throw new InternalServerError("internal_error", {
+			cause: new Error("Cognito did not return refreshed tokens"),
+		});
 	}
 	return {
 		idToken: tokens.IdToken,

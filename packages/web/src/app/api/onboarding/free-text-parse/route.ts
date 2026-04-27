@@ -4,17 +4,21 @@ import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { readJsonBody } from "@/app/api/onboarding/_shared/read-json-body";
+import { readJsonBodyOrThrow } from "@/app/api/onboarding/_shared/read-json-body";
 import { getSession } from "@/lib/auth/session";
-import {
-	consumeRateLimit,
-	rateLimitedResponse,
-} from "@/lib/security/rate-limit";
+import { consumeRateLimitOrThrow } from "@/lib/security/rate-limit";
 import {
 	DEFAULT_JSON_BODY_LIMIT_BYTES,
 	enforceContentLength,
 	enforceSameOrigin,
 } from "@/lib/security/request-guard";
+import {
+	InternalServerError,
+	PayloadTooLargeError,
+	UnauthorizedError,
+	ValidationError,
+} from "@/shared/errors/app-error";
+import { withRouteErrorHandling } from "@/shared/http/with-route-error-handling";
 
 // LLM の structured output 形状。契約の FreeTextParseResponse から note_field を除いた部分。
 const llmOutputSchema = z.object({
@@ -48,50 +52,33 @@ function jsonByteLength(value: unknown): number {
 	return new TextEncoder().encode(JSON.stringify(value)).byteLength;
 }
 
-export async function POST(request: Request) {
-	const origin = enforceSameOrigin(request);
-	if (!origin.ok) return origin.response;
-
-	const size = enforceContentLength(request, DEFAULT_JSON_BODY_LIMIT_BYTES);
-	if (!size.ok) return size.response;
+export const POST = withRouteErrorHandling(async (request: Request) => {
+	enforceSameOrigin(request);
+	enforceContentLength(request, DEFAULT_JSON_BODY_LIMIT_BYTES);
 
 	const session = await getSession();
 	if (!session) {
-		return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+		throw new UnauthorizedError("unauthenticated");
 	}
 
-	const rateLimit = consumeRateLimit({
+	consumeRateLimitOrThrow({
 		...FREE_TEXT_PARSE_RATE_LIMIT,
 		key: session.userId,
 	});
-	if (!rateLimit.allowed) {
-		return rateLimitedResponse(rateLimit.retryAfterSeconds);
-	}
 
-	const bodyResult = await readJsonBody(request, {
+	const body = await readJsonBodyOrThrow(request, {
 		maxBytes: DEFAULT_JSON_BODY_LIMIT_BYTES,
 	});
-	if (!bodyResult.ok) {
-		return NextResponse.json(
-			{
-				error:
-					bodyResult.reason === "payload_too_large"
-						? "payload_too_large"
-						: "invalid_json",
-			},
-			{ status: bodyResult.reason === "payload_too_large" ? 413 : 400 },
-		);
-	}
 
-	const parsed = FreeTextParseRequestSchema.safeParse(bodyResult.body);
+	const parsed = FreeTextParseRequestSchema.safeParse(body);
 	if (!parsed.success) {
-		return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+		throw new ValidationError("invalid_body");
 	}
 	if (
 		parsed.data.free_text.length > FREE_TEXT_MAX_CHARS ||
 		jsonByteLength(parsed.data.structured_snapshot) > SNAPSHOT_MAX_BYTES
 	) {
-		return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
+		throw new PayloadTooLargeError();
 	}
 
 	try {
@@ -109,7 +96,10 @@ export async function POST(request: Request) {
 			suggested_tags: object.suggested_tags,
 		});
 	} catch (error) {
-		console.error("free-text-parse failed", error);
-		return NextResponse.json({ error: "parse_failed" }, { status: 500 });
+		// LLM 失敗は parse_failed として 500 で返す (UI は固定文言で fallback 表示)。
+		// 旧実装は error オブジェクトを丸ごと console.error していたため、
+		// プロンプト全文 / API キー / response body などの機密が CloudWatch に
+		// 漏れる可能性があった。name と message だけに絞る。
+		throw new InternalServerError("parse_failed", { cause: error });
 	}
-}
+});
