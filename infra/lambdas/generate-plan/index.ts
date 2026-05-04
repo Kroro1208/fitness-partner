@@ -20,6 +20,10 @@ import { systemClock } from "../shared/clock";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { planKey } from "../shared/keys/plan";
+import {
+	logInjectionEvent,
+	validateLLMOutputRecord,
+} from "../shared/prompt-injection";
 import { consumeUserRateLimit } from "../shared/rate-limit";
 import {
 	badRequest,
@@ -205,6 +209,14 @@ export async function handler(
 		if (!genParse.success) {
 			console.error("invalid generated plan", {
 				issues: genParse.error.issues,
+			});
+			return badGatewayJson({ error: "invalid_plan_shape" });
+		}
+		const outputCheck = validateLLMOutputRecord(genParse.data);
+		if (!outputCheck.ok) {
+			logInjectionEvent({
+				source: "generate-plan:output",
+				reason: outputCheck.reason,
 			});
 			return badGatewayJson({ error: "invalid_plan_shape" });
 		}

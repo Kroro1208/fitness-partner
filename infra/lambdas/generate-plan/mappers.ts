@@ -4,6 +4,7 @@ import {
 	type SafePromptProfile,
 	SafePromptProfileSchema,
 } from "@fitness/contracts-ts";
+import { sanitizeUntrustedRecord } from "../shared/prompt-injection";
 
 export type JobType =
 	| "desk"
@@ -112,6 +113,11 @@ function stringArrayOrEmpty(value: unknown): string[] {
  * medical_condition_note / medication_note などの PII / 生ノートは
  * 絶対に含めず、抽象フラグ (avoid_alcohol, avoid_supplements_without_consultation)
  * に畳み込む。`SafePromptProfileSchema.parse` で戻り値の shape と型を確定する。
+ *
+ * 加えて、ユーザー由来の string / string[] フィールド (favorite_meals, hated_foods,
+ * restrictions, current_snacks, goal_description, name 他) を `sanitizeUntrustedRecord`
+ * で間接プロンプトインジェクションパターンスキャンし、検出時は固定 placeholder に
+ * 置換する。Bedrock AgentCore に到達する前の最後の境界。
  */
 export function toSafePromptProfile(profile: Profile): SafePromptProfile {
 	const avoidAlcohol =
@@ -120,7 +126,7 @@ export function toSafePromptProfile(profile: Profile): SafePromptProfile {
 		Boolean(profile.has_medical_condition) ||
 		Boolean(profile.has_doctor_diet_restriction);
 
-	return SafePromptProfileSchema.parse({
+	const draft = {
 		...pickOptionalSafeFields(profile),
 		age: profile.age,
 		sex: profile.sex,
@@ -132,7 +138,11 @@ export function toSafePromptProfile(profile: Profile): SafePromptProfile {
 		current_snacks: stringArrayOrEmpty(profile.current_snacks),
 		avoid_alcohol: avoidAlcohol,
 		avoid_supplements_without_consultation: avoidSupplements,
+	};
+	const sanitized = sanitizeUntrustedRecord(draft, {
+		source: "generate-plan:safe_prompt_profile",
 	});
+	return SafePromptProfileSchema.parse(sanitized.clean);
 }
 
 /**

@@ -22,6 +22,11 @@ import { systemClock } from "../shared/clock";
 import { WeeklyPlanRowSchema } from "../shared/db-schemas";
 import { docClient, stripKeys, TABLE_NAME } from "../shared/dynamo";
 import { planKey } from "../shared/keys/plan";
+import {
+	logInjectionEvent,
+	sanitizeUntrustedRecord,
+	validateLLMOutputRecord,
+} from "../shared/prompt-injection";
 import { consumeUserRateLimit } from "../shared/rate-limit";
 import { ok, requireJsonBody, withServerError } from "../shared/response";
 import {
@@ -230,9 +235,16 @@ async function handleCandidates(
 	const safeProfile = toSafePromptProfile(profileParse.data);
 	const dailyContext = buildDailyMacroContext(plan, date, slot);
 
+	// target_meal は過去の LLM 出力 (永続化済み) のため、二次注入の懸念がある。
+	// title / items.name / notes 等の string フィールドを再帰スキャンして redact。
+	const sanitizedTarget = sanitizeUntrustedRecord(
+		target.meal as unknown as Record<string, unknown>,
+		{ source: "swap-meal:target_meal" },
+	);
+
 	const invokeResult = await safeInvokeSwapCandidates({
 		safe_prompt_profile: safeProfile,
-		target_meal: target.meal,
+		target_meal: sanitizedTarget.clean as unknown as typeof target.meal,
 		daily_context: dailyContext,
 	});
 	if (!invokeResult.ok) {
@@ -241,6 +253,14 @@ async function handleCandidates(
 
 	const candidates = parseGeneratedCandidates(invokeResult.response, slot);
 	if (candidates === null) {
+		return badGatewayJson({ error: "invalid_swap_shape" });
+	}
+	const outputCheck = validateLLMOutputRecord(candidates);
+	if (!outputCheck.ok) {
+		logInjectionEvent({
+			source: "swap-meal:output",
+			reason: outputCheck.reason,
+		});
 		return badGatewayJson({ error: "invalid_swap_shape" });
 	}
 

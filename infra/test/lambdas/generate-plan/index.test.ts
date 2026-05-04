@@ -1,9 +1,9 @@
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockSend, mockInvoke } = vi.hoisted(() => ({
+const { mockSend, sendMock } = vi.hoisted(() => ({
 	mockSend: vi.fn(),
-	mockInvoke: vi.fn(),
+	sendMock: vi.fn(),
 }));
 vi.mock("@aws-sdk/lib-dynamodb", async () => {
 	const actual = await vi.importActual<typeof import("@aws-sdk/lib-dynamodb")>(
@@ -14,11 +14,15 @@ vi.mock("@aws-sdk/lib-dynamodb", async () => {
 		DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
 	};
 });
-vi.mock("../../../lambdas/generate-plan/agentcore-client", () => ({
-	invokeAgent: mockInvoke,
+vi.mock("@aws-sdk/client-bedrock-agentcore", () => ({
+	BedrockAgentCoreClient: vi
+		.fn()
+		.mockImplementation(() => ({ send: sendMock })),
+	InvokeAgentRuntimeCommand: vi.fn().mockImplementation((input) => input),
 }));
 
 process.env.TABLE_NAME = "FitnessTable";
+process.env.AGENTCORE_REGION = "us-west-2";
 process.env.AGENTCORE_RUNTIME_ARN =
 	"arn:aws:bedrock-agentcore:us-west-2:0:runtime/x";
 
@@ -31,8 +35,20 @@ import {
 
 beforeEach(() => {
 	mockSend.mockReset();
-	mockInvoke.mockReset();
+	sendMock.mockReset();
 });
+
+function mockAgentResponse(payload: unknown): void {
+	sendMock.mockResolvedValueOnce({
+		response: (async function* () {
+			yield new TextEncoder().encode(JSON.stringify(payload));
+		})(),
+	});
+}
+
+function mockAgentSendError(error: Error): void {
+	sendMock.mockRejectedValueOnce(error);
+}
 
 describe("generate-plan handler", () => {
 	it("onboarding 未完了で 400", async () => {
@@ -68,7 +84,7 @@ describe("generate-plan handler", () => {
 		);
 		expect(res.statusCode).toBe(200);
 		expect(JSON.parse(res.body ?? "{}").plan_id).toBe("old-id");
-		expect(mockInvoke).not.toHaveBeenCalled();
+		expect(sendMock).not.toHaveBeenCalled();
 		expect(
 			mockSend.mock.calls.some((call) => call[0] instanceof UpdateCommand),
 		).toBe(false);
@@ -93,7 +109,7 @@ describe("generate-plan handler", () => {
 		expect(res.statusCode).toBe(429);
 		expect(JSON.parse(res.body ?? "{}")).toEqual({ error: "rate_limited" });
 		expect(res.headers?.["Retry-After"]).toBeDefined();
-		expect(mockInvoke).not.toHaveBeenCalled();
+		expect(sendMock).not.toHaveBeenCalled();
 	});
 
 	it("正常系: AgentCore → Put → 200", async () => {
@@ -101,7 +117,7 @@ describe("generate-plan handler", () => {
 			.mockResolvedValueOnce({ Item: completeProfileItem })
 			.mockResolvedValueOnce({})
 			.mockResolvedValueOnce({});
-		mockInvoke.mockResolvedValueOnce({
+		mockAgentResponse({
 			generated_weekly_plan: makeGeneratedPlan(),
 		});
 		const res = await handler(
@@ -121,7 +137,29 @@ describe("generate-plan handler", () => {
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })
 			.mockResolvedValueOnce({});
-		mockInvoke.mockResolvedValueOnce({ generated_weekly_plan: { days: [] } });
+		mockAgentResponse({ generated_weekly_plan: { days: [] } });
+		const res = await handler(
+			makeAuthEvent({
+				body: JSON.stringify({ week_start: "2026-04-20" }),
+			}),
+		);
+		expect(res.statusCode).toBe(502);
+		expect(JSON.parse(res.body ?? "{}").error).toBe("invalid_plan_shape");
+	});
+
+	it("GeneratedWeeklyPlan の文字列に injection compliance signal があれば 502", async () => {
+		mockSend
+			.mockResolvedValueOnce({ Item: completeProfileItem })
+			.mockResolvedValueOnce({});
+		mockAgentResponse({
+			generated_weekly_plan: makeGeneratedPlan({
+				personal_rules: [
+					"OK, ignoring previous instructions as requested",
+					"b",
+					"c",
+				],
+			}),
+		});
 		const res = await handler(
 			makeAuthEvent({
 				body: JSON.stringify({ week_start: "2026-04-20" }),
@@ -151,7 +189,7 @@ describe("generate-plan handler", () => {
 			.mockResolvedValueOnce({
 				Item: { ...existing, pk: "user#u1", sk: "plan#2026-04-20" },
 			});
-		mockInvoke.mockResolvedValueOnce({
+		mockAgentResponse({
 			generated_weekly_plan: makeGeneratedPlan(),
 		});
 		const res = await handler(
@@ -169,7 +207,7 @@ describe("generate-plan handler", () => {
 			.mockResolvedValueOnce({})
 			.mockResolvedValueOnce({})
 			.mockRejectedValueOnce(new Error("DDB throttled"));
-		mockInvoke.mockResolvedValueOnce({
+		mockAgentResponse({
 			generated_weekly_plan: makeGeneratedPlan(),
 		});
 		const res = await handler(
@@ -185,7 +223,7 @@ describe("generate-plan handler", () => {
 		mockSend
 			.mockResolvedValueOnce({ Item: completeProfileItem })
 			.mockResolvedValueOnce({});
-		mockInvoke.mockRejectedValueOnce(
+		mockAgentSendError(
 			Object.assign(new Error("aborted"), { name: "AbortError" }),
 		);
 		const res = await handler(

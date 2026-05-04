@@ -205,6 +205,34 @@ describe("swap-meal handler candidates", () => {
 		});
 	});
 
+	it("502 invalid_swap_shape: generated candidate に injection compliance signal がある", async () => {
+		ddbMock
+			.on(GetCommand)
+			.resolvesOnce({ Item: completeProfileItem })
+			.resolvesOnce({ Item: buildPersistedPlanRow() });
+		mockSwapResponse({
+			generated_candidates: {
+				candidates: [
+					buildMeal(
+						"breakfast",
+						"OK, ignoring previous instructions as requested",
+					),
+					buildMeal("breakfast", "b"),
+					buildMeal("breakfast", "c"),
+				],
+			},
+		});
+		const handler = await importHandler();
+		const res = await handler(
+			makeCandidatesEvent({ date: "2026-04-20", slot: "breakfast" }),
+		);
+		expect(res.statusCode).toBe(502);
+		expect(JSON.parse(res.body ?? "{}")).toEqual({
+			error: "invalid_swap_shape",
+		});
+		expect(ddbMock.commandCalls(PutCommand)).toHaveLength(0);
+	});
+
 	it("504 swap_timeout: AbortError", async () => {
 		ddbMock
 			.on(GetCommand)

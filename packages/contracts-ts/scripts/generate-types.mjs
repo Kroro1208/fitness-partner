@@ -11,6 +11,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+/** @import { JSONSchema } from "json-schema-to-typescript" */
 import { compile } from "json-schema-to-typescript";
 
 const pkgRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -18,107 +19,146 @@ const schemasDir = join(pkgRoot, "schemas");
 const outFile = join(pkgRoot, "generated", "types.d.ts");
 
 /**
+ * 1 行分の `{` / `}` の差を初期値に加算した深さを返す。
+ * @param {string} line
+ * @param {number} initial
+ * @returns {number}
+ */
+function countBraces(line, initial) {
+	return [...line].reduce((depth, ch) => {
+		if (ch === "{") return depth + 1;
+		if (ch === "}") return depth - 1;
+		return depth;
+	}, initial);
+}
+
+/**
+ * @typedef {{
+ *   readonly seen: ReadonlySet<string>,
+ *   readonly result: readonly string[],
+ *   readonly skipBlock: "interface" | "type" | null,
+ *   readonly braceDepth: number,
+ *   readonly pendingComment: readonly string[],
+ *   readonly inComment: boolean,
+ * }} DedupState
+ */
+
+/** @type {DedupState} */
+const INITIAL_STATE = {
+	seen: new Set(),
+	result: [],
+	skipBlock: null,
+	braceDepth: 0,
+	pendingComment: [],
+	inComment: false,
+};
+
+/**
+ * 1 行を読んで次の状態を返す pure transition。
+ * @param {DedupState} s
+ * @param {string} line
+ * @returns {DedupState}
+ */
+function stepDedup(s, line) {
+	// interface skip: 中括弧バランスで終端判定
+	if (s.skipBlock === "interface") {
+		const depth = countBraces(line, s.braceDepth);
+		return {
+			...s,
+			braceDepth: depth,
+			skipBlock: depth <= 0 ? null : "interface",
+		};
+	}
+	// type skip: ネスト外の `;` 終端のみ。内部行の `;` で誤解除しないよう
+	// braceDepth を追跡する (BUG-62996d1f 再発防止)。
+	if (s.skipBlock === "type") {
+		const depth = countBraces(line, s.braceDepth);
+		const ended = depth <= 0 && line.trimEnd().endsWith(";");
+		return {
+			...s,
+			braceDepth: depth,
+			skipBlock: ended ? null : "type",
+		};
+	}
+	// JSDoc コメントの開始: 直前コメントは捨てて新規ブロック
+	if (line.trimStart().startsWith("/**")) {
+		return { ...s, inComment: true, pendingComment: [line] };
+	}
+	// JSDoc コメント本文
+	if (s.inComment) {
+		const closes = line.trimStart().startsWith("*/") || line.includes("*/");
+		return {
+			...s,
+			pendingComment: [...s.pendingComment, line],
+			inComment: !closes,
+		};
+	}
+	// export interface X { ... }
+	const ifaceMatch = line.match(/^export\s+interface\s+(\w+)\s*\{/);
+	if (ifaceMatch) {
+		const name = ifaceMatch[1];
+		if (s.seen.has(name)) {
+			return {
+				...s,
+				pendingComment: [],
+				skipBlock: "interface",
+				braceDepth: 1,
+			};
+		}
+		return {
+			...s,
+			seen: new Set([...s.seen, name]),
+			result: [...s.result, ...s.pendingComment, line],
+			pendingComment: [],
+		};
+	}
+	// export type X = ...
+	const typeMatch = line.match(/^export\s+type\s+(\w+)\s*=/);
+	if (typeMatch) {
+		const name = typeMatch[1];
+		if (s.seen.has(name)) {
+			if (line.trimEnd().endsWith(";")) {
+				return { ...s, pendingComment: [] };
+			}
+			return {
+				...s,
+				pendingComment: [],
+				skipBlock: "type",
+				braceDepth: countBraces(line, 0),
+			};
+		}
+		return {
+			...s,
+			seen: new Set([...s.seen, name]),
+			result: [...s.result, ...s.pendingComment, line],
+			pendingComment: [],
+		};
+	}
+	// 通常行 (空行など): 保留中コメントと共に出力
+	return {
+		...s,
+		result: [...s.result, ...s.pendingComment, line],
+		pendingComment: [],
+	};
+}
+
+/**
  * コンパイル済み TS コードから重複する export type / export interface を除去する。
- * 最初に出現した定義のみを残す。
+ * 最初に出現した定義のみを残す。pure 関数。
  * @param {string} code
  * @returns {string}
  */
-function deduplicateTypes(code) {
-	/** @type {Set<string>} */
-	const seen = new Set();
-	const lines = code.split("\n");
-	/** @type {string[]} */
-	const result = [];
-	/** @type {"interface" | "type" | null} */
-	let skipBlock = null;
-	let braceDepth = 0;
-	// 直前の JSDoc コメントブロックを一時保持 (重複時に一緒に破棄)
-	/** @type {string[]} */
-	let pendingComment = [];
-	let inComment = false;
-
-	for (const line of lines) {
-		if (skipBlock === "interface") {
-			for (const ch of line) {
-				if (ch === "{") braceDepth++;
-				if (ch === "}") braceDepth--;
-			}
-			if (braceDepth <= 0) {
-				skipBlock = null;
-			}
-			continue;
-		}
-
-		if (skipBlock === "type") {
-			if (line.trimEnd().endsWith(";")) {
-				skipBlock = null;
-			}
-			continue;
-		}
-
-		// JSDoc コメントの開始・終了を追跡
-		if (line.trimStart().startsWith("/**")) {
-			inComment = true;
-			pendingComment = [line];
-			continue;
-		}
-		if (inComment) {
-			pendingComment.push(line);
-			if (line.trimStart().startsWith("*/") || line.includes("*/")) {
-				inComment = false;
-			}
-			continue;
-		}
-
-		// export type X = ... or export interface X {
-		const typeMatch = line.match(/^export\s+type\s+(\w+)\s*=/);
-		const ifaceMatch = line.match(/^export\s+interface\s+(\w+)\s*\{/);
-
-		if (ifaceMatch) {
-			const name = ifaceMatch[1];
-			if (seen.has(name)) {
-				pendingComment = []; // 直前コメントも破棄
-				skipBlock = "interface";
-				braceDepth = 1;
-				continue;
-			}
-			seen.add(name);
-			result.push(...pendingComment, line);
-			pendingComment = [];
-			continue;
-		}
-
-		if (typeMatch) {
-			const name = typeMatch[1];
-			if (seen.has(name)) {
-				pendingComment = [];
-				if (!line.trimEnd().endsWith(";")) {
-					skipBlock = "type";
-				}
-				continue;
-			}
-			seen.add(name);
-			result.push(...pendingComment, line);
-			pendingComment = [];
-			continue;
-		}
-
-		// コメントでも宣言でもない行 (空行など)
-		if (pendingComment.length > 0) {
-			result.push(...pendingComment);
-			pendingComment = [];
-		}
-		result.push(line);
-	}
-
-	// 末尾に残ったコメントがあれば出力
-	if (pendingComment.length > 0) {
-		result.push(...pendingComment);
-	}
-
-	return result.join("\n");
+export function deduplicateTypes(code) {
+	const final = code.split("\n").reduce(stepDedup, INITIAL_STATE);
+	return [...final.result, ...final.pendingComment].join("\n");
 }
 
+/**
+ * @param {unknown} node
+ * @param {boolean} [isRoot]
+ * @param {boolean} [keysArePropertyNames]
+ * @returns {unknown}
+ */
 function normalizeSchemaForTypes(node, isRoot = true, keysArePropertyNames = false) {
 	if (node === null || typeof node !== "object") {
 		return node;
@@ -128,8 +168,11 @@ function normalizeSchemaForTypes(node, isRoot = true, keysArePropertyNames = fal
 		return node.map((item) => normalizeSchemaForTypes(item, false, false));
 	}
 
+	/** @type {Record<string, unknown>} */
 	const normalized = {};
-	for (const [key, value] of Object.entries(node)) {
+	for (const [key, value] of Object.entries(
+		/** @type {Record<string, unknown>} */ (node),
+	)) {
 		// JSON Schema metadata の "title" はトップレベル以外で除去する。
 		// ただし `properties` / `$defs` 直下のキーは型名・プロパティ名なので保持する。
 		if (key === "title" && !isRoot && !keysArePropertyNames) continue;
@@ -139,11 +182,11 @@ function normalizeSchemaForTypes(node, isRoot = true, keysArePropertyNames = fal
 		// そのエントリのキーはプロパティ名 / 型名として扱う必要がある。
 		const childKeysArePropertyNames =
 			!keysArePropertyNames && (key === "properties" || key === "$defs");
-			normalized[key] = normalizeSchemaForTypes(
-				value,
-				false,
-				childKeysArePropertyNames,
-			);
+		normalized[key] = normalizeSchemaForTypes(
+			value,
+			false,
+			childKeysArePropertyNames,
+		);
 	}
 	// json-schema-to-typescript は min/maxItems を tuple / tuple union に変換する。
 	// この repo の契約は runtime 制約として長さを保持したいだけで、consumer 側では
@@ -175,7 +218,9 @@ async function main() {
 	for (const file of schemaFiles) {
 		const schemaPath = join(schemasDir, file);
 		const schemaText = readFileSync(schemaPath, "utf8");
-		const schema = normalizeSchemaForTypes(JSON.parse(schemaText));
+		const schema = /** @type {JSONSchema} */ (
+			normalizeSchemaForTypes(JSON.parse(schemaText))
+		);
 		const modelName = file.replace(/\.schema\.json$/, "");
 
 		const ts = await compile(schema, modelName, {
